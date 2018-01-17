@@ -86,7 +86,10 @@ func DeployStageFromK8sDep(cfg DeployStageConfig, dep *v1beta1.Deployment) Deplo
 		}
 
 		c.Requests.CPU = container.Resources.Requests.Cpu().String()
+		c.Requests.Memory = container.Resources.Requests.Memory().String()
+
 		c.Limits.CPU = container.Resources.Limits.Cpu().String()
+		c.Limits.Memory = container.Resources.Limits.Memory().String()
 
 		containers = append(containers, c)
 	}

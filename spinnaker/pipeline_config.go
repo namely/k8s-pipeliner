@@ -137,7 +137,8 @@ type DeployStageContainer struct {
 	ImageDescription ImageDescription `json:"imageDescription"`
 	ImagePullPolicy  string           `json:"imagePullPolicy"`
 	Limits           struct {
-		CPU string `json:"cpu"`
+		CPU    string `json:"cpu"`
+		Memory string `json:"memory"`
 	} `json:"limits"`
 	Name  string `json:"name"`
 	Ports []struct {
@@ -146,7 +147,8 @@ type DeployStageContainer struct {
 		Protocol      string `json:"protocol"`
 	} `json:"ports"`
 	Requests struct {
-		CPU string `json:"cpu"`
+		CPU    string `json:"cpu"`
+		Memory string `json:"memory"`
 	} `json:"requests"`
 	VolumeMounts []interface{} `json:"volumeMounts"`
 }
