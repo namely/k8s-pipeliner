@@ -70,6 +70,15 @@ func DeployStageFromK8sDep(cfg DeployStageConfig, dep *v1beta1.Deployment) Deplo
 						},
 					}
 				}
+
+				if vf.SecretKeyRef != nil {
+					e.EnvSource = &EnvSource{
+						SecretSource: &SecretSource{
+							Name:       vf.SecretKeyRef.Name,
+							SecretName: vf.SecretKeyRef.Key,
+						},
+					}
+				}
 			}
 
 			c.EnvVars = append(c.EnvVars, e)
