@@ -46,6 +46,10 @@ func main() {
 					Name:  "account",
 					Usage: "the name of the account in spinnaker",
 				},
+				cli.StringFlag{
+					Name:  "docker-account",
+					Usage: "the name of the docker account in spinnaker",
+				},
 			},
 			Action: createAction,
 		},
@@ -83,8 +87,8 @@ func createAction(ctx *cli.Context) error {
 
 	cfg := spinnaker.DeployStageConfig{
 		Account:       ctx.String("account"),
+		DockerAccount: ctx.String("docker-account"),
 		Application:   applicationName,
-		DockerAccount: "namely-registry",
 	}
 
 	b, _ := json.MarshalIndent(spinnaker.DeployStageFromK8sDep(cfg, dep), "", "\t")
