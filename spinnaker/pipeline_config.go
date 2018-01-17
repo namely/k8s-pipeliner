@@ -163,7 +163,6 @@ type EnvSource struct {
 }
 
 type SecretSource struct {
-	Key        string `json:"key"`
 	SecretName string `json:"secretName"`
 	Name       string `json:"name"`
 }
