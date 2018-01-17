@@ -50,6 +50,10 @@ func main() {
 					Name:  "docker-account",
 					Usage: "the name of the docker account in spinnaker",
 				},
+				cli.StringFlag{
+					Name:  "tag-format",
+					Usage: "the trigger format for the tag variant on docker images",
+				},
 			},
 			Action: createAction,
 		},
@@ -88,6 +92,7 @@ func createAction(ctx *cli.Context) error {
 	cfg := spinnaker.DeployStageConfig{
 		Account:       ctx.String("account"),
 		DockerAccount: ctx.String("docker-account"),
+		TagFormat:     ctx.String("tag-format"),
 		Application:   applicationName,
 	}
 

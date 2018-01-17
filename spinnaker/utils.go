@@ -13,6 +13,7 @@ type DeployStageConfig struct {
 	Account       string
 	Application   string
 	DockerAccount string
+	TagFormat     string
 }
 
 // DeployStageFromK8sDep creates a spinnaker deploy stage (clusters) from a
@@ -41,10 +42,10 @@ func DeployStageFromK8sDep(cfg DeployStageConfig, dep *v1beta1.Deployment) Deplo
 			ImageDescription: ImageDescription{
 				Account:     cfg.DockerAccount,
 				FromTrigger: true,
-				ImageID:     fmt.Sprintf("%s/%s:(.*)", u.Host, repository),
+				ImageID:     fmt.Sprintf("%s/%s:%s", u.Host, repository, cfg.TagFormat),
 				Registry:    u.Hostname(),
 				Repository:  repository,
-				Tag:         "(.*)",
+				Tag:         cfg.TagFormat,
 			},
 		}
 
