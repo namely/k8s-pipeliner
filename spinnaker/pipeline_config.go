@@ -164,7 +164,7 @@ type EnvSource struct {
 
 type SecretSource struct {
 	SecretName string `json:"secretName"`
-	Name       string `json:"name"`
+	Key        string `json:"key"`
 }
 
 type ConfigMapSource struct {
