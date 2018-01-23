@@ -1,41 +1,41 @@
 apiVersion: extensions/v1beta2
 kind: Deployment
 metadata:
-  name: connect-prod
+  name: example
   namespace: production
   annotations:
-    namely.com/spinnaker-image-description-account: "namely-registry"
-    namely.com/spinnaker-image-description-imageid: "${ trigger.properties.docker_image }"
-    namely.com/spinnaker-image-description-registry: "registry.namely.land"
-    namely.com/spinnaker-image-description-repository: "namely/connect"
-    namely.com/spinnaker-image-description-tag: "${ trigger.properties.docker_tag }"
-    namely.com/spinnaker-load-balancers: "connect"
+    namely.com/spinnaker-image-description-account: "your-registry"
+    namely.com/spinnaker-image-description-imageid: "${ trigger.properties['docker_image'] }"
+    namely.com/spinnaker-image-description-registry: "your.registry.land"
+    namely.com/spinnaker-image-description-repository: "org/example"
+    namely.com/spinnaker-image-description-tag: "${ trigger.properties['docker_tag'] }"
+    namely.com/spinnaker-load-balancers: "example"
 spec:
   template:
     metadata:
       labels:
-        app: connect-prod
+        app: example
     spec:
       containers:
-      - name: connect-prod
-        image: registry.namely.land/namely/connect:latest
-        command: ["bundle", "exec", "unicorn", "-p", "5000", "-c", "./config/unicorn.rb"]
-        imagePullPolicy: Always
-        ports:
-        - containerPort: 5000
-          name: connect-prod
+      - command:
+        - bundle
+        - exec
+        - unicorn
+        - -p
+        - "80"
+        - -c
+        - ./config/unicorn.rb
         env:
         - name: ADMIN_PASSWORD
           valueFrom:
-           configMapKeyRef:
-             name: connect-prod
-             key: ADMIN_PASSWORD
-        resources:
-          requests:
-            memory: "1G"
-            cpu: "1"
-          limits:
-            memory: "2G"
-            cpu: "2"
-      imagePullSecrets:
-        - name: registryland
+            configMapKeyRef:
+              key: ADMIN_PASSWORD
+              name: super-secret-password
+        # this image doesn't really matter, its going to be replaced, but its not to show intent
+        image: your.registry.land/org/example:latest
+        imagePullPolicy: IfNotPresent
+        name: example
+        ports:
+        - containerPort: 80
+          name: http
+          protocol: TCP

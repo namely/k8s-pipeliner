@@ -45,58 +45,51 @@ func (b *Builder) MarshalJSON() ([]byte, error) {
 	}
 
 	for stageIndex, stage := range b.pipeline.Stages {
+		var s types.Stage
+		var err error
+
 		if stage.RunJob != nil {
-			stage, err := b.buildRunJobStage(stageIndex, stage)
-			if err != nil {
-				return nil, err
-			}
-
-			sp.Stages = append(sp.Stages, stage)
-			continue
+			s, err = b.buildRunJobStage(stageIndex, stage)
 		}
-
 		if stage.Deploy != nil {
-			stage, err := b.buildDeployStage(stageIndex, stage)
-			if err != nil {
-				return nil, err
-			}
-
-			sp.Stages = append(sp.Stages, stage)
+			s, err = b.buildDeployStage(stageIndex, stage)
 		}
+		if stage.ManualJudgement != nil {
+			s, err = b.buildManualJudgementStage(stageIndex, stage)
+		}
+
+		if err != nil {
+			return nil, err
+		}
+		sp.Stages = append(sp.Stages, s)
 	}
 
 	return json.Marshal(sp)
 }
 
 func (b *Builder) buildRunJobStage(index int, s config.Stage) (*types.RunJobStage, error) {
-	reliesOn := make([]string, 0)
-	if s.ReliesOn != nil {
-		reliesOn = s.ReliesOn
-	}
-
 	rjs := &types.RunJobStage{
-		Account:              s.Account,
-		Application:          b.pipeline.Application,
-		Annotations:          make(map[string]string),
-		CloudProvider:        "kubernetes",
-		CloudProviderType:    "kubernetes",
-		Name:                 s.Name,
-		VolumeSources:        []interface{}{},
-		RefID:                s.RefID,
-		RequisiteStageRefIds: reliesOn,
-		DNSPolicy:            "ClusterFirst", // hack for now
-		Type:                 "runJob",
+		StageMetadata: buildStageMetadata(s, "runJob"),
+
+		Account:           s.Account,
+		Application:       b.pipeline.Application,
+		Annotations:       make(map[string]string),
+		CloudProvider:     "kubernetes",
+		CloudProviderType: "kubernetes",
+		VolumeSources:     []interface{}{},
+		DNSPolicy:         "ClusterFirst", // hack for now
 	}
 
-	cs, _, err := ContainersFromManifest(s.RunJob.ManifestFile)
+	mg, err := ContainersFromManifest(s.RunJob.ManifestFile)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(cs) == 0 {
+	if len(mg.Containers) == 0 {
 		return nil, ErrNoContainers
 	}
-	rjs.Container = cs[0]
+	rjs.Container = mg.Containers[0]
+	rjs.Namespace = mg.Namespace
 
 	// overrides can be provided for jobs since things like
 	// migrations typically need all of the same environment variables
@@ -113,47 +106,87 @@ func (b *Builder) buildRunJobStage(index int, s config.Stage) (*types.RunJobStag
 // manifest file. So the clusters array will ALWAYS be 1 in length.
 func (b *Builder) buildDeployStage(index int, s config.Stage) (*types.DeployStage, error) {
 	ds := &types.DeployStage{
-		Name:                 s.Name,
-		RefID:                s.RefID,
-		RequisiteStageRefIds: s.ReliesOn,
-		Type:                 "deploy",
+		StageMetadata: buildStageMetadata(s, "deploy"),
 	}
 
-	cs, annotations, err := ContainersFromManifest(s.Deploy.ManifestFile)
+	mg, err := ContainersFromManifest(s.Deploy.ManifestFile)
 	if err != nil {
 		return nil, err
 	}
-	if len(cs) == 0 {
+	if len(mg.Containers) == 0 {
 		return nil, ErrNoContainers
 	}
 
 	// grab the load balancers for the deployment
 	var lbs []string
-	if l, ok := annotations[SpinnakerLoadBalancersAnnotations]; ok {
+	if l, ok := mg.Annotations[SpinnakerLoadBalancersAnnotations]; ok {
 		lbs = strings.Split(l, ",")
 	}
 
 	cluster := types.Cluster{
-		Account:                        s.Account,
-		Application:                    b.pipeline.Application,
-		VolumeSources:                  []interface{}{}, // TODO(bobbytables): allow this to be configurable
-		Events:                         []interface{}{},
-		Containers:                     cs,
-		LoadBalancers:                  lbs,
-		InterestingHealthProviderNames: []string{"KubernetesContainer", "KubernetesPod"}, // TODO(bobbytables): allow this to be configurable
-		Region:                        s.Region,
-		Namespace:                     s.Region,
-		DNSPolicy:                     "ClusterFirst", // TODO(bobbytables): allow this to be configurable
-		MaxRemainingAsgs:              s.Deploy.MaxRemainingASGS,
-		ReplicaSetAnnotations:         annotations,
-		ScaleDown:                     s.Deploy.ScaleDown,
-		Stack:                         s.Deploy.Stack,
-		Strategy:                      s.Deploy.Strategy,
-		TargetSize:                    s.Deploy.TargetSize,
-		TerminationGracePeriodSeconds: 30, // TODO(bobbytables): allow this to be configurable
+		Account:               s.Account,
+		Application:           b.pipeline.Application,
+		Containers:            mg.Containers,
+		LoadBalancers:         lbs,
+		Region:                mg.Namespace,
+		Namespace:             mg.Namespace,
+		MaxRemainingAsgs:      s.Deploy.MaxRemainingASGS,
+		ReplicaSetAnnotations: mg.Annotations,
+		ScaleDown:             s.Deploy.ScaleDown,
+		Stack:                 s.Deploy.Stack,
+		Strategy:              s.Deploy.Strategy,
+		TargetSize:            s.Deploy.TargetSize,
+
+		// TODO(bobbytables): allow these to be configurable
+		VolumeSources: []interface{}{},
+		Events:        []interface{}{},
+		InterestingHealthProviderNames: []string{"KubernetesContainer", "KubernetesPod"},
+		Provider:                       "kubernetes",
+		CloudProvider:                  "kubernetes",
+		DNSPolicy:                      "ClusterFirst",
+		TerminationGracePeriodSeconds:  30,
 	}
 
 	ds.Clusters = []types.Cluster{cluster}
 
 	return ds, nil
+}
+
+func (b *Builder) buildManualJudgementStage(index int, s config.Stage) (*types.ManualJudgementStage, error) {
+	mjs := &types.ManualJudgementStage{
+		StageMetadata: buildStageMetadata(s, "manualJudgment"),
+
+		FailPipeline: s.ManualJudgement.FailPipeline,
+		Instructions: s.ManualJudgement.Instructions,
+		Inputs:       s.ManualJudgement.Inputs,
+	}
+
+	return mjs, nil
+}
+
+func buildStageMetadata(s config.Stage, t string) types.StageMetadata {
+	var nots []types.Notification
+	for _, n := range s.Notifications {
+		message := make(map[string]types.NotificationMessage)
+		for messageOn, text := range n.Message {
+			message[messageOn] = types.NotificationMessage{Text: text}
+		}
+
+		nots = append(nots, types.Notification{
+			Address: n.Address,
+			Level:   n.Level,
+			Type:    n.Type,
+			When:    n.When,
+			Message: message,
+		})
+	}
+
+	return types.StageMetadata{
+		Name:                 s.Name,
+		RefID:                s.RefID,
+		RequisiteStageRefIds: s.ReliesOn,
+		Type:                 t,
+		Notifications:        nots,
+		SendNotifications:    (len(nots) > 0),
+	}
 }

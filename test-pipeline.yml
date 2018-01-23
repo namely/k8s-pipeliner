@@ -1,9 +1,9 @@
-name: Connect Deployment
-application: namelyconnect
-triggers:
+name: Example Deployment
+application: example     # should match application created in spinnaker
+triggers:                # list of triggers (currently only jenkins is supported)
 - jenkins:
-    job: "Connect/job/master"
-    master: "namely-jenkins"
+    job: "Example/job/master"
+    master: "jenkins"
     propertyFile: "build.properties"
 stages:
 - account: int-k8s
@@ -17,6 +17,17 @@ stages:
         - exec
         - rake
         - db:migrate
+  notifications:
+    - address: "#launchpad"
+      type: "slack"
+      when:
+        - stage.complete
+        - stage.failed
+      message:
+        stage.complete: |
+          The stage has completed!
+        stage.failed: |
+          The stage has failed!
 - account: int-k8s
   name: "Deploy to INT"
   refId: "2"
@@ -29,3 +40,12 @@ stages:
     stack: web # primarily for labeling purposes on the created resources
     strategy: redblack
     targetSize: 2 # this is the total amount of replicas for the deployment
+- account: int-k8s
+  name: "Proceed to Staging?"
+  refId: "3"
+  reliesOn:
+    - "2"
+  manualJudgement:
+    failPipeline: true
+    instructions: |
+      If this stage has completed QA, press proceed.

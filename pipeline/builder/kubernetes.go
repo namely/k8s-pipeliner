@@ -3,6 +3,7 @@ package builder
 import (
 	"errors"
 	"os"
+	"strings"
 
 	"github.com/namely/k8s-pipeliner/pipeline/builder/types"
 
@@ -46,53 +47,60 @@ const (
 	SpinnakerLoadBalancersAnnotations = "namely.com/spinnaker-load-balancers"
 )
 
+// ManifestGroup keeps a collection of containers from a deployment
+// and metadata associated with them
+type ManifestGroup struct {
+	Namespace   string
+	Annotations map[string]string
+	Containers  []*types.Container
+}
+
 // ContainersFromManifest loads a kubernetes manifest file and generates
 // spinnaker pipeline containers config from it.
 //
 // NOTE: If your manifest file declares multiple types, only the first will be taken
 // to generate the config.
-func ContainersFromManifest(file string) ([]*types.Container, map[string]string, error) {
+func ContainersFromManifest(file string) (*ManifestGroup, error) {
 	f, err := os.Open(file)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	d := yaml.NewYAMLOrJSONDecoder(f, 4096)
 
 	ext := runtime.RawExtension{}
 	if dErr := d.Decode(&ext); dErr != nil {
-		return nil, nil, dErr
+		return nil, dErr
 	}
 
 	versions := &runtime.VersionedObjects{}
 	_, gvk, err := unstructured.UnstructuredJSONScheme.Decode(ext.Raw, nil, versions)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	// seek back to the beginning of the file so we can unmarshal into the correct
 	// type once we've determined it
 	if _, err := f.Seek(0, 0); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-
-	var c []*types.Container
-	var annotations map[string]string
+	var mg ManifestGroup
 
 	switch gvk.Kind {
 	case "Deployment":
 		dep := &v1beta2.Deployment{}
 		if err := d.Decode(dep); err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 
-		c = append(c, deploymentContainers(dep)...)
-		annotations = dep.Annotations
+		mg.Containers = deploymentContainers(dep)
+		mg.Annotations = dep.Annotations
+		mg.Namespace = dep.Namespace
 	default:
-		return nil, nil, ErrUnsupportedManifest
+		return nil, ErrUnsupportedManifest
 	}
 
-	return c, annotations, nil
+	return &mg, nil
 }
 
 func deploymentContainers(dep *v1beta2.Deployment) []*types.Container {
@@ -102,20 +110,23 @@ func deploymentContainers(dep *v1beta2.Deployment) []*types.Container {
 
 		// add the image description first off using the annotations on the container
 		spinContainer.ImageDescription = types.ImageDescription{
-			Account:    dep.Annotations[SpinnakerImageDescriptionAccountAnnotation],
-			ImageID:    dep.Annotations[SpinnakerImageDescriptionImageIDAnnotation],
-			Tag:        dep.Annotations[SpinnakerImageDescriptionTagAnnotation],
-			Repository: dep.Annotations[SpinnakerImageDescriptionRepositoryAnnotation],
-			Registry:   dep.Annotations[SpinnakerImageDescriptionRegistryAnnotation],
+			Account:      dep.Annotations[SpinnakerImageDescriptionAccountAnnotation],
+			ImageID:      dep.Annotations[SpinnakerImageDescriptionImageIDAnnotation],
+			Tag:          dep.Annotations[SpinnakerImageDescriptionTagAnnotation],
+			Repository:   dep.Annotations[SpinnakerImageDescriptionRepositoryAnnotation],
+			Registry:     dep.Annotations[SpinnakerImageDescriptionRegistryAnnotation],
+			Organization: "namely",
 		}
 
 		args := []string{}
 		if container.Args != nil {
 			args = container.Args
 		}
+
+		spinContainer.Name = container.Name
 		spinContainer.Args = args
 		spinContainer.Command = container.Command
-		spinContainer.ImagePullPolicy = string(container.ImagePullPolicy)
+		spinContainer.ImagePullPolicy = strings.ToUpper(string(container.ImagePullPolicy))
 		spinContainer.Requests.CPU = container.Resources.Requests.Cpu().String()
 		spinContainer.Requests.Memory = container.Resources.Requests.Memory().String()
 		spinContainer.Limits.CPU = container.Resources.Limits.Cpu().String()

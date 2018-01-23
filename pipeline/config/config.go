@@ -48,14 +48,25 @@ type JenkinsTrigger struct {
 // Stage is an individual stage within a spinnaker pipeline
 // It defines what type of stage and the reference to a manifest file (if applicable)
 type Stage struct {
-	Account  string   `yaml:"account"`
-	Name     string   `yaml:"name"`
-	RefID    string   `yaml:"refId"`
-	ReliesOn []string `yaml:"reliesOn"`
-	Region   string   `yaml:"region"`
+	Account       string         `yaml:"account"`
+	Name          string         `yaml:"name"`
+	RefID         string         `yaml:"refId"`
+	ReliesOn      []string       `yaml:"reliesOn"`
+	Notifications []Notification `yaml:"notifications"`
 
-	RunJob *RunJobStage `yaml:"runJob"`
-	Deploy *DeployStage `yaml:"deploy"`
+	// All of the different supported stages, only one may be set
+	RunJob          *RunJobStage          `yaml:"runJob"`
+	Deploy          *DeployStage          `yaml:"deploy"`
+	ManualJudgement *ManualJudgementStage `yaml:"manualJudgement"`
+}
+
+// Notification config from pipeline configuration on a stage or pipeline
+type Notification struct {
+	Address string            `yaml:"address"`
+	Level   string            `yaml:"level"`
+	Type    string            `yaml:"type"`
+	When    []string          `yaml:"when"`
+	Message map[string]string `yaml:"message"`
 }
 
 // Container is used to provide overrides to the container defined in a k8s
@@ -79,4 +90,12 @@ type DeployStage struct {
 	Stack            string `yaml:"stack"`
 	Strategy         string `yaml:"strategy"`
 	TargetSize       int    `yaml:"targetSize"`
+}
+
+// ManualJudgementStage is the configuration for pausing a pipeline awaiting
+// manual intervention to continue it
+type ManualJudgementStage struct {
+	FailPipeline bool     `yaml:"failPipeline"`
+	Instructions string   `yaml:"instructions"`
+	Inputs       []string `yaml:"inputs"`
 }
