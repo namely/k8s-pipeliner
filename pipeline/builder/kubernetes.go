@@ -41,6 +41,10 @@ const (
 	// Example: "latest"
 	SpinnakerImageDescriptionTagAnnotation = "namely.com/spinnaker-image-description-tag"
 
+	// SpinnakerImageDescriptionOrganizationAnnotation is the registry org that owns the image.
+	// Example: "namely" (where registry.namely.land/namely <- is the org)
+	SpinnakerImageDescriptionOrganizationAnnotation = "namely.com/spinnaker-image-description-organization"
+
 	// SpinnakerLoadBalancersAnnotations is a comma separated list of load balancers
 	// defined in Spinnaker that should be attached to a cluster
 	// Example: "catalog,catalog-public"
@@ -115,7 +119,7 @@ func deploymentContainers(dep *v1beta2.Deployment) []*types.Container {
 			Tag:          dep.Annotations[SpinnakerImageDescriptionTagAnnotation],
 			Repository:   dep.Annotations[SpinnakerImageDescriptionRepositoryAnnotation],
 			Registry:     dep.Annotations[SpinnakerImageDescriptionRegistryAnnotation],
-			Organization: "namely",
+			Organization: dep.Annotations[SpinnakerImageDescriptionOrganizationAnnotation],
 		}
 
 		args := []string{}
