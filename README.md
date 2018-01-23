@@ -91,3 +91,39 @@ metadata:
 ```
 
 To attach load balancers to the resulting server group, you can add the annotation `namely.com/spinnaker-load-balancers` with a comma separated list of load balancers you've added to Spinnaker to attach them upon deployment.
+
+## Installation
+
+If you have a Go environment installed and configured, you can use `go get` to install the latest package of this project:
+
+```
+$ go get -u github.com/namely/k8s-pipeliner
+```
+
+To use it:
+
+```
+$ cd your-project
+$ k8s-pipeliner create pipeline.yml
+```
+
+If you want a pretty view and have JQ installed, you can do:
+
+```
+$ k8s-pipeliner create pipeline.yml | jq .
+```
+
+To copy the result to your clipboard and you're on a Mac, you can do:
+
+```
+$ k8s-pipeliner create pipeline.yml | pbcopy
+```
+
+### Adding the Pipeline JSON
+
+
+Once you've copied the resulting JSON from the pipeline configuration, you can go modify an already created Pipeline by clicking "Pipeline Actions" -> "Edit as JSON".
+
+![](https://i.imgur.com/LoTrkBP.png)
+
+Paste the JSON, and then in the bottom right of the screen click "Save".
