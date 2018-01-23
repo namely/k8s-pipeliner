@@ -6,17 +6,17 @@ triggers:
     master: "namely-jenkins"
     propertyFile: "build.properties"
 stages:
-- manifestFile: manifests/deploy/connect.yml
-  account: int-k8s
+- account: int-k8s
   name: "Migrate INT"
-  type: "runJob"
-  container: # override default command defined in the manifest
-    command:
-      - bundle
-      - exec
-      - rake
-      - db:migrate
-- manifestFile: manifests/deploy/connect.yml
-  account: int-k8s
+  runJob:
+    manifestFile: manifests/deploy/connect.yml
+    container: # override default command defined in the manifest
+      command:
+        - bundle
+        - exec
+        - rake
+        - db:migrate
+- account: int-k8s
   name: "Deploy INT"
-  type: "deploy"
+  deploy:
+    manifestFile: manifests/deploy/connect.yml

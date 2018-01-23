@@ -48,11 +48,14 @@ type JenkinsTrigger struct {
 // Stage is an individual stage within a spinnaker pipeline
 // It defines what type of stage and the reference to a manifest file (if applicable)
 type Stage struct {
-	Account      string     `yaml:"account"`
-	Name         string     `yaml:"name"`
-	Type         string     `yaml:"type"`
-	ManifestFile *string    `yaml:"manifestFile"`
-	Container    *Container `yaml:"container"`
+	Account  string   `yaml:"account"`
+	Name     string   `yaml:"name"`
+	RefID    string   `yaml:"refId"`
+	ReliesOn []string `yaml:"reliesOn"`
+	Region   string   `yaml:"region"`
+
+	RunJob *RunJobStage `yaml:"runJob"`
+	Deploy *DeployStage `yaml:"deploy"`
 }
 
 // Container is used to provide overrides to the container defined in a k8s
@@ -60,4 +63,20 @@ type Stage struct {
 type Container struct {
 	Command []string `yaml:"command"`
 	Args    []string `yaml:"args"`
+}
+
+// RunJobStage is the configuration for a one off job in a spinnaker pipeline
+type RunJobStage struct {
+	ManifestFile string     `yaml:"manifestFile"`
+	Container    *Container `yaml:"container"`
+}
+
+// DeployStage is the configuration for deploying a cluster of servers (pods)
+type DeployStage struct {
+	ManifestFile     string `yaml:"manifestFile"`
+	MaxRemainingASGS int    `yaml:"maxRemainingASGS"`
+	ScaleDown        bool   `yaml:"scaleDown"`
+	Stack            string `yaml:"stack"`
+	Strategy         string `yaml:"strategy"`
+	TargetSize       int    `yaml:"targetSize"`
 }

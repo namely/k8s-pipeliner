@@ -4,6 +4,7 @@ package types
 // pipeline. Mostly used for constructing JSON
 type SpinnakerPipeline struct {
 	Triggers []Trigger `json:"triggers"`
+	Stages   []Stage   `json:"stages"`
 }
 
 // Trigger is an interface to encompass multiple types of Spinnaker triggers
@@ -39,7 +40,7 @@ type RunJobStage struct {
 	Application          string            `json:"application"`
 	CloudProvider        string            `json:"cloudProvider"`
 	CloudProviderType    string            `json:"cloudProviderType"`
-	Container            Container         `json:"container"`
+	Container            *Container        `json:"container"`
 	DNSPolicy            string            `json:"dnsPolicy"`
 	Labels               map[string]string `json:"labels"`
 	Name                 string            `json:"name"`
@@ -73,7 +74,7 @@ type Cluster struct {
 	Account                        string            `json:"account"`
 	Application                    string            `json:"application"`
 	CloudProvider                  string            `json:"cloudProvider"`
-	Containers                     []Container       `json:"containers"`
+	Containers                     []*Container      `json:"containers"`
 	DNSPolicy                      string            `json:"dnsPolicy"`
 	Events                         []interface{}     `json:"events"`
 	FreeFormDetails                string            `json:"freeFormDetails"`

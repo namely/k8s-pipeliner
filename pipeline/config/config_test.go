@@ -22,5 +22,10 @@ func TestNewConfig(t *testing.T) {
 	assert.Equal(t, "Connect Deployment", cfg.Name)
 	require.Len(t, cfg.Triggers, 1)
 	require.Equal(t, "Connect/job/master", cfg.Triggers[0].Jenkins.Job)
+
 	assert.Len(t, cfg.Stages, 2)
+	assert.Equal(t, cfg.Stages[0].RunJob.ManifestFile, "manifests/deploy/connect.yml")
+	assert.NotNil(t, cfg.Stages[0].RunJob.Container)
+
+	assert.Equal(t, cfg.Stages[1].Deploy.ManifestFile, "manifests/deploy/connect.yml")
 }

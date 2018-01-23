@@ -18,6 +18,10 @@ type DeployStageConfig struct {
 
 // DeployStageFromK8sDep creates a spinnaker deploy stage (clusters) from a
 // manifest definition.
+// NOTE: OLD dont use this
+// NOTE: OLD dont use this
+// NOTE: OLD dont use this
+// NOTE: OLD dont use this
 func DeployStageFromK8sDep(cfg DeployStageConfig, dep *v1beta1.Deployment) DeployStage {
 	var containers []DeployStageContainer
 	for _, container := range dep.Spec.Template.Spec.Containers {

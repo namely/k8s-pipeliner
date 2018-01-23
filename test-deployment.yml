@@ -1,0 +1,41 @@
+apiVersion: extensions/v1beta2
+kind: Deployment
+metadata:
+  name: connect-prod
+  namespace: production
+  annotations:
+    namely.com/spinnaker-image-description-account: "namely-registry"
+    namely.com/spinnaker-image-description-imageid: "${ trigger.properties.docker_image }"
+    namely.com/spinnaker-image-description-registry: "registry.namely.land"
+    namely.com/spinnaker-image-description-repository: "namely/connect"
+    namely.com/spinnaker-image-description-tag: "${ trigger.properties.docker_tag }"
+    namely.com/spinnaker-load-balancers: "connect"
+spec:
+  template:
+    metadata:
+      labels:
+        app: connect-prod
+    spec:
+      containers:
+      - name: connect-prod
+        image: registry.namely.land/namely/connect:latest
+        command: ["bundle", "exec", "unicorn", "-p", "5000", "-c", "./config/unicorn.rb"]
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5000
+          name: connect-prod
+        env:
+        - name: ADMIN_PASSWORD
+          valueFrom:
+           configMapKeyRef:
+             name: connect-prod
+             key: ADMIN_PASSWORD
+        resources:
+          requests:
+            memory: "1G"
+            cpu: "1"
+          limits:
+            memory: "2G"
+            cpu: "2"
+      imagePullSecrets:
+        - name: registryland
