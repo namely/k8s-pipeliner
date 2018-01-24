@@ -9,7 +9,6 @@ import (
 	"github.com/namely/k8s-pipeliner/pipeline"
 	"github.com/namely/k8s-pipeliner/pipeline/builder"
 	"github.com/namely/k8s-pipeliner/pipeline/config"
-	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
 
@@ -39,7 +38,7 @@ func main() {
 	}
 
 	if err := app.Run(os.Args); err != nil {
-		logrus.WithError(err).Error()
+		fmt.Println(err.Error())
 		os.Exit(1)
 	}
 }
@@ -69,13 +68,7 @@ func validateAction(ctx *cli.Context) error {
 		return err
 	}
 
-	errs := pipeline.NewValidator(p).Validate()
-	if errs != nil {
-		fmt.Println(errs.Error())
-		os.Exit(1)
-	}
-
-	return nil
+	return pipeline.NewValidator(p).Validate()
 }
 
 func pipelineConfigHelper(ctx *cli.Context) (*config.Pipeline, error) {
