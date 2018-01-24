@@ -86,6 +86,7 @@ metadata:
     namely.com/spinnaker-image-description-imageid: "${ trigger.properties['docker_image'] }"
     namely.com/spinnaker-image-description-registry: "your.registry.land"
     namely.com/spinnaker-image-description-repository: "org/example"
+    namely.com/spinnaker-image-description-organization: "namely"
     namely.com/spinnaker-image-description-tag: "${ trigger.properties['docker_tag'] }"
     namely.com/spinnaker-load-balancers: "example"
 ```
