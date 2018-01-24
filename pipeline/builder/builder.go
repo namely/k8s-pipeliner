@@ -24,8 +24,9 @@ func New(p *config.Pipeline) *Builder {
 	return &Builder{p}
 }
 
-// MarshalJSON implements json.Marshaller
-func (b *Builder) MarshalJSON() ([]byte, error) {
+// Pipeline returns a filled out spinnaker pipeline from the given
+// config
+func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
 	sp := &types.SpinnakerPipeline{}
 
 	for _, trigger := range b.pipeline.Triggers {
@@ -62,6 +63,16 @@ func (b *Builder) MarshalJSON() ([]byte, error) {
 			return nil, err
 		}
 		sp.Stages = append(sp.Stages, s)
+	}
+
+	return sp, nil
+}
+
+// MarshalJSON implements json.Marshaller
+func (b *Builder) MarshalJSON() ([]byte, error) {
+	sp, err := b.Pipeline()
+	if err != nil {
+		return nil, err
 	}
 
 	return json.Marshal(sp)
