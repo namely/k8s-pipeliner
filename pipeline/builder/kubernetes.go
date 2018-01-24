@@ -2,15 +2,15 @@ package builder
 
 import (
 	"errors"
+	"io/ioutil"
 	"os"
 	"strings"
 
 	"github.com/namely/k8s-pipeliner/pipeline/builder/types"
 
-	"k8s.io/api/apps/v1beta2"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/yaml"
+	"k8s.io/client-go/kubernetes/scheme"
 )
 
 var (
@@ -41,6 +41,10 @@ const (
 	// Example: "latest"
 	SpinnakerImageDescriptionTagAnnotation = "namely.com/spinnaker-image-description-tag"
 
+	// SpinnakerImageDescriptionOrganizationAnnotation is the registry org that owns the image.
+	// Example: "namely" (where registry.namely.land/namely <- is the org)
+	SpinnakerImageDescriptionOrganizationAnnotation = "namely.com/spinnaker-image-description-organization"
+
 	// SpinnakerLoadBalancersAnnotations is a comma separated list of load balancers
 	// defined in Spinnaker that should be attached to a cluster
 	// Example: "catalog,catalog-public"
@@ -66,36 +70,32 @@ func ContainersFromManifest(file string) (*ManifestGroup, error) {
 		return nil, err
 	}
 
-	d := yaml.NewYAMLOrJSONDecoder(f, 4096)
-
-	ext := runtime.RawExtension{}
-	if dErr := d.Decode(&ext); dErr != nil {
-		return nil, dErr
-	}
-
-	versions := &runtime.VersionedObjects{}
-	_, gvk, err := unstructured.UnstructuredJSONScheme.Decode(ext.Raw, nil, versions)
+	b, err := ioutil.ReadAll(f)
 	if err != nil {
 		return nil, err
 	}
 
-	// seek back to the beginning of the file so we can unmarshal into the correct
-	// type once we've determined it
-	if _, err := f.Seek(0, 0); err != nil {
+	decode := scheme.Codecs.UniversalDeserializer().Decode
+	obj, g, err := decode(b, nil, nil)
+	if err != nil {
 		return nil, err
 	}
-	var mg ManifestGroup
 
-	switch gvk.Kind {
-	case "Deployment":
-		dep := &v1beta2.Deployment{}
-		if err := d.Decode(dep); err != nil {
+	var mg ManifestGroup
+	var resource runtime.Object
+
+	if g.Kind == "Deployment" {
+		resource = &appsv1.Deployment{}
+		if err := scheme.Scheme.Convert(obj, resource, nil); err != nil {
 			return nil, err
 		}
+	}
 
-		mg.Containers = deploymentContainers(dep)
-		mg.Annotations = dep.Annotations
-		mg.Namespace = dep.Namespace
+	switch t := resource.(type) {
+	case *appsv1.Deployment:
+		mg.Containers = deploymentContainers(t)
+		mg.Annotations = t.Annotations
+		mg.Namespace = t.Namespace
 	default:
 		return nil, ErrUnsupportedManifest
 	}
@@ -103,7 +103,7 @@ func ContainersFromManifest(file string) (*ManifestGroup, error) {
 	return &mg, nil
 }
 
-func deploymentContainers(dep *v1beta2.Deployment) []*types.Container {
+func deploymentContainers(dep *appsv1.Deployment) []*types.Container {
 	var c []*types.Container
 	for _, container := range dep.Spec.Template.Spec.Containers {
 		spinContainer := &types.Container{}
@@ -115,7 +115,7 @@ func deploymentContainers(dep *v1beta2.Deployment) []*types.Container {
 			Tag:          dep.Annotations[SpinnakerImageDescriptionTagAnnotation],
 			Repository:   dep.Annotations[SpinnakerImageDescriptionRepositoryAnnotation],
 			Registry:     dep.Annotations[SpinnakerImageDescriptionRegistryAnnotation],
-			Organization: "namely",
+			Organization: dep.Annotations[SpinnakerImageDescriptionOrganizationAnnotation],
 		}
 
 		args := []string{}
