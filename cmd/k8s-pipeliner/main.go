@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 
 	"github.com/namely/k8s-pipeliner/pipeline"
@@ -68,7 +69,13 @@ func validateAction(ctx *cli.Context) error {
 		return err
 	}
 
-	return pipeline.NewValidator(p).Validate()
+	errs := pipeline.NewValidator(p).Validate()
+	if errs != nil {
+		fmt.Println(errs.Error())
+		os.Exit(1)
+	}
+
+	return nil
 }
 
 func pipelineConfigHelper(ctx *cli.Context) (*config.Pipeline, error) {
