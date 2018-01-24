@@ -86,7 +86,9 @@ func ContainersFromManifest(file string) (*ManifestGroup, error) {
 
 	if g.Kind == "Deployment" {
 		resource = &appsv1.Deployment{}
-		scheme.Scheme.Convert(obj, resource, nil)
+		if err := scheme.Scheme.Convert(obj, resource, nil); err != nil {
+			return nil, err
+		}
 	}
 
 	switch t := resource.(type) {
