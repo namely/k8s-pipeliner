@@ -1,6 +1,9 @@
 # assign the current version from the binary
 VERSION = $(shell go run cmd/k8s-pipeliner/main.go --version | awk '{print $$3}')
 
+install:
+	go install ./...
+	
 test:
 	go test -cover ./...
 	golint -set_exit_status ./...

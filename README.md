@@ -98,7 +98,7 @@ To attach load balancers to the resulting server group, you can add the annotati
 If you have a Go environment installed and configured, you can use `go get` to install the latest package of this project:
 
 ```
-$ go get -u github.com/namely/k8s-pipeliner
+$ go get -u github.com/namely/k8s-pipeliner/cmd/k8s-pipeliner
 ```
 
 To use it:
@@ -121,7 +121,6 @@ $ k8s-pipeliner create pipeline.yml | pbcopy
 ```
 
 ### Adding the Pipeline JSON
-
 
 Once you've copied the resulting JSON from the pipeline configuration, you can go modify an already created Pipeline by clicking "Pipeline Actions" -> "Edit as JSON".
 
