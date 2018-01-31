@@ -3,6 +3,7 @@ package builder
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/namely/k8s-pipeliner/pipeline/builder/types"
@@ -17,11 +18,18 @@ var (
 // Builder constructs a spinnaker pipeline JSON from a pipeliner config
 type Builder struct {
 	pipeline *config.Pipeline
+
+	isLinear bool
 }
 
 // New initializes a new builder for a pipeline config
-func New(p *config.Pipeline) *Builder {
-	return &Builder{p}
+func New(p *config.Pipeline, opts ...OptFunc) *Builder {
+	b := &Builder{pipeline: p}
+	for _, opt := range opts {
+		opt(b)
+	}
+
+	return b
 }
 
 // Pipeline returns a filled out spinnaker pipeline from the given
@@ -80,7 +88,7 @@ func (b *Builder) MarshalJSON() ([]byte, error) {
 
 func (b *Builder) buildRunJobStage(index int, s config.Stage) (*types.RunJobStage, error) {
 	rjs := &types.RunJobStage{
-		StageMetadata: buildStageMetadata(s, "runJob"),
+		StageMetadata: buildStageMetadata(s, "runJob", index, b.isLinear),
 
 		Account:           s.Account,
 		Application:       b.pipeline.Application,
@@ -117,7 +125,7 @@ func (b *Builder) buildRunJobStage(index int, s config.Stage) (*types.RunJobStag
 // manifest file. So the clusters array will ALWAYS be 1 in length.
 func (b *Builder) buildDeployStage(index int, s config.Stage) (*types.DeployStage, error) {
 	ds := &types.DeployStage{
-		StageMetadata: buildStageMetadata(s, "deploy"),
+		StageMetadata: buildStageMetadata(s, "deploy", index, b.isLinear),
 	}
 
 	mg, err := ContainersFromManifest(s.Deploy.ManifestFile)
@@ -165,7 +173,7 @@ func (b *Builder) buildDeployStage(index int, s config.Stage) (*types.DeployStag
 
 func (b *Builder) buildManualJudgementStage(index int, s config.Stage) (*types.ManualJudgementStage, error) {
 	mjs := &types.ManualJudgementStage{
-		StageMetadata: buildStageMetadata(s, "manualJudgment"),
+		StageMetadata: buildStageMetadata(s, "manualJudgment", index, b.isLinear),
 
 		FailPipeline: s.ManualJudgement.FailPipeline,
 		Instructions: s.ManualJudgement.Instructions,
@@ -175,7 +183,7 @@ func (b *Builder) buildManualJudgementStage(index int, s config.Stage) (*types.M
 	return mjs, nil
 }
 
-func buildStageMetadata(s config.Stage, t string) types.StageMetadata {
+func buildStageMetadata(s config.Stage, t string, index int, linear bool) types.StageMetadata {
 	var nots []types.Notification
 	for _, n := range s.Notifications {
 		message := make(map[string]types.NotificationMessage)
@@ -192,10 +200,19 @@ func buildStageMetadata(s config.Stage, t string) types.StageMetadata {
 		})
 	}
 
+	refID := s.RefID
+	reliesOn := s.ReliesOn
+	if linear {
+		refID = fmt.Sprintf("%d", index)
+		if index > 0 {
+			reliesOn = []string{fmt.Sprintf("%d", index-1)}
+		}
+	}
+
 	return types.StageMetadata{
 		Name:                 s.Name,
-		RefID:                s.RefID,
-		RequisiteStageRefIds: s.ReliesOn,
+		RefID:                refID,
+		RequisiteStageRefIds: reliesOn,
 		Type:                 t,
 		Notifications:        nots,
 		SendNotifications:    (len(nots) > 0),
