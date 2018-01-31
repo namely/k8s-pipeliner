@@ -29,6 +29,12 @@ func main() {
 			Name:   "create",
 			Usage:  "creates a spinnaker pipeline for a given application on multiple k8s clusters",
 			Action: createAction,
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:  "linear, l",
+					Usage: "Assigns refs and reliesOn identifiers for you so you dont need to specify them. This is useful if your pipelines are always linear.",
+				},
+			},
 		},
 		{
 			Name:   "validate",
@@ -59,7 +65,8 @@ func createAction(ctx *cli.Context) error {
 		return err
 	}
 
-	return json.NewEncoder(os.Stdout).Encode(builder.New(p))
+	builder := builder.New(p, builder.WithLinear(ctx.Bool("linear")))
+	return json.NewEncoder(os.Stdout).Encode(builder)
 }
 
 func validateAction(ctx *cli.Context) error {
