@@ -14,7 +14,7 @@ import (
 
 const (
 	// Version defines the current version of k8s-pipeliner
-	Version = "0.0.5"
+	Version = "0.0.6"
 )
 
 func main() {
