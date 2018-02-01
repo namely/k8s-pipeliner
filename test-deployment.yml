@@ -16,6 +16,13 @@ spec:
       labels:
         app: example
     spec:
+      volumes:
+        - name: configmap-volume
+          configMap:
+            name: "my-configmap-name"
+            items:
+              - key: "hello"
+                path: "/my/file/path"
       containers:
       - command:
         - bundle
@@ -25,6 +32,10 @@ spec:
         - "80"
         - -c
         - ./config/unicorn.rb
+        volumeMounts:
+          - name: configmap-volume
+            mountPath: "/thisisthemount"
+            readOnly: true
         env:
         - name: ADMIN_PASSWORD
           valueFrom:

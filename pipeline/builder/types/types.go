@@ -1,5 +1,9 @@
 package types
 
+import (
+	corev1 "k8s.io/api/core/v1"
+)
+
 // SpinnakerPipeline defines the fields for the top leve object of a spinnaker
 // pipeline. Mostly used for constructing JSON
 type SpinnakerPipeline struct {
@@ -115,7 +119,7 @@ type Cluster struct {
 	Strategy                      string            `json:"strategy"`
 	TargetSize                    int               `json:"targetSize"`
 	TerminationGracePeriodSeconds int               `json:"terminationGracePeriodSeconds"`
-	VolumeSources                 []interface{}     `json:"volumeSources"`
+	VolumeSources                 []*VolumeSource   `json:"volumeSources"`
 	DelayBeforeDisableSec         int               `json:"delayBeforeDisableSec,omitempty"`
 }
 
@@ -133,7 +137,15 @@ type Container struct {
 	Name  string `json:"name"`
 	Ports []Port `json:"ports"`
 
-	VolumeMounts []interface{} `json:"volumeMounts"`
+	VolumeMounts []VolumeMount `json:"volumeMounts"`
+}
+
+// VolumeMount describes a mount that should be mounted in to the container
+// by referencing a volume source in the pod spec
+type VolumeMount struct {
+	MountPath string `json:"mountPath"`
+	Name      string `json:"name"`
+	ReadOnly  bool   `json:"readOnly"`
 }
 
 // Resources for the container either as a limit or request
@@ -200,4 +212,33 @@ type Notification struct {
 // NotificationMessage is for providing text to a stage failure type
 type NotificationMessage struct {
 	Text string `json:"text"`
+}
+
+// VolumeSource defines a pod volume source that can be referenced by containers
+type VolumeSource struct {
+	Name string `json:"name"`
+	Type string `json:"type"`
+
+	EmptyDir  *EmptyDirVolumeSource  `json:"emptyDir,omitempty"`
+	ConfigMap *ConfigMapVolumeSource `json:"configMap,omitempty"`
+	Secret    *SecretVolumeSource    `json:"secret,omitempty"`
+}
+
+// EmptyDirVolumeSource defines a empty directory volume source for a pod:
+// https://kubernetes.io/docs/api-reference/v1.9/#emptydirvolumesource-v1-core
+type EmptyDirVolumeSource struct {
+	Medium string `json:"medium"`
+}
+
+// ConfigMapVolumeSource type for referencing configmaps in volumes
+type ConfigMapVolumeSource struct {
+	ConfigMapName string             `json:"configMapName"`
+	DefaultMode   *int32             `json:"defaultMode,omitempty"`
+	Items         []corev1.KeyToPath `json:"items"`
+}
+
+// SecretVolumeSource for referencing secret types in volumes
+type SecretVolumeSource struct {
+	SecretName string             `json:"secretName"`
+	Items      []corev1.KeyToPath `json:"items"`
 }
