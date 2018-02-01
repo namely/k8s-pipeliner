@@ -34,12 +34,14 @@ stages:
   reliesOn:
     - "1"
   deploy:
-    manifestFile: test-deployment.yml
-    maxRemainingASGS: 2 # total amount of replica sets to keep around afterwards before deleting
-    scaleDown: true
-    stack: web # primarily for labeling purposes on the created resources
-    strategy: redblack
-    targetSize: 2 # this is the total amount of replicas for the deployment
+    groups:
+      - manifestFile: test-deployment.yml
+        maxRemainingASGS: 2 # total amount of replica sets to keep around afterwards before deleting
+        scaleDown: true
+        stack: web # primarily for labeling purposes on the created resources
+        strategy: redblack
+        targetSize: 2 # this is the total amount of replicas for the deployment
+        containerOverrides: {}
 - account: int-k8s
   name: "Proceed to Staging?"
   refId: "3"

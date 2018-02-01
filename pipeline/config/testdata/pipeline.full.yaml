@@ -19,4 +19,5 @@ stages:
 - account: int-k8s
   name: "Deploy INT"
   deploy:
-    manifestFile: manifests/deploy/connect.yml
+    groups:
+      - manifestFile: manifests/deploy/connect.yml
