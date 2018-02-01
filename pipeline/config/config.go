@@ -84,12 +84,27 @@ type RunJobStage struct {
 
 // DeployStage is the configuration for deploying a cluster of servers (pods)
 type DeployStage struct {
+	Groups []Group `yaml:"groups"`
+}
+
+// Group represents a group to be deployed (Think: Kubernetes Pods). Most of the configuration
+// of a group is filled out by the defined manifest file. This means things like commands, env vars,
+// etc, are all pulled into the group spec for you.
+type Group struct {
 	ManifestFile     string `yaml:"manifestFile"`
 	MaxRemainingASGS int    `yaml:"maxRemainingASGS"`
 	ScaleDown        bool   `yaml:"scaleDown"`
 	Stack            string `yaml:"stack"`
 	Strategy         string `yaml:"strategy"`
 	TargetSize       int    `yaml:"targetSize"`
+
+	// If overrides are provided, the group will run a check to make sure
+	// the given manifest only defines one container. If it does, the given
+	// overrides will be written into the spinnaker json output.
+	// This is useful for using the same container image, env, etc to run in a
+	// different mode like a queue consumer process that needs the same config,
+	// image, but different command.
+	ContainerOverrides *ContainerOverrides `yaml:"containerOverrides"`
 }
 
 // ManualJudgementStage is the configuration for pausing a pipeline awaiting
@@ -98,4 +113,11 @@ type ManualJudgementStage struct {
 	FailPipeline bool     `yaml:"failPipeline"`
 	Instructions string   `yaml:"instructions"`
 	Inputs       []string `yaml:"inputs"`
+}
+
+// ContainerOverrides are used to override a containers values for simple
+// values like the command and arguments
+type ContainerOverrides struct {
+	Args    []string `yaml:"args,omitempty"`
+	Command []string `yaml:"command,omitempty"`
 }

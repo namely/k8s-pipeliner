@@ -13,6 +13,9 @@ import (
 var (
 	// ErrNoContainers is returned when a manifest has defined containers in it
 	ErrNoContainers = errors.New("builder: no containers were found in given manifest file")
+
+	// ErrOverrideContention is returned when a manifest defines multiple containers and overrides were provided
+	ErrOverrideContention = errors.New("builder: overrides were provided to a group that has multiple containers defined")
 )
 
 // Builder constructs a spinnaker pipeline JSON from a pipeliner config
@@ -128,45 +131,64 @@ func (b *Builder) buildDeployStage(index int, s config.Stage) (*types.DeployStag
 		StageMetadata: buildStageMetadata(s, "deploy", index, b.isLinear),
 	}
 
-	mg, err := ContainersFromManifest(s.Deploy.ManifestFile)
-	if err != nil {
-		return nil, err
-	}
-	if len(mg.Containers) == 0 {
-		return nil, ErrNoContainers
-	}
+	for _, group := range s.Deploy.Groups {
+		mg, err := ContainersFromManifest(group.ManifestFile)
+		if err != nil {
+			return nil, err
+		}
+		if len(mg.Containers) == 0 {
+			return nil, ErrNoContainers
+		}
 
-	// grab the load balancers for the deployment
-	var lbs []string
-	if l, ok := mg.Annotations[SpinnakerLoadBalancersAnnotations]; ok {
-		lbs = strings.Split(l, ",")
+		// check for overrides defined on the group so we can replace the containers
+		// values before rendering our spinnaker json.
+		if overrides := group.ContainerOverrides; overrides != nil {
+			if len(mg.Containers) > 1 {
+				return nil, ErrOverrideContention
+			}
+
+			container := mg.Containers[0]
+			if overrides.Args != nil {
+				container.Args = overrides.Args
+			}
+
+			if overrides.Command != nil {
+				container.Command = overrides.Command
+			}
+		}
+
+		// grab the load balancers for the deployment
+		var lbs []string
+		if l, ok := mg.Annotations[SpinnakerLoadBalancersAnnotations]; ok {
+			lbs = strings.Split(l, ",")
+		}
+
+		cluster := types.Cluster{
+			Account:               s.Account,
+			Application:           b.pipeline.Application,
+			Containers:            mg.Containers,
+			LoadBalancers:         lbs,
+			Region:                mg.Namespace,
+			Namespace:             mg.Namespace,
+			MaxRemainingAsgs:      group.MaxRemainingASGS,
+			ReplicaSetAnnotations: mg.Annotations,
+			ScaleDown:             group.ScaleDown,
+			Stack:                 group.Stack,
+			Strategy:              group.Strategy,
+			TargetSize:            group.TargetSize,
+			VolumeSources:         mg.VolumeSources,
+
+			// TODO(bobbytables): allow these to be configurable
+			Events: []interface{}{},
+			InterestingHealthProviderNames: []string{"KubernetesContainer", "KubernetesPod"},
+			Provider:                       "kubernetes",
+			CloudProvider:                  "kubernetes",
+			DNSPolicy:                      "ClusterFirst",
+			TerminationGracePeriodSeconds:  30,
+		}
+
+		ds.Clusters = append(ds.Clusters, cluster)
 	}
-
-	cluster := types.Cluster{
-		Account:               s.Account,
-		Application:           b.pipeline.Application,
-		Containers:            mg.Containers,
-		LoadBalancers:         lbs,
-		Region:                mg.Namespace,
-		Namespace:             mg.Namespace,
-		MaxRemainingAsgs:      s.Deploy.MaxRemainingASGS,
-		ReplicaSetAnnotations: mg.Annotations,
-		ScaleDown:             s.Deploy.ScaleDown,
-		Stack:                 s.Deploy.Stack,
-		Strategy:              s.Deploy.Strategy,
-		TargetSize:            s.Deploy.TargetSize,
-		VolumeSources:         mg.VolumeSources,
-
-		// TODO(bobbytables): allow these to be configurable
-		Events: []interface{}{},
-		InterestingHealthProviderNames: []string{"KubernetesContainer", "KubernetesPod"},
-		Provider:                       "kubernetes",
-		CloudProvider:                  "kubernetes",
-		DNSPolicy:                      "ClusterFirst",
-		TerminationGracePeriodSeconds:  30,
-	}
-
-	ds.Clusters = []types.Cluster{cluster}
 
 	return ds, nil
 }
