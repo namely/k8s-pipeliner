@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/namely/k8s-pipeliner/pipeline/builder/types"
 	"github.com/namely/k8s-pipeliner/pipeline/config"
@@ -157,17 +156,11 @@ func (b *Builder) buildDeployStage(index int, s config.Stage) (*types.DeployStag
 			}
 		}
 
-		// grab the load balancers for the deployment
-		var lbs []string
-		if l, ok := mg.Annotations[SpinnakerLoadBalancersAnnotations]; ok {
-			lbs = strings.Split(l, ",")
-		}
-
 		cluster := types.Cluster{
 			Account:               s.Account,
 			Application:           b.pipeline.Application,
 			Containers:            mg.Containers,
-			LoadBalancers:         lbs,
+			LoadBalancers:         group.LoadBalancers,
 			Region:                mg.Namespace,
 			Namespace:             mg.Namespace,
 			MaxRemainingAsgs:      group.MaxRemainingASGS,

@@ -91,12 +91,13 @@ type DeployStage struct {
 // of a group is filled out by the defined manifest file. This means things like commands, env vars,
 // etc, are all pulled into the group spec for you.
 type Group struct {
-	ManifestFile     string `yaml:"manifestFile"`
-	MaxRemainingASGS int    `yaml:"maxRemainingASGS"`
-	ScaleDown        bool   `yaml:"scaleDown"`
-	Stack            string `yaml:"stack"`
-	Strategy         string `yaml:"strategy"`
-	TargetSize       int    `yaml:"targetSize"`
+	ManifestFile     string   `yaml:"manifestFile"`
+	MaxRemainingASGS int      `yaml:"maxRemainingASGS"`
+	ScaleDown        bool     `yaml:"scaleDown"`
+	Stack            string   `yaml:"stack"`
+	Strategy         string   `yaml:"strategy"`
+	TargetSize       int      `yaml:"targetSize"`
+	LoadBalancers    []string `yaml:"loadBalancers"`
 
 	// If overrides are provided, the group will run a check to make sure
 	// the given manifest only defines one container. If it does, the given

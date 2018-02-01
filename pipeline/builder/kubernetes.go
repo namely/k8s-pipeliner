@@ -45,11 +45,6 @@ const (
 	// SpinnakerImageDescriptionOrganizationAnnotation is the registry org that owns the image.
 	// Example: "namely" (where registry.namely.land/namely <- is the org)
 	SpinnakerImageDescriptionOrganizationAnnotation = "namely.com/spinnaker-image-description-organization"
-
-	// SpinnakerLoadBalancersAnnotations is a comma separated list of load balancers
-	// defined in Spinnaker that should be attached to a cluster
-	// Example: "catalog,catalog-public"
-	SpinnakerLoadBalancersAnnotations = "namely.com/spinnaker-load-balancers"
 )
 
 // ManifestGroup keeps a collection of containers from a deployment

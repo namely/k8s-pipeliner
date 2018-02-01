@@ -42,6 +42,8 @@ stages:
         strategy: redblack
         targetSize: 2 # this is the total amount of replicas for the deployment
         containerOverrides: {}
+        loadBalancers:
+          - "test"
 - account: int-k8s
   name: "Proceed to Staging?"
   refId: "3"
