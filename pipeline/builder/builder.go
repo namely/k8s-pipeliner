@@ -155,10 +155,10 @@ func (b *Builder) buildDeployStage(index int, s config.Stage) (*types.DeployStag
 		Stack:                 s.Deploy.Stack,
 		Strategy:              s.Deploy.Strategy,
 		TargetSize:            s.Deploy.TargetSize,
+		VolumeSources:         mg.VolumeSources,
 
 		// TODO(bobbytables): allow these to be configurable
-		VolumeSources: []interface{}{},
-		Events:        []interface{}{},
+		Events: []interface{}{},
 		InterestingHealthProviderNames: []string{"KubernetesContainer", "KubernetesPod"},
 		Provider:                       "kubernetes",
 		CloudProvider:                  "kubernetes",

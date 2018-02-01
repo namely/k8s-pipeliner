@@ -9,6 +9,7 @@ import (
 	"github.com/namely/k8s-pipeliner/pipeline/builder/types"
 
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 )
@@ -54,9 +55,10 @@ const (
 // ManifestGroup keeps a collection of containers from a deployment
 // and metadata associated with them
 type ManifestGroup struct {
-	Namespace   string
-	Annotations map[string]string
-	Containers  []*types.Container
+	Namespace     string
+	Annotations   map[string]string
+	Containers    []*types.Container
+	VolumeSources []*types.VolumeSource
 }
 
 // ContainersFromManifest loads a kubernetes manifest file and generates
@@ -96,6 +98,7 @@ func ContainersFromManifest(file string) (*ManifestGroup, error) {
 		mg.Containers = deploymentContainers(t)
 		mg.Annotations = t.Annotations
 		mg.Namespace = t.Namespace
+		mg.VolumeSources = volumeSources(t.Spec.Template.Spec.Volumes)
 	default:
 		return nil, ErrUnsupportedManifest
 	}
@@ -103,8 +106,49 @@ func ContainersFromManifest(file string) (*ManifestGroup, error) {
 	return &mg, nil
 }
 
+// converts kubernetes volume sources into builder types
+func volumeSources(vols []corev1.Volume) []*types.VolumeSource {
+	var vs []*types.VolumeSource
+
+	for _, vol := range vols {
+		spinVol := &types.VolumeSource{
+			Name: vol.Name,
+		}
+
+		if cm := vol.ConfigMap; cm != nil {
+			spinVol.ConfigMap = &types.ConfigMapVolumeSource{
+				ConfigMapName: cm.Name,
+				Items:         cm.Items,
+				DefaultMode:   cm.DefaultMode,
+			}
+			spinVol.Type = "CONFIGMAP"
+		}
+
+		if sec := vol.Secret; sec != nil {
+			spinVol.Secret = &types.SecretVolumeSource{
+				SecretName: sec.SecretName,
+				Items:      sec.Items,
+			}
+			spinVol.Type = "SECRET"
+		}
+
+		if ed := vol.EmptyDir; ed != nil {
+			spinVol.EmptyDir = &types.EmptyDirVolumeSource{
+				// Spinnaker requires this to be uppercased for some reason
+				Medium: strings.ToUpper(string(ed.Medium)),
+			}
+			spinVol.Type = "EMPTYDIR"
+		}
+
+		vs = append(vs, spinVol)
+	}
+
+	return vs
+}
+
 func deploymentContainers(dep *appsv1.Deployment) []*types.Container {
 	var c []*types.Container
+
 	for _, container := range dep.Spec.Template.Spec.Containers {
 		spinContainer := &types.Container{}
 
@@ -168,6 +212,15 @@ func deploymentContainers(dep *appsv1.Deployment) []*types.Container {
 			}
 
 			spinContainer.EnvVars = append(spinContainer.EnvVars, e)
+		}
+
+		// add all of the volume mounts
+		for _, vm := range container.VolumeMounts {
+			spinContainer.VolumeMounts = append(spinContainer.VolumeMounts, types.VolumeMount{
+				Name:      vm.Name,
+				ReadOnly:  vm.ReadOnly,
+				MountPath: vm.MountPath,
+			})
 		}
 
 		c = append(c, spinContainer)

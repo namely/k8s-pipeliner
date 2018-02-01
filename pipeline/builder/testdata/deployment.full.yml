@@ -20,3 +20,23 @@ spec:
         - name: WHATS_THE_WORD
           value: "bird is the word"
         image: bird.word/latest
+        volumeMounts:
+          - name: configmap-volume
+            mountPath: "/thisisthemount"
+            readOnly: true
+      volumes:
+        - name: configmap-volume
+          configMap:
+            name: "my-configmap-name"
+            items:
+              - key: "hello"
+                path: "/my/file/path"
+        - name: secret-volume
+          secret:
+            secretName: "my-secret"
+            items:
+              - key: "hello"
+                path: "/my/file/path"
+        - name: empty-volume
+          emptyDir:
+            medium: "Memory"
