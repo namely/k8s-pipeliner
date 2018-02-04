@@ -17,5 +17,5 @@ deps:
 
 .PHONY: coveralls
 coveralls:
-	overalls -project=github.com/namely/k8s-configurator -covermode=count
+	overalls -project=github.com/namely/k8s-pipeliner -covermode=count
 	goveralls -coverprofile=overalls.coverprofile -service=travis-ci
