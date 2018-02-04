@@ -1,5 +1,8 @@
 # Kubernetes Pipeliner
 
+[![Build Status](https://travis-ci.org/namely/k8s-pipeliner.svg?branch=master)](https://travis-ci.org/namely/k8s-pipeliner)
+[![Coverage Status](https://coveralls.io/repos/github/namely/k8s-pipeliner/badge.svg?branch=master)](https://coveralls.io/github/namely/k8s-configurator?branch=master)
+
 This tool is used to generate pipeline JSON for [Spinnaker](https://spinnaker.io) from Kubernetes manifest files.
 
 The basic premise is that Kubernetes already has a well defined standard for how to define cluster resources (ReplicaSets, Deployments, etc), but there's no way to glue them into Spinnaker pipeline stages. That's what this tool aims to provide.
