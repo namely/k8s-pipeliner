@@ -5,32 +5,17 @@ install:
 	go install ./...
 	
 test:
-	go test -cover ./...
+	go test ./...
 	golint -set_exit_status ./...
 
-build:
-	mkdir -p bin/darwin
-	mkdir -p bin/linux
-	GOOS=darwin go build -o bin/darwin/k8s-pipeliner cmd/k8s-pipeliner/main.go
-	GOOS=linux go build -o bin/linux/k8s-pipeliner cmd/k8s-pipeliner/main.go
+.PHONY: deps
+deps:
+	go get -u github.com/kardianos/govendor
+	govendor sync
+	go get github.com/mattn/goveralls
+	go get github.com/go-playground/overalls
 
-release: test build;
-	git tag v$(VERSION) && git push --tags
-	github-release release \
-    --user namely \
-    --repo k8s-pipeliner \
-    --tag v$(VERSION) \
-    --name "k8s-pipeliner release $(VERSION)" \
-    --description "";
-	github-release upload \
-		--user namely \
-		--repo k8s-pipeliner \
-		--tag v$(VERSION) \
-		--name "k8s-pipeliner-osx-amd64" \
-		--file bin/darwin/k8s-pipeliner;
-	github-release upload \
-		--user namely \
-		--repo k8s-pipeliner \
-		--tag v$(VERSION) \
-		--name "k8s-pipeliner-linux-amd64" \
-		--file bin/linux/k8s-pipeliner;
+.PHONY: coveralls
+coveralls:
+	overalls -project=github.com/namely/k8s-configurator -covermode=count
+	goveralls -coverprofile=overalls.coverprofile -service=travis-ci

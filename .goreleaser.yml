@@ -1,0 +1,36 @@
+builds:
+  - main: ./cmd/k8s-pipeliner/main.go
+    binary: k8s-pipeliner
+    goos:
+      - windows
+      - darwin
+      - linux
+    goarch:
+      - amd64
+brew:
+  # Reporitory to push the tap to.
+  github:
+    owner: namely
+    name: homebrew-tap
+
+  # Allows you to set a custom download strategy.
+  # Default is empty.
+  download_strategy: GitHubPrivateRepositoryReleaseDownloadStrategy
+
+  # Git author used to commit to the repository.
+  # Defaults are shown.
+  commit_author:
+    name: goreleaserbot
+    email: goreleaser@namely.com
+
+  # Folder inside the repository to put the formula.
+  # Default is the root folder.
+  folder: Formula
+
+  # Your app's homepage.
+  # Default is empty.
+  homepage: "https://github.com/namely/k8s-pipeliner"
+
+  # Your app's description.
+  # Default is empty.
+  description: "k8s-pipeliner generates Spinnaker pipelines from a source file."

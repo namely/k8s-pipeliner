@@ -1,0 +1,13 @@
+language: go
+
+go:
+  - 1.9
+
+install:
+  - make deps
+script:
+  - make coveralls
+notifications:
+  email: false
+after_success:
+  - test -n "$TRAVIS_TAG" && curl -sL https://git.io/goreleaser | bash
