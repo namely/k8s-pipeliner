@@ -95,6 +95,7 @@ type Group struct {
 	MaxRemainingASGS int      `yaml:"maxRemainingASGS"`
 	ScaleDown        bool     `yaml:"scaleDown"`
 	Stack            string   `yaml:"stack"`
+	Details          string   `yaml:"details"`
 	Strategy         string   `yaml:"strategy"`
 	TargetSize       int      `yaml:"targetSize"`
 	LoadBalancers    []string `yaml:"loadBalancers"`
