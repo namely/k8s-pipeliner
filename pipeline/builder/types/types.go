@@ -100,7 +100,6 @@ type Cluster struct {
 	Containers                     []*Container      `json:"containers"`
 	DNSPolicy                      string            `json:"dnsPolicy"`
 	Events                         []interface{}     `json:"events"`
-	FreeFormDetails                string            `json:"freeFormDetails"`
 	InterestingHealthProviderNames []string          `json:"interestingHealthProviderNames"`
 	LoadBalancers                  []string          `json:"loadBalancers"`
 	MaxRemainingAsgs               int               `json:"maxRemainingAsgs"`
@@ -116,6 +115,7 @@ type Cluster struct {
 	ScaleDown                     bool              `json:"scaleDown"`
 	SecurityGroups                []interface{}     `json:"securityGroups"`
 	Stack                         string            `json:"stack"`
+	Details                       string            `json:"freeFormDetails"`
 	Strategy                      string            `json:"strategy"`
 	TargetSize                    int               `json:"targetSize"`
 	TerminationGracePeriodSeconds int               `json:"terminationGracePeriodSeconds"`

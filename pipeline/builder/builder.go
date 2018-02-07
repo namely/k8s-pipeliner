@@ -167,6 +167,7 @@ func (b *Builder) buildDeployStage(index int, s config.Stage) (*types.DeployStag
 			ReplicaSetAnnotations: mg.Annotations,
 			ScaleDown:             group.ScaleDown,
 			Stack:                 group.Stack,
+			Details:               group.Details,
 			Strategy:              group.Strategy,
 			TargetSize:            group.TargetSize,
 			VolumeSources:         mg.VolumeSources,
