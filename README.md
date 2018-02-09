@@ -130,3 +130,76 @@ Once you've copied the resulting JSON from the pipeline configuration, you can g
 ![](https://i.imgur.com/LoTrkBP.png)
 
 Paste the JSON, and then in the bottom right of the screen click "Save".
+
+
+## Schema
+
+Here are the independent pieces of schema for pipeline.yml that you can use
+
+### Manual Judgement
+
+If you want to have a manual judgement in your pipeline, you can define a `manualJudgement` step within the `stages` array:
+
+```
+stages:
+- name: "Continue Deploy?"
+  manualJudgement:
+    failPipeline: true
+    instructions: |
+      Once you're confident with this deploy, please approve it to continue.
+```
+
+* If `failPipeline` is set to true, the manual judgement must be approved for the rest of the pipeline to continue.
+* The `instructions` are displayed within the UI when the pipeline is stalled waiting for a manual judgement. This is useful for whoever is providing the manual judgement to have context.
+
+### Run A Job
+
+A Job is a step in a pipeline that runs a one off task. A good example might be running a database migration before rolling out a piece of code.
+
+```
+stages:
+- name: "Run Migrations"
+  runJob:
+    manifestFile: manifests/deployment.yaml
+    container:
+      command:
+        - bundle
+        - exec
+      args:
+       - rake
+       - db:migrate
+```
+
+* `manifestFile` is used to generate the majority of the stage JSON for running the container. Things like environment, volumes, commands, etc are all stored within this Kubernetes Manifest file.
+* `container` key is used to overwrite some of the values that are provided in the `manifestFile`. For example, if you want to run a migration script that is provided in the container instead of the default `rails server`, this is where you'd define it.
+* `command` portion of the container override overwrites the `command` portion of the container being run in the job.
+* `args` portion of the container override overwrites the `args` portion of the container being run in the job.
+
+### Deploying Groups
+
+A Deploy stage is used for running new server groups. You can use this stage to deploy several groups in-tandem. This is useful if you're deploying the same container for different application needs. IE: One is a consumer and another is a publisher.
+
+```
+stages:
+- name: "Deploy"
+  deploy:
+    groups:
+    - manifestFile: manifests/deployment.yaml
+      maxRemainingASGS: 2
+      scaleDown: true
+      stack: web
+      details: genpop
+      strategy: redblack
+      targetSize: 10
+      loadBalancers:
+        - namely
+```
+
+* `manifestFile` is used to generate the majority of the stage JSON for running the container. Things like environment, volumes, commands, etc are all stored within this Kubernetes Manifest file.
+* `maxRemainingASGS` determines how many ReplicaSets Spinnaker will keep around after a deploy occurs. If using `redblack` strategy you need at least 2. This is used for rolling back deploys.
+* `scaleDown` scales down the previous server group after a deploy. If you want traffic to be routed to both deployments set this to `false`
+* `stack` is concatenated to the application name when deploying. So `application-stack` would be a result. CANNOT have dashes.
+* `details` is concatenated to the application name and stack when deploying. So `application-stack-detail` would be a result. This can have multiple dashes.
+* `strategy` is used to determine which strategy Spinnaker should use when deploying this new group.
+* `targetSize` is the amount of replicas to be deployed to the Kubernetes cluster. This is _not_ taken from the `deployment` manifest file
+* `loadBalancers` are the Spinnaker load balancers to be attached to this deployment. An array of strings. These will need to be defined inside of Spinnaker before a deploy to work.
