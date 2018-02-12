@@ -131,10 +131,11 @@ func (mp *ManifestParser) deploymentContainers(dep *appsv1.Deployment, scaffold 
 
 		// add the image description first off using the annotations on the container
 		var imageDescription config.ImageDescription
-		for _, desc := range mp.config.ImageDescriptions {
-			if ref := scaffold.ImageDescriptionRef(container.Name); ref != nil {
+		if ref := scaffold.ImageDescriptionRef(container.Name); ref != nil {
+			for _, desc := range mp.config.ImageDescriptions {
 				if desc.Name == ref.Name && ref.ContainerName == container.Name {
 					imageDescription = desc
+					break
 				}
 			}
 		}
