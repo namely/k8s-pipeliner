@@ -19,9 +19,9 @@ stages:
   refId: "1"
   runJob:
     manifestFile: test-deployment.yml
-    imageDescription:
-      name: main-image
-      containerName: example
+    imageDescriptions:
+      - name: main-image
+        containerName: example
     container: # override default command defined in the manifest
       command:
         - bundle
@@ -54,9 +54,9 @@ stages:
         strategy: redblack
         targetSize: 2 # this is the total amount of replicas for the deployment
         containerOverrides: {}
-        imageDescription:
-          name: main-image
-          containerName: example
+        imageDescriptions:
+          - name: main-image
+            containerName: example
         loadBalancers:
           - "test"
 - account: int-k8s

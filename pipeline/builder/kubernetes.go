@@ -72,7 +72,7 @@ func (mp *ManifestParser) ContainersFromScaffold(scaffold config.ContainerScaffo
 
 	switch t := resource.(type) {
 	case *appsv1.Deployment:
-		mg.Containers = mp.deploymentContainers(t, scaffold.ImageDescriptionRef())
+		mg.Containers = mp.deploymentContainers(t, scaffold)
 		mg.Annotations = t.Annotations
 		mg.Namespace = t.Namespace
 		mg.VolumeSources = mp.volumeSources(t.Spec.Template.Spec.Volumes)
@@ -123,7 +123,7 @@ func (mp *ManifestParser) volumeSources(vols []corev1.Volume) []*types.VolumeSou
 	return vs
 }
 
-func (mp *ManifestParser) deploymentContainers(dep *appsv1.Deployment, ref config.ImageDescriptionRef) []*types.Container {
+func (mp *ManifestParser) deploymentContainers(dep *appsv1.Deployment, scaffold config.ContainerScaffold) []*types.Container {
 	var c []*types.Container
 
 	for _, container := range dep.Spec.Template.Spec.Containers {
@@ -131,9 +131,12 @@ func (mp *ManifestParser) deploymentContainers(dep *appsv1.Deployment, ref confi
 
 		// add the image description first off using the annotations on the container
 		var imageDescription config.ImageDescription
-		for _, desc := range mp.config.ImageDescriptions {
-			if desc.Name == ref.Name && ref.ContainerName == container.Name {
-				imageDescription = desc
+		if ref := scaffold.ImageDescriptionRef(container.Name); ref != nil {
+			for _, desc := range mp.config.ImageDescriptions {
+				if desc.Name == ref.Name && ref.ContainerName == container.Name {
+					imageDescription = desc
+					break
+				}
 			}
 		}
 		spinContainer.ImageDescription = types.ImageDescription{

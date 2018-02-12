@@ -13,16 +13,22 @@ import (
 )
 
 type scaffoldMock struct {
-	manifest            string
-	imageDescriptionRef config.ImageDescriptionRef
+	manifest             string
+	imageDescriptionRefs []config.ImageDescriptionRef
 }
 
 func (sm scaffoldMock) Manifest() string {
 	return sm.manifest
 }
 
-func (sm scaffoldMock) ImageDescriptionRef() config.ImageDescriptionRef {
-	return sm.imageDescriptionRef
+func (sm scaffoldMock) ImageDescriptionRef(containerName string) *config.ImageDescriptionRef {
+	for _, ref := range sm.imageDescriptionRefs {
+		if ref.ContainerName == containerName {
+			return &ref
+		}
+	}
+
+	return nil
 }
 
 func TestContainersFromManifests(t *testing.T) {
@@ -40,9 +46,11 @@ func TestContainersFromManifests(t *testing.T) {
 		})
 		group, err := parser.ContainersFromScaffold(scaffoldMock{
 			manifest: file,
-			imageDescriptionRef: config.ImageDescriptionRef{
-				Name:          "test-ref",
-				ContainerName: "test-container",
+			imageDescriptionRefs: []config.ImageDescriptionRef{
+				{
+					Name:          "test-ref",
+					ContainerName: "test-container",
+				},
 			},
 		})
 

@@ -91,8 +91,8 @@ type Container struct {
 
 // RunJobStage is the configuration for a one off job in a spinnaker pipeline
 type RunJobStage struct {
-	ManifestFile     string              `yaml:"manifestFile"`
-	ImageDescription ImageDescriptionRef `yaml:"imageDescription"`
+	ManifestFile      string                `yaml:"manifestFile"`
+	ImageDescriptions []ImageDescriptionRef `yaml:"imageDescriptions"`
 
 	Container *Container `yaml:"container"`
 }
@@ -113,8 +113,8 @@ type ImageDescriptionRef struct {
 // of a group is filled out by the defined manifest file. This means things like commands, env vars,
 // etc, are all pulled into the group spec for you.
 type Group struct {
-	ManifestFile     string              `yaml:"manifestFile"`
-	ImageDescription ImageDescriptionRef `yaml:"imageDescription"`
+	ManifestFile      string                `yaml:"manifestFile"`
+	ImageDescriptions []ImageDescriptionRef `yaml:"imageDescriptions"`
 
 	MaxRemainingASGS int      `yaml:"maxRemainingASGS"`
 	ScaleDown        bool     `yaml:"scaleDown"`
@@ -152,7 +152,7 @@ type ContainerOverrides struct {
 // so you can build multiple types of stages (run job or deploys)
 type ContainerScaffold interface {
 	Manifest() string
-	ImageDescriptionRef() ImageDescriptionRef
+	ImageDescriptionRef(containerName string) *ImageDescriptionRef
 }
 
 var _ ContainerScaffold = Group{}
@@ -162,10 +162,24 @@ var _ ContainerScaffold = RunJobStage{}
 func (g Group) Manifest() string { return g.ManifestFile }
 
 // ImageDescriptionRef implements ContainerScaffold
-func (g Group) ImageDescriptionRef() ImageDescriptionRef { return g.ImageDescription }
+func (g Group) ImageDescriptionRef(containerName string) *ImageDescriptionRef {
+	return findImageDescription(containerName, g.ImageDescriptions)
+}
 
 // Manifest implements ContainerScaffold
 func (rj RunJobStage) Manifest() string { return rj.ManifestFile }
 
 // ImageDescriptionRef implements ContainerScaffold
-func (rj RunJobStage) ImageDescriptionRef() ImageDescriptionRef { return rj.ImageDescription }
+func (rj RunJobStage) ImageDescriptionRef(containerName string) *ImageDescriptionRef {
+	return findImageDescription(containerName, rj.ImageDescriptions)
+}
+
+func findImageDescription(containerName string, refs []ImageDescriptionRef) *ImageDescriptionRef {
+	for _, r := range refs {
+		if r.ContainerName == containerName {
+			return &r
+		}
+	}
+
+	return nil
+}
