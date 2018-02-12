@@ -5,17 +5,46 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/namely/k8s-pipeliner/pipeline/builder"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/namely/k8s-pipeliner/pipeline/builder"
+	"github.com/namely/k8s-pipeliner/pipeline/config"
 )
+
+type scaffoldMock struct {
+	manifest            string
+	imageDescriptionRef config.ImageDescriptionRef
+}
+
+func (sm scaffoldMock) Manifest() string {
+	return sm.manifest
+}
+
+func (sm scaffoldMock) ImageDescriptionRef() config.ImageDescriptionRef {
+	return sm.imageDescriptionRef
+}
 
 func TestContainersFromManifests(t *testing.T) {
 	wd, _ := os.Getwd()
 
 	t.Run("Deployment manifests are returned correctly", func(t *testing.T) {
 		file := filepath.Join(wd, "testdata", "deployment.full.yml")
-		group, err := builder.ContainersFromManifest(file)
+		parser := builder.NewManfifestParser(&config.Pipeline{
+			ImageDescriptions: []config.ImageDescription{
+				{
+					Name:    "test-ref",
+					ImageID: "this-is-the-image-id",
+				},
+			},
+		})
+		group, err := parser.ContainersFromScaffold(scaffoldMock{
+			manifest: file,
+			imageDescriptionRef: config.ImageDescriptionRef{
+				Name:          "test-ref",
+				ContainerName: "test-container",
+			},
+		})
 
 		require.NoError(t, err, "error on retrieving the deployment manifests")
 
@@ -31,11 +60,20 @@ func TestContainersFromManifests(t *testing.T) {
 			assert.Equal(t, "/thisisthemount", c.VolumeMounts[0].MountPath)
 			assert.Equal(t, true, c.VolumeMounts[0].ReadOnly)
 		})
+
+		t.Run("Container image descriptions are returned correctly", func(t *testing.T) {
+			c := group.Containers[0]
+
+			assert.Equal(t, "this-is-the-image-id", c.ImageDescription.ImageID)
+		})
 	})
 
 	t.Run("Deployments schemes are converted to latest", func(t *testing.T) {
 		file := filepath.Join(wd, "testdata", "deployment.v1beta1.yml")
-		group, err := builder.ContainersFromManifest(file)
+		parser := builder.NewManfifestParser(&config.Pipeline{})
+		group, err := parser.ContainersFromScaffold(scaffoldMock{
+			manifest: file,
+		})
 
 		require.NoError(t, err, "error on retrieving the deployment manifests")
 
@@ -46,7 +84,10 @@ func TestContainersFromManifests(t *testing.T) {
 
 	t.Run("Volume sources are copied", func(t *testing.T) {
 		file := filepath.Join(wd, "testdata", "deployment.full.yml")
-		group, err := builder.ContainersFromManifest(file)
+		parser := builder.NewManfifestParser(&config.Pipeline{})
+		group, err := parser.ContainersFromScaffold(scaffoldMock{
+			manifest: file,
+		})
 		require.NoError(t, err)
 		require.Len(t, group.VolumeSources, 3)
 

@@ -101,7 +101,11 @@ func (b *Builder) buildRunJobStage(index int, s config.Stage) (*types.RunJobStag
 		DNSPolicy:         "ClusterFirst", // hack for now
 	}
 
-	mg, err := ContainersFromManifest(s.RunJob.ManifestFile)
+	parser := &ManifestParser{
+		config: b.pipeline,
+	}
+
+	mg, err := parser.ContainersFromScaffold(s.RunJob)
 	if err != nil {
 		return nil, err
 	}
@@ -130,8 +134,12 @@ func (b *Builder) buildDeployStage(index int, s config.Stage) (*types.DeployStag
 		StageMetadata: buildStageMetadata(s, "deploy", index, b.isLinear),
 	}
 
+	parser := &ManifestParser{
+		config: b.pipeline,
+	}
+
 	for _, group := range s.Deploy.Groups {
-		mg, err := ContainersFromManifest(group.ManifestFile)
+		mg, err := parser.ContainersFromScaffold(group)
 		if err != nil {
 			return nil, err
 		}

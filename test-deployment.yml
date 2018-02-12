@@ -3,13 +3,6 @@ kind: Deployment
 metadata:
   name: example
   namespace: production
-  annotations:
-    namely.com/spinnaker-image-description-account: "your-registry"
-    namely.com/spinnaker-image-description-imageid: "${ trigger.properties['docker_image'] }"
-    namely.com/spinnaker-image-description-registry: "your.registry.land"
-    namely.com/spinnaker-image-description-repository: "org/example"
-    namely.com/spinnaker-image-description-tag: "${ trigger.properties['docker_tag'] }"
-    namely.com/spinnaker-load-balancers: "example"
 spec:
   template:
     metadata:
@@ -24,7 +17,8 @@ spec:
               - key: "hello"
                 path: "/my/file/path"
       containers:
-      - command:
+      - name: example
+        command:
         - bundle
         - exec
         - unicorn
@@ -45,7 +39,6 @@ spec:
         # this image doesn't really matter, its going to be replaced, but its not to show intent
         image: your.registry.land/org/example:latest
         imagePullPolicy: IfNotPresent
-        name: example
         ports:
         - containerPort: 80
           name: http
