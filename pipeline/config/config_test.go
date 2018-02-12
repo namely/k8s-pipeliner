@@ -29,4 +29,6 @@ func TestNewConfig(t *testing.T) {
 
 	require.Len(t, cfg.Stages[1].Deploy.Groups, 1, "no groups on deploy stage")
 	assert.Equal(t, cfg.Stages[1].Deploy.Groups[0].ManifestFile, "manifests/deploy/connect.yml")
+
+	require.Len(t, cfg.ImageDescriptions, 1, "image descriptions was empty")
 }

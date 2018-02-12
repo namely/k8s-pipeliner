@@ -13,7 +13,8 @@ spec:
         app: example
     spec:
       containers:
-      - command:
+      - name: test-container
+        command:
         - echo
         - hello
         env:

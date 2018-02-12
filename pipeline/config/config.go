@@ -25,10 +25,23 @@ func NewPipeline(r io.Reader) (*Pipeline, error) {
 // Pipeline is the high level struct that contains all of the configuration
 // of a pipeline
 type Pipeline struct {
-	Name        string    `yaml:"name"`
-	Application string    `yaml:"application"`
-	Triggers    []Trigger `yaml:"triggers"`
-	Stages      []Stage   `yaml:"stages"`
+	Name              string             `yaml:"name"`
+	Application       string             `yaml:"application"`
+	Triggers          []Trigger          `yaml:"triggers"`
+	Stages            []Stage            `yaml:"stages"`
+	ImageDescriptions []ImageDescription `yaml:"imageDescriptions"`
+}
+
+// ImageDescription contains the description of an image that can be referenced
+// from stages to inject in an image.
+type ImageDescription struct {
+	Name         string `yaml:"name"`
+	Account      string `yaml:"account"`
+	ImageID      string `yaml:"image_id"`
+	Registry     string `yaml:"registry"`
+	Repository   string `yaml:"repository"`
+	Tag          string `yaml:"tag"`
+	Organization string `yaml:"organization"`
 }
 
 // Trigger contains the fields that are relevant for
@@ -78,8 +91,10 @@ type Container struct {
 
 // RunJobStage is the configuration for a one off job in a spinnaker pipeline
 type RunJobStage struct {
-	ManifestFile string     `yaml:"manifestFile"`
-	Container    *Container `yaml:"container"`
+	ManifestFile     string              `yaml:"manifestFile"`
+	ImageDescription ImageDescriptionRef `yaml:"imageDescription"`
+
+	Container *Container `yaml:"container"`
 }
 
 // DeployStage is the configuration for deploying a cluster of servers (pods)
@@ -87,11 +102,20 @@ type DeployStage struct {
 	Groups []Group `yaml:"groups"`
 }
 
+// ImageDescriptionRef represents a reference to a defined ImageDescription on
+// a given pipeline
+type ImageDescriptionRef struct {
+	Name          string `yaml:"name"`
+	ContainerName string `yaml:"containerName"`
+}
+
 // Group represents a group to be deployed (Think: Kubernetes Pods). Most of the configuration
 // of a group is filled out by the defined manifest file. This means things like commands, env vars,
 // etc, are all pulled into the group spec for you.
 type Group struct {
-	ManifestFile     string   `yaml:"manifestFile"`
+	ManifestFile     string              `yaml:"manifestFile"`
+	ImageDescription ImageDescriptionRef `yaml:"imageDescription"`
+
 	MaxRemainingASGS int      `yaml:"maxRemainingASGS"`
 	ScaleDown        bool     `yaml:"scaleDown"`
 	Stack            string   `yaml:"stack"`
@@ -123,3 +147,25 @@ type ContainerOverrides struct {
 	Args    []string `yaml:"args,omitempty"`
 	Command []string `yaml:"command,omitempty"`
 }
+
+// ContainerScaffold is used to make it easy to get a file and image ref
+// so you can build multiple types of stages (run job or deploys)
+type ContainerScaffold interface {
+	Manifest() string
+	ImageDescriptionRef() ImageDescriptionRef
+}
+
+var _ ContainerScaffold = Group{}
+var _ ContainerScaffold = RunJobStage{}
+
+// Manifest implements ContainerScaffold
+func (g Group) Manifest() string { return g.ManifestFile }
+
+// ImageDescriptionRef implements ContainerScaffold
+func (g Group) ImageDescriptionRef() ImageDescriptionRef { return g.ImageDescription }
+
+// Manifest implements ContainerScaffold
+func (rj RunJobStage) Manifest() string { return rj.ManifestFile }
+
+// ImageDescriptionRef implements ContainerScaffold
+func (rj RunJobStage) ImageDescriptionRef() ImageDescriptionRef { return rj.ImageDescription }

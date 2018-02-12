@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/namely/k8s-pipeliner/pipeline/builder/types"
+	"github.com/namely/k8s-pipeliner/pipeline/config"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -20,33 +21,6 @@ var (
 	ErrUnsupportedManifest = errors.New("builder: manifest type is not supported")
 )
 
-const (
-	// SpinnakerImageDescriptionAccountAnnotation is used for injecting in the docker registry
-	// that should be used when generating the imageDescription struct on a container
-	// field. This should match a docker registry account you've added to spinnaker
-	SpinnakerImageDescriptionAccountAnnotation = "namely.com/spinnaker-image-description-account"
-
-	// SpinnakerImageDescriptionImageIDAnnotation represents the whole repository
-	// Example: registry.namely.com/namely/namely:latest
-	SpinnakerImageDescriptionImageIDAnnotation = "namely.com/spinnaker-image-description-imageid"
-
-	// SpinnakerImageDescriptionRegistryAnnotation is the registry host
-	// Example: registry.namely.com
-	SpinnakerImageDescriptionRegistryAnnotation = "namely.com/spinnaker-image-description-registry"
-
-	// SpinnakerImageDescriptionRepositoryAnnotation is the user / repository name
-	// Example: "namely/namely"
-	SpinnakerImageDescriptionRepositoryAnnotation = "namely.com/spinnaker-image-description-repository"
-
-	// SpinnakerImageDescriptionTagAnnotation is the tag portion of the image ID
-	// Example: "latest"
-	SpinnakerImageDescriptionTagAnnotation = "namely.com/spinnaker-image-description-tag"
-
-	// SpinnakerImageDescriptionOrganizationAnnotation is the registry org that owns the image.
-	// Example: "namely" (where registry.namely.land/namely <- is the org)
-	SpinnakerImageDescriptionOrganizationAnnotation = "namely.com/spinnaker-image-description-organization"
-)
-
 // ManifestGroup keeps a collection of containers from a deployment
 // and metadata associated with them
 type ManifestGroup struct {
@@ -56,13 +30,21 @@ type ManifestGroup struct {
 	VolumeSources []*types.VolumeSource
 }
 
-// ContainersFromManifest loads a kubernetes manifest file and generates
+// ManifestParser handles generating Spinnaker builder types from a kubernetes
+// manifest file (deployments)
+type ManifestParser struct {
+	config *config.Pipeline
+}
+
+// NewManfifestParser initializes and returns a manifest parser for a given pipeline config
+func NewManfifestParser(config *config.Pipeline) *ManifestParser {
+	return &ManifestParser{config}
+}
+
+// ContainersFromGroup loads a kubernetes manifest file and generates
 // spinnaker pipeline containers config from it.
-//
-// NOTE: If your manifest file declares multiple types, only the first will be taken
-// to generate the config.
-func ContainersFromManifest(file string) (*ManifestGroup, error) {
-	f, err := os.Open(file)
+func (mp *ManifestParser) ContainersFromScaffold(scaffold config.ContainerScaffold) (*ManifestGroup, error) {
+	f, err := os.Open(scaffold.Manifest())
 	if err != nil {
 		return nil, err
 	}
@@ -90,10 +72,10 @@ func ContainersFromManifest(file string) (*ManifestGroup, error) {
 
 	switch t := resource.(type) {
 	case *appsv1.Deployment:
-		mg.Containers = deploymentContainers(t)
+		mg.Containers = mp.deploymentContainers(t, scaffold.ImageDescriptionRef())
 		mg.Annotations = t.Annotations
 		mg.Namespace = t.Namespace
-		mg.VolumeSources = volumeSources(t.Spec.Template.Spec.Volumes)
+		mg.VolumeSources = mp.volumeSources(t.Spec.Template.Spec.Volumes)
 	default:
 		return nil, ErrUnsupportedManifest
 	}
@@ -102,7 +84,7 @@ func ContainersFromManifest(file string) (*ManifestGroup, error) {
 }
 
 // converts kubernetes volume sources into builder types
-func volumeSources(vols []corev1.Volume) []*types.VolumeSource {
+func (mp *ManifestParser) volumeSources(vols []corev1.Volume) []*types.VolumeSource {
 	var vs []*types.VolumeSource
 
 	for _, vol := range vols {
@@ -141,20 +123,26 @@ func volumeSources(vols []corev1.Volume) []*types.VolumeSource {
 	return vs
 }
 
-func deploymentContainers(dep *appsv1.Deployment) []*types.Container {
+func (mp *ManifestParser) deploymentContainers(dep *appsv1.Deployment, ref config.ImageDescriptionRef) []*types.Container {
 	var c []*types.Container
 
 	for _, container := range dep.Spec.Template.Spec.Containers {
 		spinContainer := &types.Container{}
 
 		// add the image description first off using the annotations on the container
+		var imageDescription config.ImageDescription
+		for _, desc := range mp.config.ImageDescriptions {
+			if desc.Name == ref.Name && ref.ContainerName == container.Name {
+				imageDescription = desc
+			}
+		}
 		spinContainer.ImageDescription = types.ImageDescription{
-			Account:      dep.Annotations[SpinnakerImageDescriptionAccountAnnotation],
-			ImageID:      dep.Annotations[SpinnakerImageDescriptionImageIDAnnotation],
-			Tag:          dep.Annotations[SpinnakerImageDescriptionTagAnnotation],
-			Repository:   dep.Annotations[SpinnakerImageDescriptionRepositoryAnnotation],
-			Registry:     dep.Annotations[SpinnakerImageDescriptionRegistryAnnotation],
-			Organization: dep.Annotations[SpinnakerImageDescriptionOrganizationAnnotation],
+			Account:      imageDescription.Account,
+			ImageID:      imageDescription.ImageID,
+			Tag:          imageDescription.Tag,
+			Repository:   imageDescription.Repository,
+			Registry:     imageDescription.Registry,
+			Organization: imageDescription.Organization,
 		}
 
 		args := []string{}

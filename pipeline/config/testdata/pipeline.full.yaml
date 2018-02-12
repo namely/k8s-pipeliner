@@ -5,6 +5,14 @@ triggers:
     job: "Connect/job/master"
     master: "namely-jenkins"
     propertyFile: "build.properties"
+imageDescriptions:
+  - name: testImageRef
+    account: account
+    image_id: image_id
+    registry: registry
+    repository: repository
+    tag: tag
+    organization: organization
 stages:
 - account: int-k8s
   name: "Migrate INT"
