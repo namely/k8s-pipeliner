@@ -14,15 +14,15 @@ import (
 
 type scaffoldMock struct {
 	manifest            string
-	imageDescriptionRef config.ImageDescriptionRef
+	imageDescriptionRef []config.ImageDescriptionRef
 }
 
 func (sm scaffoldMock) Manifest() string {
 	return sm.manifest
 }
 
-func (sm scaffoldMock) ImageDescriptionRef() config.ImageDescriptionRef {
-	return sm.imageDescriptionRef
+func (sm scaffoldMock) ImageDescriptionRef(containerName string) *config.ImageDescriptionRef {
+	return &sm.imageDescriptionRef[0]
 }
 
 func TestContainersFromManifests(t *testing.T) {
@@ -40,10 +40,10 @@ func TestContainersFromManifests(t *testing.T) {
 		})
 		group, err := parser.ContainersFromScaffold(scaffoldMock{
 			manifest: file,
-			imageDescriptionRef: config.ImageDescriptionRef{
+			imageDescriptionRef: []config.ImageDescriptionRef{{
 				Name:          "test-ref",
 				ContainerName: "test-container",
-			},
+			}},
 		})
 
 		require.NoError(t, err, "error on retrieving the deployment manifests")
