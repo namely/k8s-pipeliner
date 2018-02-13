@@ -74,6 +74,10 @@ func TestContainersFromManifests(t *testing.T) {
 
 			assert.Equal(t, "this-is-the-image-id", c.ImageDescription.ImageID)
 		})
+
+		t.Run("Pod spec annotations are copied into the group", func(t *testing.T) {
+			assert.Equal(t, "annotations", group.PodAnnotations["test"])
+		})
 	})
 
 	t.Run("Deployments schemes are converted to latest", func(t *testing.T) {

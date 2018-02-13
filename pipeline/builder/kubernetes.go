@@ -24,10 +24,11 @@ var (
 // ManifestGroup keeps a collection of containers from a deployment
 // and metadata associated with them
 type ManifestGroup struct {
-	Namespace     string
-	Annotations   map[string]string
-	Containers    []*types.Container
-	VolumeSources []*types.VolumeSource
+	Namespace      string
+	Annotations    map[string]string
+	PodAnnotations map[string]string
+	Containers     []*types.Container
+	VolumeSources  []*types.VolumeSource
 }
 
 // ManifestParser handles generating Spinnaker builder types from a kubernetes
@@ -41,7 +42,7 @@ func NewManfifestParser(config *config.Pipeline) *ManifestParser {
 	return &ManifestParser{config}
 }
 
-// ContainersFromGroup loads a kubernetes manifest file and generates
+// ContainersFromScaffold loads a kubernetes manifest file and generates
 // spinnaker pipeline containers config from it.
 func (mp *ManifestParser) ContainersFromScaffold(scaffold config.ContainerScaffold) (*ManifestGroup, error) {
 	f, err := os.Open(scaffold.Manifest())
@@ -74,6 +75,7 @@ func (mp *ManifestParser) ContainersFromScaffold(scaffold config.ContainerScaffo
 	case *appsv1.Deployment:
 		mg.Containers = mp.deploymentContainers(t, scaffold)
 		mg.Annotations = t.Annotations
+		mg.PodAnnotations = t.Spec.Template.Annotations
 		mg.Namespace = t.Namespace
 		mg.VolumeSources = mp.volumeSources(t.Spec.Template.Spec.Volumes)
 	default:
