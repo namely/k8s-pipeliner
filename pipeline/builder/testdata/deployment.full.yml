@@ -11,6 +11,8 @@ spec:
     metadata:
       labels:
         app: example
+      annotations:
+        test: "annotations"
     spec:
       containers:
       - name: test-container

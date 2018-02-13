@@ -173,6 +173,7 @@ func (b *Builder) buildDeployStage(index int, s config.Stage) (*types.DeployStag
 			Namespace:             mg.Namespace,
 			MaxRemainingAsgs:      group.MaxRemainingASGS,
 			ReplicaSetAnnotations: mg.Annotations,
+			PodAnnotations:        mg.PodAnnotations,
 			ScaleDown:             group.ScaleDown,
 			Stack:                 group.Stack,
 			Details:               group.Details,

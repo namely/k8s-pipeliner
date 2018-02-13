@@ -6,6 +6,8 @@ metadata:
 spec:
   template:
     metadata:
+      annotations:
+        my-annotations: "cool"
       labels:
         app: example
     spec:
