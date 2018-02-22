@@ -202,6 +202,19 @@ func (mp *ManifestParser) deploymentContainers(dep *appsv1.Deployment, scaffold 
 			spinContainer.EnvVars = append(spinContainer.EnvVars, e)
 		}
 
+		for _, envFrom := range container.EnvFrom {
+			var e types.EnvFromSource
+			e.Prefix = envFrom.Prefix
+
+			if cmRef := envFrom.ConfigMapRef; cmRef != nil {
+				e.ConfigMapSource = &types.EnvFromConfigMapSource{
+					Name: cmRef.Name,
+				}
+			}
+			// TODO(bobbytables): Add secretRefs as well for envFrom sources
+			spinContainer.EnvFrom = append(spinContainer.EnvFrom, e)
+		}
+
 		// add all of the volume mounts
 		for _, vm := range container.VolumeMounts {
 			spinContainer.VolumeMounts = append(spinContainer.VolumeMounts, types.VolumeMount{

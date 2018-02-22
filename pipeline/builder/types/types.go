@@ -129,6 +129,7 @@ type Container struct {
 	Args             []string         `json:"args"`
 	Command          []string         `json:"command"`
 	EnvVars          []EnvVar         `json:"envVars"`
+	EnvFrom          []EnvFromSource  `json:"envFrom"`
 	ImageDescription ImageDescription `json:"imageDescription"`
 	ImagePullPolicy  string           `json:"imagePullPolicy"`
 	Limits           Resources        `json:"limits"`
@@ -138,6 +139,19 @@ type Container struct {
 	Ports []Port `json:"ports"`
 
 	VolumeMounts []VolumeMount `json:"volumeMounts"`
+}
+
+// EnvFromSource is used to pull in a config map as a list of environment
+// variables
+type EnvFromSource struct {
+	Prefix          string                  `json:"prefix"`
+	ConfigMapSource *EnvFromConfigMapSource `json:"configMapRef"`
+}
+
+// EnvFromConfigMapSource is used to pull in a configmap for key/value envVars
+type EnvFromConfigMapSource struct {
+	Name     string `json:"name"`
+	Optional bool   `json:"optional"`
 }
 
 // VolumeMount describes a mount that should be mounted in to the container
