@@ -202,6 +202,27 @@ func (mp *ManifestParser) deploymentContainers(dep *appsv1.Deployment, scaffold 
 			spinContainer.EnvVars = append(spinContainer.EnvVars, e)
 		}
 
+		for _, envFrom := range container.EnvFrom {
+			var e types.EnvFromSource
+			e.Prefix = envFrom.Prefix
+
+			if cmRef := envFrom.ConfigMapRef; cmRef != nil {
+				e.ConfigMapSource = &types.EnvFromConfigMapSource{
+					Name: cmRef.Name,
+				}
+			}
+			// TODO(bobbytables): Add secretRefs as well for envFrom sources
+			spinContainer.EnvFrom = append(spinContainer.EnvFrom, e)
+		}
+
+		if probe := container.LivenessProbe; probe != nil {
+			spinContainer.LivenessProbe = spinnakerProbeHandler(probe)
+		}
+
+		if probe := container.ReadinessProbe; probe != nil {
+			spinContainer.ReadinessProbe = spinnakerProbeHandler(probe)
+		}
+
 		// add all of the volume mounts
 		for _, vm := range container.VolumeMounts {
 			spinContainer.VolumeMounts = append(spinContainer.VolumeMounts, types.VolumeMount{
@@ -215,4 +236,47 @@ func (mp *ManifestParser) deploymentContainers(dep *appsv1.Deployment, scaffold 
 	}
 
 	return c
+}
+
+func spinnakerProbeHandler(probe *corev1.Probe) *types.Probe {
+	h := types.ProbeHandler{}
+
+	if httpGet := probe.HTTPGet; httpGet != nil {
+		h.Type = "HTTP"
+		h.HTTPGetAction = &types.HTTPGetAction{
+			Path:      httpGet.Path,
+			Port:      httpGet.Port.IntValue(),
+			URIScheme: string(httpGet.Scheme),
+		}
+
+		for _, header := range httpGet.HTTPHeaders {
+			h.HTTPGetAction.HTTPHeaders = append(h.HTTPGetAction.HTTPHeaders, types.HTTPGetActionHeaders{
+				Name:  header.Name,
+				Value: header.Value,
+			})
+		}
+	}
+
+	if exec := probe.Exec; exec != nil {
+		h.ExecAction = &types.ExecAction{
+			Commands: exec.Command,
+		}
+		h.Type = "EXEC"
+	}
+
+	if tcp := probe.TCPSocket; tcp != nil {
+		h.TCPSocketAction = &types.TCPSocketAction{
+			Port: tcp.Port.IntValue(),
+		}
+		h.Type = "TCP"
+	}
+
+	return &types.Probe{
+		FailureThreshold:    probe.FailureThreshold,
+		InitialDelaySeconds: probe.InitialDelaySeconds,
+		PeriodSeconds:       probe.PeriodSeconds,
+		SuccessThreshold:    probe.SuccessThreshold,
+		TimeoutSeconds:      probe.TimeoutSeconds,
+		Handler:             h,
+	}
 }

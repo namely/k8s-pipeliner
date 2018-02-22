@@ -18,7 +18,7 @@ type Trigger interface {
 
 // StageMetadata is the common components of a stage in spinnaker such as name
 type StageMetadata struct {
-	RefID                string         `json:"refId"`
+	RefID                string         `json:"refId,omitempty"`
 	RequisiteStageRefIds []string       `json:"requisiteStageRefIds,omitempty"`
 	Name                 string         `json:"name"`
 	Type                 string         `json:"type"`
@@ -56,11 +56,11 @@ type RunJobStage struct {
 	Application       string            `json:"application"`
 	CloudProvider     string            `json:"cloudProvider"`
 	CloudProviderType string            `json:"cloudProviderType"`
-	Container         *Container        `json:"container"`
+	Container         *Container        `json:"container,omitempty"`
 	DNSPolicy         string            `json:"dnsPolicy"`
-	Labels            map[string]string `json:"labels"`
+	Labels            map[string]string `json:"labels,omitempty"`
 	Namespace         string            `json:"namespace"`
-	VolumeSources     []interface{}     `json:"volumeSources"`
+	VolumeSources     []interface{}     `json:"volumeSources,omitempty"`
 }
 
 func (rjs RunJobStage) spinnakerStage() {}
@@ -103,32 +103,33 @@ type Cluster struct {
 	InterestingHealthProviderNames []string          `json:"interestingHealthProviderNames"`
 	LoadBalancers                  []string          `json:"loadBalancers"`
 	MaxRemainingAsgs               int               `json:"maxRemainingAsgs"`
-	NodeSelector                   map[string]string `json:"nodeSelector"`
-	PodAnnotations                 map[string]string `json:"podAnnotations"`
+	NodeSelector                   map[string]string `json:"nodeSelector,omitempty"`
+	PodAnnotations                 map[string]string `json:"podAnnotations,omitempty"`
 	Provider                       string            `json:"provider"`
 
 	// Region is just a kubernetes namespace
 	Region    string `json:"region"`
 	Namespace string `json:"namespace"`
 
-	ReplicaSetAnnotations         map[string]string `json:"replicaSetAnnotations"`
+	ReplicaSetAnnotations         map[string]string `json:"replicaSetAnnotations,omitempty"`
 	ScaleDown                     bool              `json:"scaleDown"`
-	SecurityGroups                []interface{}     `json:"securityGroups"`
+	SecurityGroups                []interface{}     `json:"securityGroups,omitempty"`
 	Stack                         string            `json:"stack"`
 	Details                       string            `json:"freeFormDetails"`
 	Strategy                      string            `json:"strategy"`
 	TargetSize                    int               `json:"targetSize"`
 	TerminationGracePeriodSeconds int               `json:"terminationGracePeriodSeconds"`
-	VolumeSources                 []*VolumeSource   `json:"volumeSources"`
+	VolumeSources                 []*VolumeSource   `json:"volumeSources,omitempty"`
 	DelayBeforeDisableSec         int               `json:"delayBeforeDisableSec,omitempty"`
 }
 
 // Container is a representation of a container to be deployed either as a job
 // or within a cluster
 type Container struct {
-	Args             []string         `json:"args"`
-	Command          []string         `json:"command"`
-	EnvVars          []EnvVar         `json:"envVars"`
+	Args             []string         `json:"args,omitempty"`
+	Command          []string         `json:"command,omitempty"`
+	EnvVars          []EnvVar         `json:"envVars,omitempty"`
+	EnvFrom          []EnvFromSource  `json:"envFrom,omitempty"`
 	ImageDescription ImageDescription `json:"imageDescription"`
 	ImagePullPolicy  string           `json:"imagePullPolicy"`
 	Limits           Resources        `json:"limits"`
@@ -138,6 +139,22 @@ type Container struct {
 	Ports []Port `json:"ports"`
 
 	VolumeMounts []VolumeMount `json:"volumeMounts"`
+
+	LivenessProbe  *Probe `json:"livenessProbe"`
+	ReadinessProbe *Probe `json:"readinessProbe"`
+}
+
+// EnvFromSource is used to pull in a config map as a list of environment
+// variables
+type EnvFromSource struct {
+	Prefix          string                  `json:"prefix"`
+	ConfigMapSource *EnvFromConfigMapSource `json:"configMapRef"`
+}
+
+// EnvFromConfigMapSource is used to pull in a configmap for key/value envVars
+type EnvFromConfigMapSource struct {
+	Name     string `json:"name"`
+	Optional bool   `json:"optional"`
 }
 
 // VolumeMount describes a mount that should be mounted in to the container
@@ -241,4 +258,46 @@ type ConfigMapVolumeSource struct {
 type SecretVolumeSource struct {
 	SecretName string             `json:"secretName"`
 	Items      []corev1.KeyToPath `json:"items"`
+}
+
+// Probe is a probe against a container for things such as liveness or readiness
+type Probe struct {
+	FailureThreshold    int32        `json:"failureThreshold"`
+	InitialDelaySeconds int32        `json:"initialDelaySeconds"`
+	PeriodSeconds       int32        `json:"periodSeconds"`
+	SuccessThreshold    int32        `json:"successThreshold"`
+	TimeoutSeconds      int32        `json:"timeoutSeconds"`
+	Handler             ProbeHandler `json:"handler"`
+}
+
+// ProbeHandler represents all of the different types of probes
+type ProbeHandler struct {
+	ExecAction      *ExecAction      `json:"execAction,omitempty"`
+	HTTPGetAction   *HTTPGetAction   `json:"httpGetAction,omitempty"`
+	TCPSocketAction *TCPSocketAction `json:"tcpSocketAction,omitempty"`
+	Type            string           `json:"type"`
+}
+
+// ExecAction is a probe type that runs a command
+type ExecAction struct {
+	Commands []string `json:"commands"`
+}
+
+// HTTPGetAction a probe type that hits an HTTP endpoint in the container
+type HTTPGetAction struct {
+	HTTPHeaders []HTTPGetActionHeaders `json:"httpHeaders"`
+	Path        string                 `json:"path"`
+	Port        int                    `json:"port"`
+	URIScheme   string                 `json:"uriScheme"`
+}
+
+// HTTPGetActionHeaders is a key/value struct for headers used in a HTTP probe
+type HTTPGetActionHeaders struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+// TCPSocketAction checks if a TCP connection can be opened against the given port
+type TCPSocketAction struct {
+	Port int `json:"port"`
 }

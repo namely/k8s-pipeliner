@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: example
+  namespace: fake-namespace
+  annotations:
+    fake-annotation-1: "Hello"
+    fake-annotation-2: "World"
+spec:
+  template:
+    metadata:
+      labels:
+        app: example
+      annotations:
+        test: "annotations"
+    spec:
+      containers:
+      - name: test-container
+        command:
+        - echo
+        - hello
+        livenessProbe:
+          exec:
+            command: ["say", "hello"]
+        readinessProbe:
+          exec:
+            command: ["say", "hello"]
