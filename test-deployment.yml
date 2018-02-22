@@ -20,6 +20,11 @@ spec:
                 path: "/my/file/path"
       containers:
       - name: example
+        livenessProbe:
+          exec:
+            command:
+            - cat
+            - /tmp/healthy
         command:
         - bundle
         - exec
