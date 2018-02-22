@@ -136,4 +136,18 @@ func TestContainersFromManifests(t *testing.T) {
 		assert.Equal(t, "dummy-ref", container.EnvFrom[0].ConfigMapSource.Name)
 		assert.Equal(t, "some-prefix", container.EnvFrom[0].Prefix)
 	})
+
+	t.Run("LivenessProbe is copied in the correct format", func(t *testing.T) {
+		file := filepath.Join(wd, "testdata", "deployment.probes.yml")
+		parser := builder.NewManfifestParser(&config.Pipeline{})
+		group, err := parser.ContainersFromScaffold(scaffoldMock{
+			manifest: file,
+		})
+		require.NoError(t, err)
+
+		container := group.Containers[0]
+
+		require.NotNil(t, container.LivenessProbe)
+		require.NotNil(t, container.ReadinessProbe)
+	})
 }

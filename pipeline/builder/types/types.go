@@ -273,9 +273,9 @@ type Probe struct {
 // ProbeHandler represents all of the different types of probes
 type ProbeHandler struct {
 	ExecAction      *ExecAction      `json:"execAction,omitempty"`
-	HTTPGetAction   *HTTPGetAction   `yaml:"httpGetAction,omitempty"`
-	TCPSocketAction *TCPSocketAction `yaml:"tcpSocketAction,omitempty"`
-	Type            string           `yaml:"type"`
+	HTTPGetAction   *HTTPGetAction   `json:"httpGetAction,omitempty"`
+	TCPSocketAction *TCPSocketAction `json:"tcpSocketAction,omitempty"`
+	Type            string           `json:"type"`
 }
 
 // ExecAction is a probe type that runs a command
