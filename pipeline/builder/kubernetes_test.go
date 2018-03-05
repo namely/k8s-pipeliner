@@ -136,7 +136,37 @@ func TestContainersFromManifests(t *testing.T) {
 		assert.Equal(t, "dummy-ref", container.EnvFrom[0].ConfigMapSource.Name)
 		assert.Equal(t, "some-prefix", container.EnvFrom[0].Prefix)
 	})
+	t.Run("EnvFrom sources are copied in", func(t *testing.T) {
+		file := filepath.Join(wd, "testdata", "deployment.envfrom.yml")
+		parser := builder.NewManfifestParser(&config.Pipeline{})
+		group, err := parser.ContainersFromScaffold(scaffoldMock{
+			manifest: file,
+		})
+		require.NoError(t, err)
 
+		container := group.Containers[0]
+		require.Len(t, container.EnvFrom, 1)
+		require.NotNil(t, container.EnvFrom[0].ConfigMapSource)
+		assert.Equal(t, "dummy-ref", container.EnvFrom[0].ConfigMapSource.Name)
+		assert.Equal(t, "some-prefix", container.EnvFrom[0].Prefix)
+	})
+	t.Run("Optional Configmaps/secrets are copied in", func(t *testing.T) {
+		file := filepath.Join(wd, "testdata", "deployment.optional.yml")
+		parser := builder.NewManfifestParser(&config.Pipeline{})
+		group, err := parser.ContainersFromScaffold(scaffoldMock{
+			manifest: file,
+		})
+		require.NoError(t, err)
+
+		container := group.Containers[0]
+		require.Len(t, container.EnvVars, 3)
+		require.NotNil(t, container.EnvVars[0].EnvSource.SecretSource.Optional)
+		require.NotNil(t, container.EnvVars[1].EnvSource.ConfigMapSource.Optional)
+		require.NotNil(t, container.EnvVars[2].EnvSource.ConfigMapSource.Optional)
+		assert.Equal(t, false, container.EnvVars[0].EnvSource.SecretSource.Optional)
+		assert.Equal(t, true, container.EnvVars[1].EnvSource.ConfigMapSource.Optional)
+		assert.Equal(t, false, container.EnvVars[2].EnvSource.ConfigMapSource.Optional)
+	})
 	t.Run("LivenessProbe is copied in the correct format", func(t *testing.T) {
 		file := filepath.Join(wd, "testdata", "deployment.probes.yml")
 		parser := builder.NewManfifestParser(&config.Pipeline{})

@@ -181,19 +181,28 @@ func (mp *ManifestParser) deploymentContainers(dep *appsv1.Deployment, scaffold 
 
 			if vf := env.ValueFrom; vf != nil {
 				if vf.ConfigMapKeyRef != nil {
+					if vf.ConfigMapKeyRef.Optional == nil {
+						vf.ConfigMapKeyRef.Optional = newFalse()
+					}
+
 					e.EnvSource = &types.EnvSource{
 						ConfigMapSource: &types.ConfigMapSource{
 							ConfigMapName: vf.ConfigMapKeyRef.Name,
 							Key:           vf.ConfigMapKeyRef.Key,
+							Optional:      *vf.ConfigMapKeyRef.Optional,
 						},
 					}
 				}
 
 				if vf.SecretKeyRef != nil {
+					if vf.SecretKeyRef.Optional == nil {
+						vf.SecretKeyRef.Optional = newFalse()
+					}
 					e.EnvSource = &types.EnvSource{
 						SecretSource: &types.SecretSource{
 							Key:        vf.SecretKeyRef.Key,
 							SecretName: vf.SecretKeyRef.Name,
+							Optional:   *vf.SecretKeyRef.Optional,
 						},
 					}
 				}
@@ -279,4 +288,9 @@ func spinnakerProbeHandler(probe *corev1.Probe) *types.Probe {
 		TimeoutSeconds:      probe.TimeoutSeconds,
 		Handler:             h,
 	}
+}
+
+func newFalse() *bool {
+	b := false
+	return &b
 }
