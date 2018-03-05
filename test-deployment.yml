@@ -43,6 +43,12 @@ spec:
             configMapKeyRef:
               key: ADMIN_PASSWORD
               name: super-secret-password
+              optional: true
+        - name: ADMIN_USERNAME
+          valueFrom:
+            secretKeyRef:
+              key: ADMIN_USERNAME
+              name: super-secret-username
         # this image doesn't really matter, its going to be replaced, but its not to show intent
         image: your.registry.land/org/example:latest
         imagePullPolicy: IfNotPresent

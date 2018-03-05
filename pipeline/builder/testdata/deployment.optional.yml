@@ -1,0 +1,37 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: example
+  namespace: fake-namespace
+  annotations:
+    fake-annotation-1: "Hello"
+    fake-annotation-2: "World"
+spec:
+  template:
+    metadata:
+      labels:
+        app: example
+    spec:
+      containers:
+      - command:
+        - echo
+        - hello
+        env:
+        - name: PEPPER
+          valueFrom:
+            secretKeyRef:
+              name: secrets
+              key: pepper
+              optional: false
+        - name: SALT
+          valueFrom:
+            configMapKeyRef:
+              key: configs
+              name: salt
+              optional: true
+        - name: EXISTENCE
+          valueFrom:
+            configMapKeyRef:
+              key: configs
+              name: mundane
+        image: bird.word/latest

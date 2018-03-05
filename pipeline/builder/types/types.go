@@ -197,12 +197,14 @@ type EnvSource struct {
 type SecretSource struct {
 	SecretName string `json:"secretName"`
 	Key        string `json:"key"`
+	Optional   bool   `json:"optional"`
 }
 
 // ConfigMapSource is a env var from a config map in k8s
 type ConfigMapSource struct {
 	ConfigMapName string `json:"configMapName"`
 	Key           string `json:"key"`
+	Optional      bool   `json:"optional"`
 }
 
 // ImageDescription is used to tell spinnaker which image to use for a stage
