@@ -30,6 +30,7 @@ type Pipeline struct {
 	Triggers          []Trigger          `yaml:"triggers"`
 	Stages            []Stage            `yaml:"stages"`
 	ImageDescriptions []ImageDescription `yaml:"imageDescriptions"`
+	Notifications     []Notification     `yaml:"notifications"`
 }
 
 // ImageDescription contains the description of an image that can be referenced
