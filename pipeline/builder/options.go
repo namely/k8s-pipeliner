@@ -10,3 +10,11 @@ func WithLinear(l bool) OptFunc {
 		b.isLinear = l
 	}
 }
+
+// WithBasePath assigns the base path for the builder to use when given
+// relatively pathed files for manifests
+func WithBasePath(basePath string) OptFunc {
+	return func(b *Builder) {
+		b.basePath = basePath
+	}
+}

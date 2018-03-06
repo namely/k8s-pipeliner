@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/namely/k8s-pipeliner/pipeline/builder/types"
@@ -34,18 +35,31 @@ type ManifestGroup struct {
 // ManifestParser handles generating Spinnaker builder types from a kubernetes
 // manifest file (deployments)
 type ManifestParser struct {
-	config *config.Pipeline
+	config   *config.Pipeline
+	basePath string
 }
 
-// NewManfifestParser initializes and returns a manifest parser for a given pipeline config
-func NewManfifestParser(config *config.Pipeline) *ManifestParser {
-	return &ManifestParser{config}
+// NewManfifestParser initializes and returns a manifest parser for a given pipeline config.
+// If a basePath is passed it is used as the path when loading relative file paths
+// for manifest definitions
+func NewManfifestParser(config *config.Pipeline, basePath ...string) *ManifestParser {
+	mp := &ManifestParser{config: config}
+	if len(basePath) > 0 {
+		mp.basePath = basePath[0]
+	}
+
+	return mp
 }
 
 // ContainersFromScaffold loads a kubernetes manifest file and generates
 // spinnaker pipeline containers config from it.
 func (mp *ManifestParser) ContainersFromScaffold(scaffold config.ContainerScaffold) (*ManifestGroup, error) {
-	f, err := os.Open(scaffold.Manifest())
+	path := scaffold.Manifest()
+	if !filepath.IsAbs(scaffold.Manifest()) && mp.basePath != "" {
+		path = filepath.Join(mp.basePath, scaffold.Manifest())
+	}
+
+	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
