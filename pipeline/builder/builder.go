@@ -37,7 +37,11 @@ func New(p *config.Pipeline, opts ...OptFunc) *Builder {
 // Pipeline returns a filled out spinnaker pipeline from the given
 // config
 func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
-	sp := &types.SpinnakerPipeline{}
+	sp := &types.SpinnakerPipeline{
+		LimitConcurrent:      b.pipeline.DisableConcurrentExecutions,
+		KeepWaitingPipelines: b.pipeline.KeepQueuedPipelines,
+		Description:          b.pipeline.Description,
+	}
 
 	sp.Notifications = buildNotifications(b.pipeline.Notifications)
 

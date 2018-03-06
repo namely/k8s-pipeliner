@@ -1,6 +1,10 @@
 name: Example Deployment
 application: example
 
+disableConcurrentExecutions: true
+keepQueuedPipelines: true
+description: This pipeline deploys some sweet code
+
 notifications:
   - address: "#launchpad"
     type: "slack"

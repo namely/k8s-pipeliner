@@ -32,3 +32,19 @@ func TestBuilderAssignsNotifications(t *testing.T) {
 	assert.Equal(t, "pipeline", notification.Level)
 	assert.Equal(t, "slack", notification.Type)
 }
+
+func TestBuilderAssignsPipelineConfiguration(t *testing.T) {
+	pipeline := &config.Pipeline{
+		DisableConcurrentExecutions: true,
+		KeepQueuedPipelines:         true,
+		Description:                 "fake description",
+	}
+
+	builder := builder.New(pipeline)
+	spinnaker, err := builder.Pipeline()
+	require.NoError(t, err, "error generating pipeline json")
+
+	assert.True(t, spinnaker.KeepWaitingPipelines)
+	assert.True(t, spinnaker.LimitConcurrent)
+	assert.Equal(t, pipeline.Description, spinnaker.Description)
+}

@@ -10,6 +10,11 @@ type SpinnakerPipeline struct {
 	Triggers      []Trigger      `json:"triggers"`
 	Stages        []Stage        `json:"stages"`
 	Notifications []Notification `json:"notifications"`
+
+	// Pipeline level config
+	LimitConcurrent      bool   `json:"limitConcurrent"`
+	KeepWaitingPipelines bool   `json:"keepWaitingPipelines"`
+	Description          string `json:"description"`
 }
 
 // Trigger is an interface to encompass multiple types of Spinnaker triggers
