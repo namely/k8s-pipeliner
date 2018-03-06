@@ -120,7 +120,7 @@ $ k8s-pipeliner create pipeline.yml | jq .
 To copy the result to your clipboard and you're on a Mac, you can do:
 
 ```
-$ k8s-pipeliner create pipeline.yml | pbcopy
+$ k8s-pipeliner create --linear pipeline.yml | pbcopy
 ```
 
 ### Adding the Pipeline JSON

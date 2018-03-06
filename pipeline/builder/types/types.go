@@ -9,8 +9,14 @@ import (
 type SpinnakerPipeline struct {
 	ID string `json:"id,omitempty"`
 
-	Triggers []Trigger `json:"triggers"`
-	Stages   []Stage   `json:"stages"`
+	Triggers      []Trigger      `json:"triggers"`
+	Stages        []Stage        `json:"stages"`
+	Notifications []Notification `json:"notifications"`
+
+	// Pipeline level config
+	LimitConcurrent      bool   `json:"limitConcurrent"`
+	KeepWaitingPipelines bool   `json:"keepWaitingPipelines"`
+	Description          string `json:"description"`
 }
 
 // Trigger is an interface to encompass multiple types of Spinnaker triggers
@@ -199,12 +205,14 @@ type EnvSource struct {
 type SecretSource struct {
 	SecretName string `json:"secretName"`
 	Key        string `json:"key"`
+	Optional   bool   `json:"optional"`
 }
 
 // ConfigMapSource is a env var from a config map in k8s
 type ConfigMapSource struct {
 	ConfigMapName string `json:"configMapName"`
 	Key           string `json:"key"`
+	Optional      bool   `json:"optional"`
 }
 
 // ImageDescription is used to tell spinnaker which image to use for a stage

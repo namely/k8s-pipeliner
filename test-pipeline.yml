@@ -1,6 +1,23 @@
 name: Example Deployment
-application: example     # should match application created in spinnaker
-triggers:                # list of triggers (currently only jenkins is supported)
+application: example
+
+disableConcurrentExecutions: true
+keepQueuedPipelines: true
+description: This pipeline deploys some sweet code
+
+notifications:
+  - address: "#launchpad"
+    type: "slack"
+    when:
+      - pipeline.complete
+      - pipeline.failed
+    message:
+      pipeline.complete: |
+        The stage has completed!
+      pipeline.failed: |
+        The stage has failed!
+
+triggers:
 - jenkins:
     job: "Example/job/master"
     master: "jenkins"

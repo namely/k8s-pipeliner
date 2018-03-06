@@ -38,7 +38,13 @@ func New(p *config.Pipeline, opts ...OptFunc) *Builder {
 // Pipeline returns a filled out spinnaker pipeline from the given
 // config
 func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
-	sp := &types.SpinnakerPipeline{}
+	sp := &types.SpinnakerPipeline{
+		LimitConcurrent:      b.pipeline.DisableConcurrentExecutions,
+		KeepWaitingPipelines: b.pipeline.KeepQueuedPipelines,
+		Description:          b.pipeline.Description,
+	}
+
+	sp.Notifications = buildNotifications(b.pipeline.Notifications)
 
 	for _, trigger := range b.pipeline.Triggers {
 		if trigger.Jenkins != nil {
@@ -206,8 +212,29 @@ func (b *Builder) buildManualJudgementStage(index int, s config.Stage) (*types.M
 }
 
 func buildStageMetadata(s config.Stage, t string, index int, linear bool) types.StageMetadata {
+	refID := s.RefID
+	reliesOn := s.ReliesOn
+	if linear {
+		refID = fmt.Sprintf("%d", index)
+		if index > 0 {
+			reliesOn = []string{fmt.Sprintf("%d", index-1)}
+		}
+	}
+
+	notifications := buildNotifications(s.Notifications)
+	return types.StageMetadata{
+		Name:                 s.Name,
+		RefID:                refID,
+		RequisiteStageRefIds: reliesOn,
+		Type:                 t,
+		Notifications:        notifications,
+		SendNotifications:    (len(notifications) > 0),
+	}
+}
+
+func buildNotifications(notifications []config.Notification) []types.Notification {
 	var nots []types.Notification
-	for _, n := range s.Notifications {
+	for _, n := range notifications {
 		message := make(map[string]types.NotificationMessage)
 		for messageOn, text := range n.Message {
 			message[messageOn] = types.NotificationMessage{Text: text}
@@ -222,21 +249,5 @@ func buildStageMetadata(s config.Stage, t string, index int, linear bool) types.
 		})
 	}
 
-	refID := s.RefID
-	reliesOn := s.ReliesOn
-	if linear {
-		refID = fmt.Sprintf("%d", index)
-		if index > 0 {
-			reliesOn = []string{fmt.Sprintf("%d", index-1)}
-		}
-	}
-
-	return types.StageMetadata{
-		Name:                 s.Name,
-		RefID:                refID,
-		RequisiteStageRefIds: reliesOn,
-		Type:                 t,
-		Notifications:        nots,
-		SendNotifications:    (len(nots) > 0),
-	}
+	return nots
 }
