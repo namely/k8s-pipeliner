@@ -22,6 +22,7 @@ type Builder struct {
 	pipeline *config.Pipeline
 
 	isLinear bool
+	basePath string
 }
 
 // New initializes a new builder for a pipeline config
@@ -107,9 +108,7 @@ func (b *Builder) buildRunJobStage(index int, s config.Stage) (*types.RunJobStag
 		DNSPolicy:         "ClusterFirst", // hack for now
 	}
 
-	parser := &ManifestParser{
-		config: b.pipeline,
-	}
+	parser := NewManfifestParser(b.pipeline, b.basePath)
 
 	mg, err := parser.ContainersFromScaffold(s.RunJob)
 	if err != nil {
@@ -140,9 +139,7 @@ func (b *Builder) buildDeployStage(index int, s config.Stage) (*types.DeployStag
 		StageMetadata: buildStageMetadata(s, "deploy", index, b.isLinear),
 	}
 
-	parser := &ManifestParser{
-		config: b.pipeline,
-	}
+	parser := NewManfifestParser(b.pipeline, b.basePath)
 
 	for _, group := range s.Deploy.Groups {
 		mg, err := parser.ContainersFromScaffold(group)
