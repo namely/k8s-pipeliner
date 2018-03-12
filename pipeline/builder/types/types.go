@@ -7,7 +7,9 @@ import (
 // SpinnakerPipeline defines the fields for the top leve object of a spinnaker
 // pipeline. Mostly used for constructing JSON
 type SpinnakerPipeline struct {
-	ID string `json:"id,omitempty"`
+	ID          string `json:"id,omitempty"`
+	Name        string `json:"name,omitempty"`
+	Application string `json:"application,omitempty"`
 
 	Triggers      []Trigger      `json:"triggers"`
 	Stages        []Stage        `json:"stages"`
