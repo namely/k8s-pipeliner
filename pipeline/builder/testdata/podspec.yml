@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-example
+  namespace: fake-namespace
+  annotations:
+    key1: value1
+    key2: value2
+spec:
+  containers:
+  - name: test-ref
+    image: ubuntu:trusty
+    command: ["echo"]
+    args: ["Hello World"]

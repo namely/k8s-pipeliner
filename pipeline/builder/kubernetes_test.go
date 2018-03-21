@@ -94,6 +94,20 @@ func TestContainersFromManifests(t *testing.T) {
 		assert.Equal(t, "fake-namespace", group.Namespace)
 	})
 
+	t.Run("PodSpecs work as manifest references", func(t *testing.T) {
+		file := filepath.Join(wd, "testdata", "podspec.yml")
+		parser := builder.NewManfifestParser(&config.Pipeline{})
+		group, err := parser.ContainersFromScaffold(scaffoldMock{
+			manifest: file,
+		})
+
+		require.NoError(t, err, "error on retrieving the deployment manifests")
+
+		assert.Len(t, group.Containers, 1)
+		assert.Len(t, group.Annotations, 2)
+		assert.Equal(t, "fake-namespace", group.Namespace)
+	})
+
 	t.Run("Volume sources are copied", func(t *testing.T) {
 		file := filepath.Join(wd, "testdata", "deployment.full.yml")
 		parser := builder.NewManfifestParser(&config.Pipeline{})
