@@ -2,6 +2,7 @@ package builder
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -78,22 +79,31 @@ func (mp *ManifestParser) ContainersFromScaffold(scaffold config.ContainerScaffo
 	var mg ManifestGroup
 	var resource runtime.Object
 
-	if g.Kind == "Deployment" {
+	switch g.Kind {
+	case "Deployment":
 		resource = &appsv1.Deployment{}
 		if err := scheme.Scheme.Convert(obj, resource, nil); err != nil {
 			return nil, err
 		}
+	case "Pod":
+		resource = obj
 	}
 
 	switch t := resource.(type) {
 	case *appsv1.Deployment:
-		mg.Containers = mp.deploymentContainers(t, scaffold)
+		mg.Containers = mp.deploymentContainers(t.Spec.Template.Spec, scaffold)
 		mg.Annotations = t.Annotations
 		mg.PodAnnotations = t.Spec.Template.Annotations
-		mg.Namespace = t.Namespace
+		mg.Namespace = t.GetNamespace()
 		mg.VolumeSources = mp.volumeSources(t.Spec.Template.Spec.Volumes)
+	case *corev1.Pod:
+		mg.Containers = mp.deploymentContainers(t.Spec, scaffold)
+		mg.Annotations = t.Annotations
+		mg.PodAnnotations = t.Annotations
+		mg.Namespace = t.GetNamespace()
+		mg.VolumeSources = mp.volumeSources(t.Spec.Volumes)
 	default:
-		return nil, ErrUnsupportedManifest
+		return nil, fmt.Errorf("type not supported: %T", t)
 	}
 
 	return &mg, nil
@@ -139,10 +149,10 @@ func (mp *ManifestParser) volumeSources(vols []corev1.Volume) []*types.VolumeSou
 	return vs
 }
 
-func (mp *ManifestParser) deploymentContainers(dep *appsv1.Deployment, scaffold config.ContainerScaffold) []*types.Container {
+func (mp *ManifestParser) deploymentContainers(podspec corev1.PodSpec, scaffold config.ContainerScaffold) []*types.Container {
 	var c []*types.Container
 
-	for _, container := range dep.Spec.Template.Spec.Containers {
+	for _, container := range podspec.Containers {
 		spinContainer := &types.Container{}
 
 		// add the image description first off using the annotations on the container
