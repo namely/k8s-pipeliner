@@ -145,25 +145,17 @@ func TestContainersFromManifests(t *testing.T) {
 		require.NoError(t, err)
 
 		container := group.Containers[0]
-		require.Len(t, container.EnvFrom, 1)
+		require.Len(t, container.EnvFrom, 2)
 		require.NotNil(t, container.EnvFrom[0].ConfigMapSource)
 		assert.Equal(t, "dummy-ref", container.EnvFrom[0].ConfigMapSource.Name)
 		assert.Equal(t, "some-prefix", container.EnvFrom[0].Prefix)
-	})
-	t.Run("EnvFrom sources are copied in", func(t *testing.T) {
-		file := filepath.Join(wd, "testdata", "deployment.envfrom.yml")
-		parser := builder.NewManfifestParser(&config.Pipeline{})
-		group, err := parser.ContainersFromScaffold(scaffoldMock{
-			manifest: file,
-		})
-		require.NoError(t, err)
 
-		container := group.Containers[0]
-		require.Len(t, container.EnvFrom, 1)
-		require.NotNil(t, container.EnvFrom[0].ConfigMapSource)
-		assert.Equal(t, "dummy-ref", container.EnvFrom[0].ConfigMapSource.Name)
-		assert.Equal(t, "some-prefix", container.EnvFrom[0].Prefix)
+		secretSource := container.EnvFrom[1]
+		require.NotNil(t, secretSource.SecretSource)
+		assert.Equal(t, "secret-ref", secretSource.SecretSource.Name)
+		assert.Equal(t, "secret-prefix", secretSource.Prefix)
 	})
+
 	t.Run("Optional Configmaps/secrets are copied in", func(t *testing.T) {
 		file := filepath.Join(wd, "testdata", "deployment.optional.yml")
 		parser := builder.NewManfifestParser(&config.Pipeline{})

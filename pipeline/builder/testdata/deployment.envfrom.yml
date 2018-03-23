@@ -23,3 +23,6 @@ spec:
         - configMapRef:
             name: dummy-ref
           prefix: some-prefix
+        - secretRef:
+            name: secret-ref
+          prefix: secret-prefix
