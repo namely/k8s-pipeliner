@@ -159,10 +159,17 @@ type Container struct {
 type EnvFromSource struct {
 	Prefix          string                  `json:"prefix"`
 	ConfigMapSource *EnvFromConfigMapSource `json:"configMapRef"`
+	SecretSource    *EnvFromSecretSource    `json:"secretRef"`
 }
 
 // EnvFromConfigMapSource is used to pull in a configmap for key/value envVars
 type EnvFromConfigMapSource struct {
+	Name     string `json:"name"`
+	Optional bool   `json:"optional"`
+}
+
+// EnvFromSecretSource is used to pull in a secret for key/value envVars
+type EnvFromSecretSource struct {
 	Name     string `json:"name"`
 	Optional bool   `json:"optional"`
 }

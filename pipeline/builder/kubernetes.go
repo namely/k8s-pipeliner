@@ -244,7 +244,13 @@ func (mp *ManifestParser) deploymentContainers(podspec corev1.PodSpec, scaffold 
 					Name: cmRef.Name,
 				}
 			}
-			// TODO(bobbytables): Add secretRefs as well for envFrom sources
+
+			if secRef := envFrom.SecretRef; secRef != nil {
+				e.SecretSource = &types.EnvFromSecretSource{
+					Name: secRef.Name,
+				}
+			}
+
 			spinContainer.EnvFrom = append(spinContainer.EnvFrom, e)
 		}
 
