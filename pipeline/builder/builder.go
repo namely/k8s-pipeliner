@@ -171,6 +171,7 @@ func (b *Builder) buildDeployStage(index int, s config.Stage) (*types.DeployStag
 			Account:               s.Account,
 			Application:           b.pipeline.Application,
 			Containers:            mg.Containers,
+			InitContainers:        mg.InitContainers,
 			LoadBalancers:         group.LoadBalancers,
 			Region:                mg.Namespace,
 			Namespace:             mg.Namespace,
