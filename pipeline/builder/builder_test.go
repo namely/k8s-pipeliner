@@ -52,31 +52,176 @@ func TestBuilderAssignsPipelineConfiguration(t *testing.T) {
 	assert.Equal(t, pipeline.Description, spinnaker.Description)
 }
 
-func TestBuilderAssignsRequisiteStageRefIds(t *testing.T) {
+func TestBuilderPipelineStages(t *testing.T) {
 	wd, _ := os.Getwd()
 	file := filepath.Join(wd, "testdata", "deployment.full.yml")
 
-	pipeline := &config.Pipeline{
-		DisableConcurrentExecutions: true,
-		KeepQueuedPipelines:         true,
-		Description:                 "fake description",
-		Stages: 										 []config.Stage{
-			{
-				Name: "Test Stage",
-				Deploy: &config.DeployStage{
-					Groups: []config.Group{
-						{
+	t.Run("Deploy stage is parsed correctly", func(t *testing.T) {
+		t.Run("Clusters are assigned", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						Name: "Test Deploy Stage",
+						Deploy: &config.DeployStage{
+							Groups: []config.Group{
+								{
+									ManifestFile: file,
+								},
+							},
+						},
+					},
+				},
+			}
+
+			builder := builder.New(pipeline)
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			assert.Equal(t, "Test Deploy Stage", spinnaker.Stages[0].(*types.DeployStage).Name)
+			assert.Len(t, spinnaker.Stages[0].(*types.DeployStage).Clusters, 1)
+		})
+
+		t.Run("RequisiteStageRefIds defaults to an empty slice", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						Deploy: &config.DeployStage{},
+					},
+				},
+			}
+
+			builder := builder.New(pipeline)
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			assert.Equal(t, []string{}, spinnaker.Stages[0].(*types.DeployStage).StageMetadata.RequisiteStageRefIds)
+		})
+
+		t.Run("RequisiteStageRefIds is assigned when ReliesOn is provided", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						ReliesOn: []string{"2"},
+						Deploy:   &config.DeployStage{},
+					},
+				},
+			}
+
+			builder := builder.New(pipeline)
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			assert.Equal(t, []string{"2"}, spinnaker.Stages[0].(*types.DeployStage).StageMetadata.RequisiteStageRefIds)
+		})
+	})
+
+	t.Run("RunJob stage is parsed correctly", func(t *testing.T) {
+		t.Run("Name is assigned", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						Name: "Test RunJob Stage",
+						RunJob: &config.RunJobStage{
 							ManifestFile: file,
 						},
 					},
 				},
-			},
-		},
-	}
+			}
 
-	builder := builder.New(pipeline)
-	spinnaker, err := builder.Pipeline()
-	require.NoError(t, err, "error generating pipeline json")
+			builder := builder.New(pipeline)
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
 
-	assert.Equal(t, []string{}, spinnaker.Stages[0].(*types.DeployStage).StageMetadata.RequisiteStageRefIds)
+			assert.Equal(t, "Test RunJob Stage", spinnaker.Stages[0].(*types.RunJobStage).Name)
+		})
+
+		t.Run("RequisiteStageRefIds defaults to an empty slice", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						RunJob: &config.RunJobStage{
+							ManifestFile: file,
+						},
+					},
+				},
+			}
+
+			builder := builder.New(pipeline)
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			assert.Equal(t, []string{}, spinnaker.Stages[0].(*types.RunJobStage).StageMetadata.RequisiteStageRefIds)
+		})
+
+		t.Run("RequisiteStageRefIds is assigned when ReliesOn is provided", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						ReliesOn: []string{"2"},
+						RunJob: &config.RunJobStage{
+							ManifestFile: file,
+						},
+					},
+				},
+			}
+
+			builder := builder.New(pipeline)
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			assert.Equal(t, []string{"2"}, spinnaker.Stages[0].(*types.RunJobStage).StageMetadata.RequisiteStageRefIds)
+		})
+	})
+
+	t.Run("ManualJudgement stage is parsed correctly", func(t *testing.T) {
+		t.Run("Name is assigned", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						Name:            "Test ManualJudgementStage Stage",
+						ManualJudgement: &config.ManualJudgementStage{},
+					},
+				},
+			}
+
+			builder := builder.New(pipeline)
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			assert.Equal(t, "Test ManualJudgementStage Stage", spinnaker.Stages[0].(*types.ManualJudgementStage).Name)
+		})
+
+		t.Run("RequisiteStageRefIds defaults to an empty slice", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						ManualJudgement: &config.ManualJudgementStage{},
+					},
+				},
+			}
+
+			builder := builder.New(pipeline)
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			assert.Equal(t, []string{}, spinnaker.Stages[0].(*types.ManualJudgementStage).StageMetadata.RequisiteStageRefIds)
+		})
+
+		t.Run("RequisiteStageRefIds is assigned when ReliesOn is provided", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						ReliesOn:        []string{"2"},
+						ManualJudgement: &config.ManualJudgementStage{},
+					},
+				},
+			}
+
+			builder := builder.New(pipeline)
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			assert.Equal(t, []string{"2"}, spinnaker.Stages[0].(*types.ManualJudgementStage).StageMetadata.RequisiteStageRefIds)
+		})
+	})
 }
