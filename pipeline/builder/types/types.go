@@ -29,7 +29,7 @@ type Trigger interface {
 // StageMetadata is the common components of a stage in spinnaker such as name
 type StageMetadata struct {
 	RefID                string         `json:"refId,omitempty"`
-	RequisiteStageRefIds []string       `json:"requisiteStageRefIds,omitempty"`
+	RequisiteStageRefIds []string       `json:"requisiteStageRefIds"`
 	Name                 string         `json:"name"`
 	Type                 string         `json:"type"`
 	Notifications        []Notification `json:"notifications,omitempty"`

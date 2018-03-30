@@ -79,6 +79,7 @@ func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		sp.Stages = append(sp.Stages, s)
 	}
 
@@ -213,7 +214,11 @@ func (b *Builder) buildManualJudgementStage(index int, s config.Stage) (*types.M
 
 func buildStageMetadata(s config.Stage, t string, index int, linear bool) types.StageMetadata {
 	refID := s.RefID
+	if s.ReliesOn == nil {
+		s.ReliesOn = []string{}
+	}
 	reliesOn := s.ReliesOn
+
 	if linear {
 		refID = fmt.Sprintf("%d", index)
 		if index > 0 {
