@@ -57,6 +57,7 @@ func TestContainersFromManifests(t *testing.T) {
 		require.NoError(t, err, "error on retrieving the deployment manifests")
 
 		assert.Len(t, group.Containers, 1)
+		assert.Len(t, group.InitContainers, 1)
 		assert.Len(t, group.Annotations, 2)
 		assert.Equal(t, "fake-namespace", group.Namespace)
 
@@ -173,6 +174,7 @@ func TestContainersFromManifests(t *testing.T) {
 		assert.Equal(t, true, container.EnvVars[1].EnvSource.ConfigMapSource.Optional)
 		assert.Equal(t, false, container.EnvVars[2].EnvSource.ConfigMapSource.Optional)
 	})
+
 	t.Run("LivenessProbe is copied in the correct format", func(t *testing.T) {
 		file := filepath.Join(wd, "testdata", "deployment.probes.yml")
 		parser := builder.NewManfifestParser(&config.Pipeline{})
@@ -185,5 +187,54 @@ func TestContainersFromManifests(t *testing.T) {
 
 		require.NotNil(t, container.LivenessProbe)
 		require.NotNil(t, container.ReadinessProbe)
+	})
+
+	t.Run("InitContainers are copied in the correct format", func(t *testing.T) {
+		file := filepath.Join(wd, "testdata", "deployment.initContainer.yml")
+		parser := builder.NewManfifestParser(&config.Pipeline{
+			ImageDescriptions: []config.ImageDescription{
+				{
+					Name:    "test-ref",
+					ImageID: "this-is-the-init-image-id",
+				},
+			},
+		})
+
+		group, err := parser.ContainersFromScaffold(scaffoldMock{
+			manifest: file,
+			imageDescriptionRefs: []config.ImageDescriptionRef{
+				{
+					Name:          "test-ref",
+					ContainerName: "init-container",
+				},
+			},
+		})
+		require.NoError(t, err)
+
+		initContainer := group.InitContainers[0]
+
+		assert.Equal(t, "init-container", initContainer.Name)
+
+		require.NotNil(t, initContainer.LivenessProbe)
+		require.NotNil(t, initContainer.ReadinessProbe)
+
+		t.Run("InitContainer env are copied in", func(t *testing.T) {
+			require.Len(t, initContainer.EnvVars, 1)
+			require.Nil(t, initContainer.EnvVars[0].EnvSource)
+			assert.Equal(t, "WHATS_THE_WORD", initContainer.EnvVars[0].Name)
+			assert.Equal(t, "bird is the word", initContainer.EnvVars[0].Value)
+		})
+
+		t.Run("InitContainer VolumeMounts are copied in", func(t *testing.T) {
+
+			require.Len(t, initContainer.VolumeMounts, 1)
+			assert.Equal(t, "configmap-volume", initContainer.VolumeMounts[0].Name)
+			assert.Equal(t, "/thisisthemount", initContainer.VolumeMounts[0].MountPath)
+			assert.Equal(t, true, initContainer.VolumeMounts[0].ReadOnly)
+		})
+
+		t.Run("InitContainer image descriptions are returned correctly", func(t *testing.T) {
+			assert.Equal(t, "this-is-the-init-image-id", initContainer.ImageDescription.ImageID)
+		})
 	})
 }

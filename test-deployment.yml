@@ -56,3 +56,36 @@ spec:
         - containerPort: 80
           name: http
           protocol: TCP
+      initContainers:
+      - name: init-example
+        livenessProbe:
+          exec:
+            command:
+            - cat
+            - /tmp/healthy
+        command:
+        - echo
+        - hello init container
+        volumeMounts:
+          - name: configmap-volume
+            mountPath: "/thisisthemount"
+            readOnly: true
+        env:
+        - name: ADMIN_PASSWORD
+          valueFrom:
+            configMapKeyRef:
+              key: ADMIN_PASSWORD
+              name: super-secret-password
+              optional: true
+        - name: ADMIN_USERNAME
+          valueFrom:
+            secretKeyRef:
+              key: ADMIN_USERNAME
+              name: super-secret-username
+        # this image doesn't really matter, its going to be replaced, but its not to show intent
+        image: your.registry.land/org/example:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+          name: http
+          protocol: TCP

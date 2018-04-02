@@ -110,6 +110,7 @@ type Cluster struct {
 	Containers                     []*Container      `json:"containers"`
 	DNSPolicy                      string            `json:"dnsPolicy"`
 	Events                         []interface{}     `json:"events"`
+	InitContainers                 []*Container      `json:"initContainers"`
 	InterestingHealthProviderNames []string          `json:"interestingHealthProviderNames"`
 	LoadBalancers                  []string          `json:"loadBalancers"`
 	MaxRemainingAsgs               int               `json:"maxRemainingAsgs"`

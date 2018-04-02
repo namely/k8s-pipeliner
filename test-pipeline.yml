@@ -30,6 +30,13 @@ imageDescriptions:
     repository: "namely/example-all-day"
     tag: "${ trigger.properties['docker_tag'] }"
     organization: "namely"
+  - name: second-image
+    account: "namely-registry"
+    image_id: "${ trigger.properties['docker_image'] }"
+    registry: "registry.namely.land"
+    repository: "namely/second-repo-name"
+    tag: "${ trigger.properties['docker_tag'] }"
+    organization: "namely"
 stages:
 - account: int-k8s
   name: "Migrate INT"
@@ -74,6 +81,8 @@ stages:
         imageDescriptions:
           - name: main-image
             containerName: example
+          - name: second-image
+            containerName: init-example
         loadBalancers:
           - "test"
 - account: int-k8s

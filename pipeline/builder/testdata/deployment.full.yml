@@ -14,6 +14,19 @@ spec:
       annotations:
         test: "annotations"
     spec:
+      initContainers:
+      - name: init-container
+        command:
+        - echo
+        - hello
+        env:
+        - name: WHATS_THE_WORD
+          value: "bird is the word"
+        image: bird.word/latest
+        volumeMounts:
+          - name: configmap-volume
+            mountPath: "/thisisthemount"
+            readOnly: true
       containers:
       - name: test-container
         command:

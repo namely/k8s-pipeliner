@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: example
+  namespace: fake-namespace
+  annotations:
+    fake-annotation-1: "Hello"
+    fake-annotation-2: "World"
+spec:
+  template:
+    metadata:
+      labels:
+        app: example
+      annotations:
+        test: "annotations"
+    spec:
+      initContainers:
+      - name: init-container
+        command:
+        - echo
+        - hello init container
+        env:
+        - name: WHATS_THE_WORD
+          value: "bird is the word"
+        image: init.container/latest
+        livenessProbe:
+          exec:
+            command: ["say", "hello"]
+        readinessProbe:
+          exec:
+            command: ["say", "hello"]
+        volumeMounts:
+          - name: configmap-volume
+            mountPath: "/thisisthemount"
+            readOnly: true
