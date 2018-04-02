@@ -46,6 +46,8 @@ func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
 
 	sp.Notifications = buildNotifications(b.pipeline.Notifications)
 
+	sp.Triggers = []types.Trigger{}
+
 	for _, trigger := range b.pipeline.Triggers {
 		if trigger.Jenkins != nil {
 			jt := trigger.Jenkins
