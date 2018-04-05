@@ -70,7 +70,7 @@ type RunJobStage struct {
 	DNSPolicy         string            `json:"dnsPolicy"`
 	Labels            map[string]string `json:"labels,omitempty"`
 	Namespace         string            `json:"namespace"`
-	VolumeSources     []interface{}     `json:"volumeSources,omitempty"`
+	VolumeSources     []*VolumeSource   `json:"volumeSources,omitempty"`
 }
 
 func (rjs RunJobStage) spinnakerStage() {}
@@ -256,9 +256,10 @@ type VolumeSource struct {
 	Name string `json:"name"`
 	Type string `json:"type"`
 
-	EmptyDir  *EmptyDirVolumeSource  `json:"emptyDir,omitempty"`
-	ConfigMap *ConfigMapVolumeSource `json:"configMap,omitempty"`
-	Secret    *SecretVolumeSource    `json:"secret,omitempty"`
+	EmptyDir              *EmptyDirVolumeSource              `json:"emptyDir,omitempty"`
+	ConfigMap             *ConfigMapVolumeSource             `json:"configMap,omitempty"`
+	Secret                *SecretVolumeSource                `json:"secret,omitempty"`
+	PersistentVolumeClaim *PersistentVolumeClaimVolumeSource `json:"persistentVolumeClaim,omitempty"`
 }
 
 // EmptyDirVolumeSource defines a empty directory volume source for a pod:
@@ -278,6 +279,11 @@ type ConfigMapVolumeSource struct {
 type SecretVolumeSource struct {
 	SecretName string             `json:"secretName"`
 	Items      []corev1.KeyToPath `json:"items"`
+}
+
+// PersistentVolumeClaimVolumeSource for referencing secret types in volumes
+type PersistentVolumeClaimVolumeSource struct {
+	ClaimName string `json:"claimName"`
 }
 
 // Probe is a probe against a container for things such as liveness or readiness

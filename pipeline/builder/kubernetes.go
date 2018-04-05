@@ -146,6 +146,13 @@ func (mp *ManifestParser) volumeSources(vols []corev1.Volume) []*types.VolumeSou
 			spinVol.Type = "EMPTYDIR"
 		}
 
+		if ed := vol.PersistentVolumeClaim; ed != nil {
+			spinVol.PersistentVolumeClaim = &types.PersistentVolumeClaimVolumeSource{
+				ClaimName: ed.ClaimName,
+			}
+			spinVol.Type = "PERSISTENTVOLUMECLAIM"
+		}
+
 		vs = append(vs, spinVol)
 	}
 
