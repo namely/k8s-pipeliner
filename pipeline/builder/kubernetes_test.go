@@ -116,7 +116,7 @@ func TestContainersFromManifests(t *testing.T) {
 			manifest: file,
 		})
 		require.NoError(t, err)
-		require.Len(t, group.VolumeSources, 3)
+		require.Len(t, group.VolumeSources, 4)
 
 		t.Run("ConfigMaps are copied", func(t *testing.T) {
 			cms := group.VolumeSources[0]
@@ -134,6 +134,14 @@ func TestContainersFromManifests(t *testing.T) {
 			ed := group.VolumeSources[2]
 			require.NotNil(t, ed.EmptyDir)
 			assert.Equal(t, ed.Type, "EMPTYDIR")
+		})
+
+		t.Run("PersistentVolumeClaims are copied", func(t *testing.T) {
+			vs := group.VolumeSources[3]
+			require.NotNil(t, vs.PersistentVolumeClaim)
+			assert.Equal(t, "PERSISTENTVOLUMECLAIM", vs.Type)
+			assert.Equal(t, "persistent-volume-claim", vs.Name)
+			assert.Equal(t, "my-claim-name", vs.PersistentVolumeClaim.ClaimName)
 		})
 	})
 

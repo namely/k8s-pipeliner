@@ -56,3 +56,6 @@ spec:
         - name: empty-volume
           emptyDir:
             medium: "Memory"
+        - name: persistent-volume-claim
+          persistentVolumeClaim:
+            claimName: my-claim-name
