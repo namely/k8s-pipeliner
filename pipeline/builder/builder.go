@@ -169,11 +169,29 @@ func (b *Builder) buildDeployStage(index int, s config.Stage) (*types.DeployStag
 				container.Command = overrides.Command
 			}
 		}
+		var deploymentSettings types.Deployment
+
+		if deployment := group.Deployment; deployment != nil {
+			deploymentSettings = types.Deployment{
+				Enabled:         deployment.Enabled,
+				MinReadySeconds: deployment.MinReadySeconds,
+				Paused:          deployment.Paused,
+				DeploymentStrategy: types.DeploymentStrategy{
+					RollingUpdate: types.RollingUpdate{
+						MaxSurge:       deployment.DeploymentStrategy.RollingUpdate.MaxSurge,
+						MaxUnavailable: deployment.DeploymentStrategy.RollingUpdate.MaxUnavailable,
+					},
+					Type: "RollingUpdate",
+				},
+				RevisionHistoryLimit: deployment.RevisionHistoryLimit,
+			}
+		}
 
 		cluster := types.Cluster{
 			Account:               s.Account,
 			Application:           b.pipeline.Application,
 			Containers:            mg.Containers,
+			Deployment:            deploymentSettings,
 			InitContainers:        mg.InitContainers,
 			LoadBalancers:         group.LoadBalancers,
 			Region:                mg.Namespace,

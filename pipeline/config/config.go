@@ -120,14 +120,14 @@ type ImageDescriptionRef struct {
 type Group struct {
 	ManifestFile      string                `yaml:"manifestFile"`
 	ImageDescriptions []ImageDescriptionRef `yaml:"imageDescriptions"`
-
-	MaxRemainingASGS int      `yaml:"maxRemainingASGS"`
-	ScaleDown        bool     `yaml:"scaleDown"`
-	Stack            string   `yaml:"stack"`
-	Details          string   `yaml:"details"`
-	Strategy         string   `yaml:"strategy"`
-	TargetSize       int      `yaml:"targetSize"`
-	LoadBalancers    []string `yaml:"loadBalancers"`
+	MaxRemainingASGS  int                   `yaml:"maxRemainingASGS"`
+	ScaleDown         bool                  `yaml:"scaleDown"`
+	Stack             string                `yaml:"stack"`
+	Details           string                `yaml:"details"`
+	Strategy          string                `yaml:"strategy"`
+	TargetSize        int                   `yaml:"targetSize"`
+	LoadBalancers     []string              `yaml:"loadBalancers"`
+	Deployment        *Deployment           `yaml:"deployment,omitempty"`
 
 	// If overrides are provided, the group will run a check to make sure
 	// the given manifest only defines one container. If it does, the given
@@ -136,6 +136,27 @@ type Group struct {
 	// different mode like a queue consumer process that needs the same config,
 	// image, but different command.
 	ContainerOverrides *ContainerOverrides `yaml:"containerOverrides"`
+}
+
+// Deployment allows you to create a server group of type deployment instead of replica sets
+type Deployment struct {
+	DeploymentStrategy   DeploymentStrategy `yaml:"deploymentStrategy"`
+	Enabled              bool               `yaml:"enabled"`
+	MinReadySeconds      int                `yaml:"minReadySeconds"`
+	Paused               bool               `yaml:"paused"`
+	RevisionHistoryLimit int                `yaml:"revisionHistoryLimit"`
+}
+
+// DeploymentStrategy are generally either of type rolling update or recreate. Rolling update is preferred.
+type DeploymentStrategy struct {
+	RollingUpdate RollingUpdate `yaml:"rollingUpdate"`
+	Type          string        `yaml:"type"`
+}
+
+// RollingUpdate can have a maximum number of new pods and unavailable pods in type string.
+type RollingUpdate struct {
+	MaxSurge       string `yaml:"maxSurge"`
+	MaxUnavailable string `yaml:"maxUnavailable"`
 }
 
 // ManualJudgementStage is the configuration for pausing a pipeline awaiting
