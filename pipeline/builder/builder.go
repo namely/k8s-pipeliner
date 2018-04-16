@@ -123,7 +123,7 @@ func (b *Builder) buildRunJobStage(index int, s config.Stage) (*types.RunJobStag
 	rjs.Container = mg.Containers[0]
 	rjs.Namespace = mg.Namespace
 	rjs.VolumeSources = mg.VolumeSources
-	rjs.PodAnnotations = mg.PodAnnotations
+	rjs.Annotations = mg.PodAnnotations
 
 	// overrides can be provided for jobs since things like
 	// migrations typically need all of the same environment variables

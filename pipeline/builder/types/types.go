@@ -71,7 +71,6 @@ type RunJobStage struct {
 	Labels            map[string]string `json:"labels,omitempty"`
 	Namespace         string            `json:"namespace"`
 	VolumeSources     []*VolumeSource   `json:"volumeSources,omitempty"`
-	PodAnnotations    map[string]string `json:"podAnnotations,omitempty"`
 }
 
 func (rjs RunJobStage) spinnakerStage() {}
