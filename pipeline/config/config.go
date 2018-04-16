@@ -68,14 +68,14 @@ type JenkinsTrigger struct {
 type Stage struct {
 	Account       string         `yaml:"account"`
 	Name          string         `yaml:"name"`
-	RefID         string         `yaml:"refId"`
-	ReliesOn      []string       `yaml:"reliesOn"`
-	Notifications []Notification `yaml:"notifications"`
+	RefID         string         `yaml:"refId,omitempty"`
+	ReliesOn      []string       `yaml:"reliesOn,omitempty"`
+	Notifications []Notification `yaml:"notifications,omitempty"`
 
 	// All of the different supported stages, only one may be set
-	RunJob          *RunJobStage          `yaml:"runJob"`
-	Deploy          *DeployStage          `yaml:"deploy"`
-	ManualJudgement *ManualJudgementStage `yaml:"manualJudgement"`
+	RunJob          *RunJobStage          `yaml:"runJob,omitempty"`
+	Deploy          *DeployStage          `yaml:"deploy,omitempty"`
+	ManualJudgement *ManualJudgementStage `yaml:"manualJudgement,omitempty"`
 }
 
 // Notification config from pipeline configuration on a stage or pipeline
