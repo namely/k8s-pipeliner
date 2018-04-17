@@ -61,6 +61,7 @@ type JenkinsTrigger struct {
 	Job          string `yaml:"job"`
 	Master       string `yaml:"master"`
 	PropertyFile string `yaml:"propertyFile"`
+	Enabled      bool   `yaml:"enabled"`
 }
 
 // Stage is an individual stage within a spinnaker pipeline

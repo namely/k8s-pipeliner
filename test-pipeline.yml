@@ -22,6 +22,7 @@ triggers:
     job: "Example/job/master"
     master: "jenkins"
     propertyFile: "build.properties"
+    enabled: true
 imageDescriptions:
   - name: main-image
     account: "namely-registry"
