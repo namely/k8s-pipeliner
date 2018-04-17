@@ -99,7 +99,8 @@ type RunJobStage struct {
 	ManifestFile      string                `yaml:"manifestFile"`
 	ImageDescriptions []ImageDescriptionRef `yaml:"imageDescriptions"`
 
-	Container *Container `yaml:"container"`
+	Container    *Container    `yaml:"container"`
+	PodOverrides *PodOverrides `yaml:"podOverrides,omitempty"`
 }
 
 // DeployStage is the configuration for deploying a cluster of servers (pods)
@@ -151,6 +152,12 @@ type ManualJudgementStage struct {
 type ContainerOverrides struct {
 	Args    []string `yaml:"args,omitempty"`
 	Command []string `yaml:"command,omitempty"`
+}
+
+// PodOverrides are used to override certain attributes about a pod spec
+// but defined from a pipeline.yml file
+type PodOverrides struct {
+	Annotations map[string]string `yaml:"annotations",omitempty`
 }
 
 // ContainerScaffold is used to make it easy to get a file and image ref
