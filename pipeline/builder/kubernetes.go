@@ -109,6 +109,10 @@ func (mp *ManifestParser) ContainersFromScaffold(scaffold config.ContainerScaffo
 		return nil, fmt.Errorf("type not supported: %T", t)
 	}
 
+	if mg.PodAnnotations == nil {
+		mg.PodAnnotations = make(map[string]string)
+	}
+
 	return &mg, nil
 }
 
