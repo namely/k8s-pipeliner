@@ -125,6 +125,12 @@ func (b *Builder) buildRunJobStage(index int, s config.Stage) (*types.RunJobStag
 	rjs.VolumeSources = mg.VolumeSources
 	rjs.Annotations = mg.PodAnnotations
 
+	if po := s.RunJob.PodOverrides; po != nil {
+		for k, v := range po.Annotations {
+			rjs.Annotations[k] = v
+		}
+	}
+
 	// overrides can be provided for jobs since things like
 	// migrations typically need all of the same environment variables
 	// and such from a deployment manifest
@@ -168,6 +174,12 @@ func (b *Builder) buildDeployStage(index int, s config.Stage) (*types.DeployStag
 
 			if overrides.Command != nil {
 				container.Command = overrides.Command
+			}
+		}
+
+		if po := group.PodOverrides; po != nil {
+			for k, v := range po.Annotations {
+				mg.PodAnnotations[k] = v
 			}
 		}
 

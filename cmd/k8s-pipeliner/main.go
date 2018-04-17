@@ -12,9 +12,9 @@ import (
 	"github.com/urfave/cli"
 )
 
-const (
+var (
 	// Version defines the current version of k8s-pipeliner
-	Version = "0.0.15"
+	version = "n/a"
 )
 
 func main() {
@@ -22,7 +22,7 @@ func main() {
 	app.Name = "k8s-pipeliner"
 	app.Description = "create spinnaker pipelines from kubernetes clusters"
 	app.Flags = []cli.Flag{}
-	app.Version = Version
+	app.Version = version
 
 	app.Commands = []cli.Command{
 		{

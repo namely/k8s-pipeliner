@@ -130,6 +130,9 @@ func TestBuilderPipelineStages(t *testing.T) {
 							Groups: []config.Group{
 								{
 									ManifestFile: file,
+									PodOverrides: &config.PodOverrides{
+										Annotations: map[string]string{"hello": "world"},
+									},
 								},
 							},
 						},
@@ -143,6 +146,9 @@ func TestBuilderPipelineStages(t *testing.T) {
 
 			assert.Equal(t, "Test Deploy Stage", spinnaker.Stages[0].(*types.DeployStage).Name)
 			assert.Len(t, spinnaker.Stages[0].(*types.DeployStage).Clusters, 1)
+
+			expected := map[string]string{"hello": "world", "test": "annotations"}
+			assert.Equal(t, expected, spinnaker.Stages[0].(*types.DeployStage).Clusters[0].PodAnnotations)
 		})
 
 		t.Run("RequisiteStageRefIds defaults to an empty slice", func(t *testing.T) {
@@ -286,6 +292,29 @@ func TestBuilderPipelineStages(t *testing.T) {
 			require.NoError(t, err, "error generating pipeline json")
 
 			assert.Equal(t, []string{"2"}, spinnaker.Stages[0].(*types.ManualJudgementStage).StageMetadata.RequisiteStageRefIds)
+		})
+
+		t.Run("PodAnnotations are assigned when overrides", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						ReliesOn: []string{"2"},
+						RunJob: &config.RunJobStage{
+							ManifestFile: file,
+							PodOverrides: &config.PodOverrides{
+								Annotations: map[string]string{"hello": "world"},
+							},
+						},
+					},
+				},
+			}
+
+			builder := builder.New(pipeline)
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			expected := map[string]string{"hello": "world", "test": "annotations"}
+			assert.Equal(t, expected, spinnaker.Stages[0].(*types.RunJobStage).Annotations)
 		})
 	})
 }
