@@ -52,8 +52,12 @@ func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
 		if trigger.Jenkins != nil {
 			jt := trigger.Jenkins
 
+			if jt.Enabled == nil {
+				jt.Enabled = newTrue()
+			}
+
 			sp.Triggers = append(sp.Triggers, &types.JenkinsTrigger{
-				Enabled:      jt.Enabled,
+				Enabled:      *jt.Enabled,
 				Job:          jt.Job,
 				Master:       jt.Master,
 				PropertyFile: jt.PropertyFile,
@@ -271,4 +275,9 @@ func buildNotifications(notifications []config.Notification) []types.Notificatio
 	}
 
 	return nots
+}
+
+func newTrue() *bool {
+	b := true
+	return &b
 }
