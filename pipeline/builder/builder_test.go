@@ -67,7 +67,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 			assert.Equal(t, []types.Trigger{}, spinnaker.Triggers)
 		})
 
-		t.Run("JenkinsTrigger is parsed correctly", func(t *testing.T) {
+		t.Run("JenkinsTrigger is parsed correctly and disabled", func(t *testing.T) {
 			pipeline := &config.Pipeline{
 				Triggers: []config.Trigger{
 					{
@@ -75,6 +75,32 @@ func TestBuilderPipelineStages(t *testing.T) {
 							Job:          "My Job Name",
 							Master:       "namely-jenkins",
 							PropertyFile: ".test-ci-properties",
+						},
+					},
+				},
+			}
+
+			builder := builder.New(pipeline)
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			assert.Len(t, spinnaker.Triggers, 1)
+
+			assert.Equal(t, false, spinnaker.Triggers[0].(*types.JenkinsTrigger).Enabled)
+			assert.Equal(t, "My Job Name", spinnaker.Triggers[0].(*types.JenkinsTrigger).Job)
+			assert.Equal(t, "namely-jenkins", spinnaker.Triggers[0].(*types.JenkinsTrigger).Master)
+			assert.Equal(t, ".test-ci-properties", spinnaker.Triggers[0].(*types.JenkinsTrigger).PropertyFile)
+			assert.Equal(t, "jenkins", spinnaker.Triggers[0].(*types.JenkinsTrigger).Type)
+		})
+		t.Run("JenkinsTrigger is enabled", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Triggers: []config.Trigger{
+					{
+						Jenkins: &config.JenkinsTrigger{
+							Job:          "My Job Name",
+							Master:       "namely-jenkins",
+							PropertyFile: ".test-ci-properties",
+							Enabled:      true,
 						},
 					},
 				},

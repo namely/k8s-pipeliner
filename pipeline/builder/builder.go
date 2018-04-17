@@ -53,7 +53,7 @@ func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
 			jt := trigger.Jenkins
 
 			sp.Triggers = append(sp.Triggers, &types.JenkinsTrigger{
-				Enabled:      true,
+				Enabled:      jt.Enabled,
 				Job:          jt.Job,
 				Master:       jt.Master,
 				PropertyFile: jt.PropertyFile,
