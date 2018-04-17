@@ -137,6 +137,10 @@ type Group struct {
 	// different mode like a queue consumer process that needs the same config,
 	// image, but different command.
 	ContainerOverrides *ContainerOverrides `yaml:"containerOverrides"`
+
+	// PodOverrides allows you to add things like annotations to the pod
+	// spec that is generated from this configuration
+	PodOverrides *PodOverrides `yaml:"podOverrides,omitempty"`
 }
 
 // ManualJudgementStage is the configuration for pausing a pipeline awaiting

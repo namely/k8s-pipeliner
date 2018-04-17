@@ -104,6 +104,9 @@ func TestBuilderPipelineStages(t *testing.T) {
 							Groups: []config.Group{
 								{
 									ManifestFile: file,
+									PodOverrides: &config.PodOverrides{
+										Annotations: map[string]string{"hello": "world"},
+									},
 								},
 							},
 						},
@@ -117,6 +120,9 @@ func TestBuilderPipelineStages(t *testing.T) {
 
 			assert.Equal(t, "Test Deploy Stage", spinnaker.Stages[0].(*types.DeployStage).Name)
 			assert.Len(t, spinnaker.Stages[0].(*types.DeployStage).Clusters, 1)
+
+			expected := map[string]string{"hello": "world", "test": "annotations"}
+			assert.Equal(t, expected, spinnaker.Stages[0].(*types.DeployStage).Clusters[0].PodAnnotations)
 		})
 
 		t.Run("RequisiteStageRefIds defaults to an empty slice", func(t *testing.T) {

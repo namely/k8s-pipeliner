@@ -177,6 +177,12 @@ func (b *Builder) buildDeployStage(index int, s config.Stage) (*types.DeployStag
 			}
 		}
 
+		if po := group.PodOverrides; po != nil {
+			for k, v := range po.Annotations {
+				mg.PodAnnotations[k] = v
+			}
+		}
+
 		cluster := types.Cluster{
 			Account:               s.Account,
 			Application:           b.pipeline.Application,
