@@ -99,7 +99,8 @@ type RunJobStage struct {
 	ManifestFile      string                `yaml:"manifestFile"`
 	ImageDescriptions []ImageDescriptionRef `yaml:"imageDescriptions"`
 
-	Container *Container `yaml:"container"`
+	Container    *Container    `yaml:"container"`
+	PodOverrides *PodOverrides `yaml:"podOverrides,omitempty"`
 }
 
 // DeployStage is the configuration for deploying a cluster of servers (pods)
@@ -136,6 +137,10 @@ type Group struct {
 	// different mode like a queue consumer process that needs the same config,
 	// image, but different command.
 	ContainerOverrides *ContainerOverrides `yaml:"containerOverrides"`
+
+	// PodOverrides allows you to add things like annotations to the pod
+	// spec that is generated from this configuration
+	PodOverrides *PodOverrides `yaml:"podOverrides,omitempty"`
 }
 
 // ManualJudgementStage is the configuration for pausing a pipeline awaiting
@@ -151,6 +156,12 @@ type ManualJudgementStage struct {
 type ContainerOverrides struct {
 	Args    []string `yaml:"args,omitempty"`
 	Command []string `yaml:"command,omitempty"`
+}
+
+// PodOverrides are used to override certain attributes about a pod spec
+// but defined from a pipeline.yml file
+type PodOverrides struct {
+	Annotations map[string]string `yaml:"annotations",omitempty`
 }
 
 // ContainerScaffold is used to make it easy to get a file and image ref
