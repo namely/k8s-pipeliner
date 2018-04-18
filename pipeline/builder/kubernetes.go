@@ -1,7 +1,6 @@
 package builder
 
 import (
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -10,7 +9,7 @@ import (
 
 	"github.com/namely/k8s-pipeliner/pipeline/builder/types"
 	"github.com/namely/k8s-pipeliner/pipeline/config"
-	errs "github.com/pkg/errors"
+	"github.com/pkg/errors"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
