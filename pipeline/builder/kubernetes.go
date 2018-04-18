@@ -74,6 +74,7 @@ func (mp *ManifestParser) ContainersFromScaffold(scaffold config.ContainerScaffo
 	decode := scheme.Codecs.UniversalDeserializer().Decode
 	obj, g, err := decode(b, nil, nil)
 	if err != nil {
+		fmt.Printf("Marshaling Failure: %s\n", path)
 		return nil, err
 	}
 
