@@ -10,6 +10,7 @@ import (
 
 	"github.com/namely/k8s-pipeliner/pipeline/builder/types"
 	"github.com/namely/k8s-pipeliner/pipeline/config"
+	errs "github.com/pkg/errors"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -74,8 +75,7 @@ func (mp *ManifestParser) ContainersFromScaffold(scaffold config.ContainerScaffo
 	decode := scheme.Codecs.UniversalDeserializer().Decode
 	obj, g, err := decode(b, nil, nil)
 	if err != nil {
-		fmt.Printf("Marshaling Failure: %s\n", path)
-		return nil, err
+		return nil, errs.Wrapf(err, "marshaling failure: %s", path)
 	}
 
 	var mg ManifestGroup
