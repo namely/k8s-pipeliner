@@ -74,7 +74,7 @@ func (mp *ManifestParser) ContainersFromScaffold(scaffold config.ContainerScaffo
 	decode := scheme.Codecs.UniversalDeserializer().Decode
 	obj, g, err := decode(b, nil, nil)
 	if err != nil {
-		return nil, errs.Wrapf(err, "marshaling failure: %s", path)
+		return nil, errors.Wrapf(err, "marshaling failure: %s", path)
 	}
 
 	var mg ManifestGroup
