@@ -114,12 +114,62 @@ func TestBuilderPipelineStages(t *testing.T) {
 
 			assert.Len(t, spinnaker.Triggers, 1)
 
-			assert.Equal(t, false, spinnaker.Triggers[0].(*types.JenkinsTrigger).Enabled)
-			assert.Equal(t, "My Job Name", spinnaker.Triggers[0].(*types.JenkinsTrigger).Job)
-			assert.Equal(t, "namely-jenkins", spinnaker.Triggers[0].(*types.JenkinsTrigger).Master)
-			assert.Equal(t, ".test-ci-properties", spinnaker.Triggers[0].(*types.JenkinsTrigger).PropertyFile)
-			assert.Equal(t, "jenkins", spinnaker.Triggers[0].(*types.JenkinsTrigger).Type)
+			jt := spinnaker.Triggers[0].(*types.JenkinsTrigger)
+			assert.Equal(t, false, jt.Enabled)
+			assert.Equal(t, "My Job Name", jt.Job)
+			assert.Equal(t, "namely-jenkins", jt.Master)
+			assert.Equal(t, ".test-ci-properties", jt.PropertyFile)
+			assert.Equal(t, "jenkins", jt.Type)
 		})
+
+		t.Run("WebhooksTrigger is configured correctly", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Triggers: []config.Trigger{
+					{
+						Webhook: &config.WebhookTrigger{
+							Source:  "this-is-a-test",
+							Enabled: true,
+						},
+					},
+				},
+			}
+
+			b := builder.New(pipeline)
+			spinnaker, err := b.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			assert.Len(t, spinnaker.Triggers, 1)
+
+			whTrigger := spinnaker.Triggers[0].(*types.WebhookTrigger)
+			assert.Equal(t, true, whTrigger.Enabled)
+			assert.Equal(t, builder.WebhookTrigger, whTrigger.Type)
+			assert.Equal(t, "this-is-a-test", whTrigger.Source)
+		})
+	})
+
+	t.Run("Parameter configuration is parsed correctly", func(t *testing.T) {
+		pipeline := &config.Pipeline{
+			Paramters: []config.Parameter{
+				{
+					Name:        "param1",
+					Description: "parameter description",
+					Default:     "default value",
+					Required:    true,
+				},
+			},
+		}
+
+		b := builder.New(pipeline)
+		spinnaker, err := b.Pipeline()
+		require.NoError(t, err, "error generating pipeline json")
+
+		require.Len(t, spinnaker.Parameters, 1)
+
+		param := spinnaker.Parameters[0]
+		assert.Equal(t, true, param.Required)
+		assert.Equal(t, "parameter description", param.Description)
+		assert.Equal(t, "param1", param.Name)
+		assert.Equal(t, "default value", param.Default)
 	})
 
 	t.Run("Deploy stage is parsed correctly", func(t *testing.T) {

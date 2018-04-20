@@ -19,37 +19,21 @@ type SpinnakerPipeline struct {
 	LimitConcurrent      bool   `json:"limitConcurrent"`
 	KeepWaitingPipelines bool   `json:"keepWaitingPipelines"`
 	Description          string `json:"description"`
+
+	Parameters []Parameter `json:"parameterConfig"`
 }
 
-// Trigger is an interface to encompass multiple types of Spinnaker triggers
-type Trigger interface {
-	spinnakerTrigger()
+// Parameter is a parameter declaration for a pipeline config
+type Parameter struct {
+	Description string `json:"description"`
+	Name        string `json:"name"`
+	Default     string `json:"default"`
+	Required    bool   `json:"required"`
+
+	// TODO(bobbytables): Allow configuring parameter options
+	HasOptions bool          `json:"hasOptions"`
+	Options    []interface{} `json:"options"`
 }
-
-// StageMetadata is the common components of a stage in spinnaker such as name
-type StageMetadata struct {
-	RefID                string         `json:"refId,omitempty"`
-	RequisiteStageRefIds []string       `json:"requisiteStageRefIds"`
-	Name                 string         `json:"name"`
-	Type                 string         `json:"type"`
-	Notifications        []Notification `json:"notifications,omitempty"`
-	SendNotifications    bool           `json:"sendNotifications"`
-}
-
-// JenkinsTrigger constructs the JSON necessary to include a Jenkins trigger
-// for a spinnaker pipeline
-type JenkinsTrigger struct {
-	Enabled      bool   `json:"enabled"`
-	Job          string `json:"job"`
-	Master       string `json:"master"`
-	PropertyFile string `json:"propertyFile"`
-	Type         string `json:"type"`
-}
-
-var _ Trigger = &JenkinsTrigger{}
-
-// Trigger implements Trigger
-func (t *JenkinsTrigger) spinnakerTrigger() {}
 
 // Stage is an interface to represent a Stage struct such as RunJob or Deploy
 type Stage interface {
