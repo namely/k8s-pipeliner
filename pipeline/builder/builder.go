@@ -84,6 +84,7 @@ func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
 		sp.Parameters[i] = types.Parameter{
 			Name:        param.Name,
 			Description: param.Description,
+			Default:     param.Default,
 			Required:    param.Required,
 		}
 	}

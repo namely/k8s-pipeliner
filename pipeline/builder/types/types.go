@@ -27,6 +27,7 @@ type SpinnakerPipeline struct {
 type Parameter struct {
 	Description string `json:"description"`
 	Name        string `json:"name"`
+	Default     string `json:"default"`
 	Required    bool   `json:"required"`
 
 	// TODO(bobbytables): Allow configuring parameter options

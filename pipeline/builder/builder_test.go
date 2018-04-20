@@ -153,6 +153,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 				{
 					Name:        "param1",
 					Description: "parameter description",
+					Default:     "default value",
 					Required:    true,
 				},
 			},
@@ -168,6 +169,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 		assert.Equal(t, true, param.Required)
 		assert.Equal(t, "parameter description", param.Description)
 		assert.Equal(t, "param1", param.Name)
+		assert.Equal(t, "default value", param.Default)
 	})
 
 	t.Run("Deploy stage is parsed correctly", func(t *testing.T) {

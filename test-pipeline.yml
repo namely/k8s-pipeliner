@@ -17,6 +17,12 @@ notifications:
       pipeline.failed: |
         The stage has failed!
 
+parameters:
+  - name: "random"
+    description: "random description"
+    required: true
+    default: "hello-world"
+
 triggers:
 - jenkins:
     job: "Example/job/master"

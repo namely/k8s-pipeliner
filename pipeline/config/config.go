@@ -43,6 +43,7 @@ type Pipeline struct {
 type Parameter struct {
 	Name        string `yaml:"name"`
 	Description string `yaml:"description"`
+	Default     string `yaml:"default"`
 	Required    bool   `yaml:"required"`
 }
 
