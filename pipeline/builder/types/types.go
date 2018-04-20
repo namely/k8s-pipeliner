@@ -4,6 +4,36 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+// SpinnakerPipeline defines the fields for the top leve object of a spinnaker
+// pipeline. Mostly used for constructing JSON
+type SpinnakerPipeline struct {
+	ID          string `json:"id,omitempty"`
+	Name        string `json:"name,omitempty"`
+	Application string `json:"application,omitempty"`
+
+	Triggers      []Trigger      `json:"triggers"`
+	Stages        []Stage        `json:"stages"`
+	Notifications []Notification `json:"notifications"`
+
+	// Pipeline level config
+	LimitConcurrent      bool   `json:"limitConcurrent"`
+	KeepWaitingPipelines bool   `json:"keepWaitingPipelines"`
+	Description          string `json:"description"`
+
+	Parameters []Parameter `json:"parameterConfig"`
+}
+
+// Parameter is a parameter declaration for a pipeline config
+type Parameter struct {
+	Description string `json:"description"`
+	Name        string `json:"name"`
+	Required    bool   `json:"required"`
+
+	// TODO(bobbytables): Allow configuring parameter options
+	HasOptions bool          `json:"hasOptions"`
+	Options    []interface{} `json:"options"`
+}
+
 // Stage is an interface to represent a Stage struct such as RunJob or Deploy
 type Stage interface {
 	spinnakerStage()

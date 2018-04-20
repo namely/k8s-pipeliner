@@ -147,6 +147,29 @@ func TestBuilderPipelineStages(t *testing.T) {
 		})
 	})
 
+	t.Run("Parameter configuration is parsed correctly", func(t *testing.T) {
+		pipeline := &config.Pipeline{
+			Paramters: []config.Parameter{
+				{
+					Name:        "param1",
+					Description: "parameter description",
+					Required:    true,
+				},
+			},
+		}
+
+		b := builder.New(pipeline)
+		spinnaker, err := b.Pipeline()
+		require.NoError(t, err, "error generating pipeline json")
+
+		require.Len(t, spinnaker.Parameters, 1)
+
+		param := spinnaker.Parameters[0]
+		assert.Equal(t, true, param.Required)
+		assert.Equal(t, "parameter description", param.Description)
+		assert.Equal(t, "param1", param.Name)
+	})
+
 	t.Run("Deploy stage is parsed correctly", func(t *testing.T) {
 		t.Run("Clusters are assigned", func(t *testing.T) {
 			pipeline := &config.Pipeline{

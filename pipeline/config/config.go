@@ -30,11 +30,20 @@ type Pipeline struct {
 	Triggers          []Trigger          `yaml:"triggers"`
 	Stages            []Stage            `yaml:"stages"`
 	ImageDescriptions []ImageDescription `yaml:"imageDescriptions"`
-	Notifications     []Notification     `yaml:"notifications"`
 
 	DisableConcurrentExecutions bool   `yaml:"disableConcurrentExecutions"`
 	KeepQueuedPipelines         bool   `yaml:"keepQueuedPipelines"`
 	Description                 string `yaml:"description"`
+
+	Notifications []Notification `yaml:"notifications"`
+	Paramters     []Parameter    `yaml:"parameters"`
+}
+
+// Parameter defines a single parameter in a pipeline config
+type Parameter struct {
+	Name        string `yaml:"name"`
+	Description string `yaml:"description"`
+	Required    bool   `yaml:"required"`
 }
 
 // ImageDescription contains the description of an image that can be referenced

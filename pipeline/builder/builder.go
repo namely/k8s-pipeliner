@@ -79,6 +79,15 @@ func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
 		}
 	}
 
+	sp.Parameters = make([]types.Parameter, len(b.pipeline.Paramters))
+	for i, param := range b.pipeline.Paramters {
+		sp.Parameters[i] = types.Parameter{
+			Name:        param.Name,
+			Description: param.Description,
+			Required:    param.Required,
+		}
+	}
+
 	for stageIndex, stage := range b.pipeline.Stages {
 		var s types.Stage
 		var err error

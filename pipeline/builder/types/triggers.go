@@ -1,22 +1,5 @@
 package types
 
-// SpinnakerPipeline defines the fields for the top leve object of a spinnaker
-// pipeline. Mostly used for constructing JSON
-type SpinnakerPipeline struct {
-	ID          string `json:"id,omitempty"`
-	Name        string `json:"name,omitempty"`
-	Application string `json:"application,omitempty"`
-
-	Triggers      []Trigger      `json:"triggers"`
-	Stages        []Stage        `json:"stages"`
-	Notifications []Notification `json:"notifications"`
-
-	// Pipeline level config
-	LimitConcurrent      bool   `json:"limitConcurrent"`
-	KeepWaitingPipelines bool   `json:"keepWaitingPipelines"`
-	Description          string `json:"description"`
-}
-
 // Trigger is an interface to encompass multiple types of Spinnaker triggers
 type Trigger interface {
 	spinnakerTrigger()
