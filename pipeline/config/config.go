@@ -53,6 +53,7 @@ type ImageDescription struct {
 // spinnaker triggers such as jenkins or docker registry
 type Trigger struct {
 	Jenkins *JenkinsTrigger `yaml:"jenkins"`
+	Webhook *WebhookTrigger `yaml:"webhook"`
 }
 
 // JenkinsTrigger has all of the fields defining how a trigger
@@ -62,6 +63,12 @@ type JenkinsTrigger struct {
 	Master       string `yaml:"master"`
 	PropertyFile string `yaml:"propertyFile"`
 	Enabled      *bool  `yaml:"enabled"`
+}
+
+// WebhookTrigger defines how a webhook can trigger a pipeline execution
+type WebhookTrigger struct {
+	Enabled bool   `yaml:"enabled"`
+	Source  string `yaml:"source"`
 }
 
 // Stage is an individual stage within a spinnaker pipeline

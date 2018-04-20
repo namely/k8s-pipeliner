@@ -23,6 +23,9 @@ triggers:
     master: "jenkins"
     propertyFile: "build.properties"
     enabled: true
+- webhook:
+    source: "random-string"
+    enabled: true
 imageDescriptions:
   - name: main-image
     account: "namely-registry"
