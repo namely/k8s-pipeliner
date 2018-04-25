@@ -16,22 +16,66 @@ Using a pipeline configuration YAML file, you can define stages and reference Ku
 
 ## Example Pipeline
 
-This is a lengthy example of how a pipeline YAML looks. Each stage can reference a notification plugin you've installed in Spinnaker.
+This is a lengthy example of how a pipeline YAML looks.
 
-```
+```yaml
 name: Example Deployment
-application: example     # should match application created in spinnaker
-triggers:                # list of triggers (currently only jenkins is supported)
+application: example
+
+disableConcurrentExecutions: true
+keepQueuedPipelines: true
+description: This pipeline deploys some sweet code
+
+notifications:
+  - address: "#launchpad"
+    type: "slack"
+    when:
+      - pipeline.complete
+      - pipeline.failed
+    message:
+      pipeline.complete: |
+        The stage has completed!
+      pipeline.failed: |
+        The stage has failed!
+
+parameters:
+  - name: "random"
+    description: "random description"
+    required: true
+    default: "hello-world"
+
+triggers:
 - jenkins:
     job: "Example/job/master"
     master: "jenkins"
     propertyFile: "build.properties"
+    enabled: true
+- webhook:
+    source: "random-string"
+    enabled: true
+imageDescriptions:
+  - name: main-image
+    account: "namely-registry"
+    image_id: "${ trigger.properties['docker_image'] }"
+    registry: "registry.namely.land"
+    repository: "namely/example-all-day"
+    tag: "${ trigger.properties['docker_tag'] }"
+    organization: "namely"
+  - name: second-image
+    account: "namely-registry"
+    image_id: "${ trigger.properties['docker_image'] }"
+    registry: "registry.namely.land"
+    repository: "namely/second-repo-name"
+    tag: "${ trigger.properties['docker_tag'] }"
+    organization: "namely"
 stages:
 - account: int-k8s
   name: "Migrate INT"
-  refId: "1"
   runJob:
     manifestFile: test-deployment.yml
+    imageDescriptions:
+      - name: main-image
+        containerName: example
     container: # override default command defined in the manifest
       command:
         - bundle
@@ -51,16 +95,23 @@ stages:
           The stage has failed!
 - account: int-k8s
   name: "Deploy to INT"
-  refId: "2"
-  reliesOn:
-    - "1"
   deploy:
-    manifestFile: test-deployment.yml
-    maxRemainingASGS: 2 # total amount of replica sets to keep around afterwards before deleting
-    scaleDown: true
-    stack: web # primarily for labeling purposes on the created resources
-    strategy: redblack
-    targetSize: 2 # this is the total amount of replicas for the deployment
+    groups:
+      - manifestFile: test-deployment.yml
+        maxRemainingASGS: 2 # total amount of replica sets to keep around afterwards before deleting
+        scaleDown: true
+        stack: web # primarily for labeling purposes on the created resources
+        details: helloworld
+        strategy: redblack
+        targetSize: 2 # this is the total amount of replicas for the deployment
+        containerOverrides: {}
+        imageDescriptions:
+          - name: main-image
+            containerName: example
+          - name: second-image
+            containerName: init-example
+        loadBalancers:
+          - "test"
 - account: int-k8s
   name: "Proceed to Staging?"
   refId: "3"
@@ -71,30 +122,6 @@ stages:
     instructions: |
       If this stage has completed QA, press proceed.
 ```
-
-### Deployment Annotations
-
-Right now this tool only supports rendering from Kubernetes Deployment manifests, this will likely change in the future but it works for right now.
-
-To populate the `imageDescription` field that Spinnaker uses when deploying server clusters, this tool relies on annotations defined on your manifest:
-
-```
-apiVersion: extensions/v1beta2
-kind: Deployment
-metadata:
-  name: example
-  namespace: production
-  annotations:
-    namely.com/spinnaker-image-description-account: "your-registry"
-    namely.com/spinnaker-image-description-imageid: "${ trigger.properties['docker_image'] }"
-    namely.com/spinnaker-image-description-registry: "your.registry.land"
-    namely.com/spinnaker-image-description-repository: "org/example"
-    namely.com/spinnaker-image-description-organization: "namely"
-    namely.com/spinnaker-image-description-tag: "${ trigger.properties['docker_tag'] }"
-    namely.com/spinnaker-load-balancers: "example"
-```
-
-To attach load balancers to the resulting server group, you can add the annotation `namely.com/spinnaker-load-balancers` with a comma separated list of load balancers you've added to Spinnaker to attach them upon deployment.
 
 ## Installation
 
@@ -134,7 +161,35 @@ Paste the JSON, and then in the bottom right of the screen click "Save".
 
 ## Schema
 
-Here are the independent pieces of schema for pipeline.yml that you can use
+Here are the independent pieces of schema for pipeline.yml that you can use. You can also take a look at the [Config Definitions](pipeline/config/config.go).
+
+### Triggers
+
+We currently support 2 types of triggers in k8s-pipeliner, webhooks and jenkins.
+
+#### Webhooks
+
+```yaml
+triggers:
+- webhook:
+    source: "random-string"
+    enabled: true
+```
+
+The "source" field in webhooks is the endpoint that you need to hit in order to kick off Spinnaker. If you're running the gate API at "gate-api.example.com", your webhook endpoint from this configuration would be https://gate-api.example.com/webhooks/webhook/random-string (random-string is our source value)
+
+#### Jenkins
+
+Spinnaker also supports triggering off of Jenkins jobs completing, to use this trigger include a `jenkins` field:
+
+```
+triggers:
+- jenkins:
+    job: "Example/job/master"
+    master: "jenkins"
+    propertyFile: "build.properties" # optional
+    enabled: true
+```
 
 ### Manual Judgement
 
@@ -179,7 +234,16 @@ stages:
 
 A Deploy stage is used for running new server groups. You can use this stage to deploy several groups in-tandem. This is useful if you're deploying the same container for different application needs. IE: One is a consumer and another is a publisher.
 
-```
+```yaml
+imageDescriptions:
+  - name: main-image
+    account: "namely-registry"
+    image_id: "${ trigger.properties['docker_image'] }"
+    registry: "registry.namely.land"
+    repository: "namely/example-all-day"
+    tag: "${ trigger.properties['docker_tag'] }"
+    organization: "namely"
+
 stages:
 - name: "Deploy"
   deploy:
@@ -193,6 +257,9 @@ stages:
       targetSize: 10
       loadBalancers:
         - namely
+      imageDescriptions:
+        - name: main-image
+          containerName: my-container
 ```
 
 * `manifestFile` is used to generate the majority of the stage JSON for running the container. Things like environment, volumes, commands, etc are all stored within this Kubernetes Manifest file.
@@ -203,3 +270,31 @@ stages:
 * `strategy` is used to determine which strategy Spinnaker should use when deploying this new group.
 * `targetSize` is the amount of replicas to be deployed to the Kubernetes cluster. This is _not_ taken from the `deployment` manifest file
 * `loadBalancers` are the Spinnaker load balancers to be attached to this deployment. An array of strings. These will need to be defined inside of Spinnaker before a deploy to work.
+
+#### Image Descriptions
+
+`imageDescriptions` are a top level key in your YAML that define a Docker image to be deployed. You can use Spinnaker expression syntax in these fields to add dynamic images in your deployment pipeline.
+
+The `name` key on the image description is then referenced in your `groups` of a `deploy` stage. You can see this here:
+
+```yaml
+imageDescriptions:
+  - name: main-image
+    containerName: my-container
+```
+
+What k8s-pipeliner does is it looks into the manifest you've supplied, finds the container with the name "my-container", and includes the image description for the Spinnaker JSON that is rendered for it. This allows you to specify multiple containers in your pods and be able to swap out the images based on dynamic values for them.
+
+### Parameter Support
+
+This tool also supports the ability to include parameters in your pipeline definitions:
+
+```yaml
+parameters:
+  - name: "random"
+    description: "random description"
+    required: true
+    default: "hello-world"
+```
+
+This configures your pipeline to have parameters in the UI / enable pipeline expressions.
