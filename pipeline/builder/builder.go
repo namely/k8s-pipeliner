@@ -127,12 +127,13 @@ func (b *Builder) buildRunJobStage(index int, s config.Stage) (*types.RunJobStag
 	rjs := &types.RunJobStage{
 		StageMetadata: buildStageMetadata(s, "runJob", index, b.isLinear),
 
-		Account:           s.Account,
-		Application:       b.pipeline.Application,
-		Annotations:       make(map[string]string),
-		CloudProvider:     "kubernetes",
-		CloudProviderType: "kubernetes",
-		DNSPolicy:         "ClusterFirst", // hack for now
+		Account:            s.Account,
+		Application:        b.pipeline.Application,
+		Annotations:        make(map[string]string),
+		CloudProvider:      "kubernetes",
+		CloudProviderType:  "kubernetes",
+		DNSPolicy:          "ClusterFirst", // hack for now
+		ServiceAccountName: s.RunJob.ServiceAccountName,
 	}
 
 	parser := NewManfifestParser(b.pipeline, b.basePath)

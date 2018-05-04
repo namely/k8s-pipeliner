@@ -45,16 +45,17 @@ type Stage interface {
 type RunJobStage struct {
 	StageMetadata
 
-	Account           string            `json:"account"`
-	Annotations       map[string]string `json:"annotations"`
-	Application       string            `json:"application"`
-	CloudProvider     string            `json:"cloudProvider"`
-	CloudProviderType string            `json:"cloudProviderType"`
-	Container         *Container        `json:"container,omitempty"`
-	DNSPolicy         string            `json:"dnsPolicy"`
-	Labels            map[string]string `json:"labels,omitempty"`
-	Namespace         string            `json:"namespace"`
-	VolumeSources     []*VolumeSource   `json:"volumeSources,omitempty"`
+	Account            string            `json:"account"`
+	Annotations        map[string]string `json:"annotations"`
+	Application        string            `json:"application"`
+	CloudProvider      string            `json:"cloudProvider"`
+	CloudProviderType  string            `json:"cloudProviderType"`
+	Container          *Container        `json:"container,omitempty"`
+	DNSPolicy          string            `json:"dnsPolicy"`
+	Labels             map[string]string `json:"labels,omitempty"`
+	Namespace          string            `json:"namespace"`
+	VolumeSources      []*VolumeSource   `json:"volumeSources,omitempty"`
+	ServiceAccountName string            `json:"serviceAccountName,omitempty"`
 }
 
 func (rjs RunJobStage) spinnakerStage() {}
@@ -244,6 +245,7 @@ type VolumeSource struct {
 	ConfigMap             *ConfigMapVolumeSource             `json:"configMap,omitempty"`
 	Secret                *SecretVolumeSource                `json:"secret,omitempty"`
 	PersistentVolumeClaim *PersistentVolumeClaimVolumeSource `json:"persistentVolumeClaim,omitempty"`
+	HostPath              *HostPathVolumeSource              `json:"hostPath,omitempty"`
 }
 
 // EmptyDirVolumeSource defines a empty directory volume source for a pod:
@@ -268,6 +270,11 @@ type SecretVolumeSource struct {
 // PersistentVolumeClaimVolumeSource for referencing secret types in volumes
 type PersistentVolumeClaimVolumeSource struct {
 	ClaimName string `json:"claimName"`
+}
+
+// HostPathVolumeSource for using the nodes filesystem for mounts
+type HostPathVolumeSource struct {
+	Path string `json:"path"`
 }
 
 // Probe is a probe against a container for things such as liveness or readiness
