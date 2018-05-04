@@ -368,6 +368,26 @@ func TestBuilderPipelineStages(t *testing.T) {
 			expected := map[string]string{"hello": "world", "test": "annotations"}
 			assert.Equal(t, expected, spinnaker.Stages[0].(*types.RunJobStage).Annotations)
 		})
+
+		t.Run("ServiceAccountName is assigned", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						ReliesOn: []string{"2"},
+						RunJob: &config.RunJobStage{
+							ManifestFile:       file,
+							ServiceAccountName: "test-svc-acc",
+						},
+					},
+				},
+			}
+
+			builder := builder.New(pipeline)
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			assert.Equal(t, "test-svc-acc", spinnaker.Stages[0].(*types.RunJobStage).ServiceAccountName)
+		})
 	})
 }
 

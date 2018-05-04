@@ -157,6 +157,13 @@ func (mp *ManifestParser) volumeSources(vols []corev1.Volume) []*types.VolumeSou
 			spinVol.Type = "PERSISTENTVOLUMECLAIM"
 		}
 
+		if ed := vol.HostPath; ed != nil {
+			spinVol.HostPath = &types.HostPathVolumeSource{
+				Path: ed.Path,
+			}
+			spinVol.Type = "HOSTPATH"
+		}
+
 		vs = append(vs, spinVol)
 	}
 

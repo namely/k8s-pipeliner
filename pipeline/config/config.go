@@ -130,8 +130,9 @@ type RunJobStage struct {
 	ManifestFile      string                `yaml:"manifestFile"`
 	ImageDescriptions []ImageDescriptionRef `yaml:"imageDescriptions"`
 
-	Container    *Container    `yaml:"container"`
-	PodOverrides *PodOverrides `yaml:"podOverrides,omitempty"`
+	Container          *Container    `yaml:"container"`
+	PodOverrides       *PodOverrides `yaml:"podOverrides,omitempty"`
+	ServiceAccountName string        `yaml:"serviceAccountName"`
 }
 
 // DeployStage is the configuration for deploying a cluster of servers (pods)
