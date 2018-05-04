@@ -27,7 +27,6 @@ func NewPipeline(r io.Reader) (*Pipeline, error) {
 type Pipeline struct {
 	Name              string             `yaml:"name"`
 	Application       string             `yaml:"application"`
-	ConfigMap         *ConfigMap         `yaml:"configmaps,omitempty"`
 	Triggers          []Trigger          `yaml:"triggers"`
 	Stages            []Stage            `yaml:"stages"`
 	ImageDescriptions []ImageDescription `yaml:"imageDescriptions"`
@@ -38,18 +37,6 @@ type Pipeline struct {
 
 	Notifications []Notification `yaml:"notifications"`
 	Paramters     []Parameter    `yaml:"parameters"`
-}
-
-// Configmap defines a list of configmaps that are deployed via an additional pipeline
-type ConfigMap struct {
-	Type           string          `yaml:"type"`
-	ConfigMapFiles []ConfigMapFile `yaml:"files"`
-}
-
-// ConfigMapFiles define the path and the account the files are
-type ConfigMapFile struct {
-	Path  string   `yaml:"path"`
-	Stage []string `yaml:"stages,omitempty"`
 }
 
 // Parameter defines a single parameter in a pipeline config
@@ -192,7 +179,7 @@ type ContainerOverrides struct {
 // PodOverrides are used to override certain attributes about a pod spec
 // but defined from a pipeline.yml file
 type PodOverrides struct {
-	Annotations map[string]string `yaml:"annotations",omitempty`
+  Annotations map[string]string `yaml:"annotations",omitempty`
 }
 
 // ContainerScaffold is used to make it easy to get a file and image ref
