@@ -42,12 +42,12 @@ type Pipeline struct {
 
 // Configmap defines a list of configmaps that are deployed via an additional pipeline
 type ConfigMap struct {
-	Type           string           `yaml:"type"`
-	ConfigMapFiles []ConfigMapFiles `yaml:"files"`
+	Type           string          `yaml:"type"`
+	ConfigMapFiles []ConfigMapFile `yaml:"files"`
 }
 
 // ConfigMapFiles define the path and the account the files are
-type ConfigMapFiles struct {
+type ConfigMapFile struct {
 	Path  string   `yaml:"path"`
 	Stage []string `yaml:"stages,omitempty"`
 }
