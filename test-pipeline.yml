@@ -17,11 +17,21 @@ notifications:
       pipeline.failed: |
         The stage has failed!
 
+parameters:
+  - name: "random"
+    description: "random description"
+    required: true
+    default: "hello-world"
+
 triggers:
 - jenkins:
     job: "Example/job/master"
     master: "jenkins"
     propertyFile: "build.properties"
+    enabled: true
+- webhook:
+    source: "random-string"
+    enabled: true
 imageDescriptions:
   - name: main-image
     account: "namely-registry"

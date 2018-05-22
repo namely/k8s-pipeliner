@@ -19,37 +19,21 @@ type SpinnakerPipeline struct {
 	LimitConcurrent      bool   `json:"limitConcurrent"`
 	KeepWaitingPipelines bool   `json:"keepWaitingPipelines"`
 	Description          string `json:"description"`
+
+	Parameters []Parameter `json:"parameterConfig"`
 }
 
-// Trigger is an interface to encompass multiple types of Spinnaker triggers
-type Trigger interface {
-	spinnakerTrigger()
+// Parameter is a parameter declaration for a pipeline config
+type Parameter struct {
+	Description string `json:"description"`
+	Name        string `json:"name"`
+	Default     string `json:"default"`
+	Required    bool   `json:"required"`
+
+	// TODO(bobbytables): Allow configuring parameter options
+	HasOptions bool          `json:"hasOptions"`
+	Options    []interface{} `json:"options"`
 }
-
-// StageMetadata is the common components of a stage in spinnaker such as name
-type StageMetadata struct {
-	RefID                string         `json:"refId,omitempty"`
-	RequisiteStageRefIds []string       `json:"requisiteStageRefIds"`
-	Name                 string         `json:"name"`
-	Type                 string         `json:"type"`
-	Notifications        []Notification `json:"notifications,omitempty"`
-	SendNotifications    bool           `json:"sendNotifications"`
-}
-
-// JenkinsTrigger constructs the JSON necessary to include a Jenkins trigger
-// for a spinnaker pipeline
-type JenkinsTrigger struct {
-	Enabled      bool   `json:"enabled"`
-	Job          string `json:"job"`
-	Master       string `json:"master"`
-	PropertyFile string `json:"propertyFile"`
-	Type         string `json:"type"`
-}
-
-var _ Trigger = &JenkinsTrigger{}
-
-// Trigger implements Trigger
-func (t *JenkinsTrigger) spinnakerTrigger() {}
 
 // Stage is an interface to represent a Stage struct such as RunJob or Deploy
 type Stage interface {
@@ -61,16 +45,17 @@ type Stage interface {
 type RunJobStage struct {
 	StageMetadata
 
-	Account           string            `json:"account"`
-	Annotations       map[string]string `json:"annotations"`
-	Application       string            `json:"application"`
-	CloudProvider     string            `json:"cloudProvider"`
-	CloudProviderType string            `json:"cloudProviderType"`
-	Container         *Container        `json:"container,omitempty"`
-	DNSPolicy         string            `json:"dnsPolicy"`
-	Labels            map[string]string `json:"labels,omitempty"`
-	Namespace         string            `json:"namespace"`
-	VolumeSources     []*VolumeSource   `json:"volumeSources,omitempty"`
+	Account            string            `json:"account"`
+	Annotations        map[string]string `json:"annotations"`
+	Application        string            `json:"application"`
+	CloudProvider      string            `json:"cloudProvider"`
+	CloudProviderType  string            `json:"cloudProviderType"`
+	Container          *Container        `json:"container,omitempty"`
+	DNSPolicy          string            `json:"dnsPolicy"`
+	Labels             map[string]string `json:"labels,omitempty"`
+	Namespace          string            `json:"namespace"`
+	VolumeSources      []*VolumeSource   `json:"volumeSources,omitempty"`
+	ServiceAccountName string            `json:"serviceAccountName,omitempty"`
 }
 
 func (rjs RunJobStage) spinnakerStage() {}
@@ -282,6 +267,7 @@ type VolumeSource struct {
 	ConfigMap             *ConfigMapVolumeSource             `json:"configMap,omitempty"`
 	Secret                *SecretVolumeSource                `json:"secret,omitempty"`
 	PersistentVolumeClaim *PersistentVolumeClaimVolumeSource `json:"persistentVolumeClaim,omitempty"`
+	HostPath              *HostPathVolumeSource              `json:"hostPath,omitempty"`
 }
 
 // EmptyDirVolumeSource defines a empty directory volume source for a pod:
@@ -306,6 +292,11 @@ type SecretVolumeSource struct {
 // PersistentVolumeClaimVolumeSource for referencing secret types in volumes
 type PersistentVolumeClaimVolumeSource struct {
 	ClaimName string `json:"claimName"`
+}
+
+// HostPathVolumeSource for using the nodes filesystem for mounts
+type HostPathVolumeSource struct {
+	Path string `json:"path"`
 }
 
 // Probe is a probe against a container for things such as liveness or readiness

@@ -30,11 +30,21 @@ type Pipeline struct {
 	Triggers          []Trigger          `yaml:"triggers"`
 	Stages            []Stage            `yaml:"stages"`
 	ImageDescriptions []ImageDescription `yaml:"imageDescriptions"`
-	Notifications     []Notification     `yaml:"notifications"`
 
 	DisableConcurrentExecutions bool   `yaml:"disableConcurrentExecutions"`
 	KeepQueuedPipelines         bool   `yaml:"keepQueuedPipelines"`
 	Description                 string `yaml:"description"`
+
+	Notifications []Notification `yaml:"notifications"`
+	Paramters     []Parameter    `yaml:"parameters"`
+}
+
+// Parameter defines a single parameter in a pipeline config
+type Parameter struct {
+	Name        string `yaml:"name"`
+	Description string `yaml:"description"`
+	Default     string `yaml:"default"`
+	Required    bool   `yaml:"required"`
 }
 
 // ImageDescription contains the description of an image that can be referenced
@@ -53,6 +63,7 @@ type ImageDescription struct {
 // spinnaker triggers such as jenkins or docker registry
 type Trigger struct {
 	Jenkins *JenkinsTrigger `yaml:"jenkins"`
+	Webhook *WebhookTrigger `yaml:"webhook"`
 }
 
 // JenkinsTrigger has all of the fields defining how a trigger
@@ -61,6 +72,13 @@ type JenkinsTrigger struct {
 	Job          string `yaml:"job"`
 	Master       string `yaml:"master"`
 	PropertyFile string `yaml:"propertyFile"`
+	Enabled      *bool  `yaml:"enabled"`
+}
+
+// WebhookTrigger defines how a webhook can trigger a pipeline execution
+type WebhookTrigger struct {
+	Enabled bool   `yaml:"enabled"`
+	Source  string `yaml:"source"`
 }
 
 // Stage is an individual stage within a spinnaker pipeline
@@ -99,7 +117,9 @@ type RunJobStage struct {
 	ManifestFile      string                `yaml:"manifestFile"`
 	ImageDescriptions []ImageDescriptionRef `yaml:"imageDescriptions"`
 
-	Container *Container `yaml:"container"`
+	Container          *Container    `yaml:"container"`
+	PodOverrides       *PodOverrides `yaml:"podOverrides,omitempty"`
+	ServiceAccountName string        `yaml:"serviceAccountName"`
 }
 
 // DeployStage is the configuration for deploying a cluster of servers (pods)
@@ -136,6 +156,10 @@ type Group struct {
 	// different mode like a queue consumer process that needs the same config,
 	// image, but different command.
 	ContainerOverrides *ContainerOverrides `yaml:"containerOverrides"`
+
+	// PodOverrides allows you to add things like annotations to the pod
+	// spec that is generated from this configuration
+	PodOverrides *PodOverrides `yaml:"podOverrides,omitempty"`
 }
 
 // Deployment allows you to create a server group of type deployment instead of replica sets
@@ -172,6 +196,12 @@ type ManualJudgementStage struct {
 type ContainerOverrides struct {
 	Args    []string `yaml:"args,omitempty"`
 	Command []string `yaml:"command,omitempty"`
+}
+
+// PodOverrides are used to override certain attributes about a pod spec
+// but defined from a pipeline.yml file
+type PodOverrides struct {
+  Annotations map[string]string `yaml:"annotations",omitempty`
 }
 
 // ContainerScaffold is used to make it easy to get a file and image ref

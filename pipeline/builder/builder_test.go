@@ -67,13 +67,13 @@ func TestBuilderPipelineStages(t *testing.T) {
 			assert.Equal(t, []types.Trigger{}, spinnaker.Triggers)
 		})
 
-		t.Run("JenkinsTrigger is parsed correctly", func(t *testing.T) {
+		t.Run("JenkinsTrigger is parsed correctly and enabled", func(t *testing.T) {
 			pipeline := &config.Pipeline{
 				Triggers: []config.Trigger{
 					{
 						Jenkins: &config.JenkinsTrigger{
-							Job: "My Job Name",
-							Master: "namely-jenkins",
+							Job:          "My Job Name",
+							Master:       "namely-jenkins",
 							PropertyFile: ".test-ci-properties",
 						},
 					},
@@ -92,6 +92,84 @@ func TestBuilderPipelineStages(t *testing.T) {
 			assert.Equal(t, ".test-ci-properties", spinnaker.Triggers[0].(*types.JenkinsTrigger).PropertyFile)
 			assert.Equal(t, "jenkins", spinnaker.Triggers[0].(*types.JenkinsTrigger).Type)
 		})
+		t.Run("JenkinsTrigger is disabled", func(t *testing.T) {
+			var enabled *bool
+			enabled = newFalse()
+			pipeline := &config.Pipeline{
+				Triggers: []config.Trigger{
+					{
+						Jenkins: &config.JenkinsTrigger{
+							Job:          "My Job Name",
+							Master:       "namely-jenkins",
+							PropertyFile: ".test-ci-properties",
+							Enabled:      enabled,
+						},
+					},
+				},
+			}
+
+			builder := builder.New(pipeline)
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			assert.Len(t, spinnaker.Triggers, 1)
+
+			jt := spinnaker.Triggers[0].(*types.JenkinsTrigger)
+			assert.Equal(t, false, jt.Enabled)
+			assert.Equal(t, "My Job Name", jt.Job)
+			assert.Equal(t, "namely-jenkins", jt.Master)
+			assert.Equal(t, ".test-ci-properties", jt.PropertyFile)
+			assert.Equal(t, "jenkins", jt.Type)
+		})
+
+		t.Run("WebhooksTrigger is configured correctly", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Triggers: []config.Trigger{
+					{
+						Webhook: &config.WebhookTrigger{
+							Source:  "this-is-a-test",
+							Enabled: true,
+						},
+					},
+				},
+			}
+
+			b := builder.New(pipeline)
+			spinnaker, err := b.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			assert.Len(t, spinnaker.Triggers, 1)
+
+			whTrigger := spinnaker.Triggers[0].(*types.WebhookTrigger)
+			assert.Equal(t, true, whTrigger.Enabled)
+			assert.Equal(t, builder.WebhookTrigger, whTrigger.Type)
+			assert.Equal(t, "this-is-a-test", whTrigger.Source)
+		})
+	})
+
+	t.Run("Parameter configuration is parsed correctly", func(t *testing.T) {
+		pipeline := &config.Pipeline{
+			Paramters: []config.Parameter{
+				{
+					Name:        "param1",
+					Description: "parameter description",
+					Default:     "default value",
+					Required:    true,
+				},
+			},
+		}
+
+		b := builder.New(pipeline)
+		spinnaker, err := b.Pipeline()
+		require.NoError(t, err, "error generating pipeline json")
+
+		require.Len(t, spinnaker.Parameters, 1)
+
+		param := spinnaker.Parameters[0]
+		assert.Equal(t, true, param.Required)
+		assert.Equal(t, "parameter description", param.Description)
+		assert.Equal(t, "param1", param.Name)
+		assert.Equal(t, "default value", param.Default)
 	})
 
 	t.Run("Deploy stage is parsed correctly", func(t *testing.T) {
@@ -104,6 +182,9 @@ func TestBuilderPipelineStages(t *testing.T) {
 							Groups: []config.Group{
 								{
 									ManifestFile: file,
+									PodOverrides: &config.PodOverrides{
+										Annotations: map[string]string{"hello": "world"},
+									},
 								},
 							},
 						},
@@ -117,6 +198,9 @@ func TestBuilderPipelineStages(t *testing.T) {
 
 			assert.Equal(t, "Test Deploy Stage", spinnaker.Stages[0].(*types.DeployStage).Name)
 			assert.Len(t, spinnaker.Stages[0].(*types.DeployStage).Clusters, 1)
+
+			expected := map[string]string{"hello": "world", "test": "annotations"}
+			assert.Equal(t, expected, spinnaker.Stages[0].(*types.DeployStage).Clusters[0].PodAnnotations)
 		})
 
 		t.Run("RequisiteStageRefIds defaults to an empty slice", func(t *testing.T) {
@@ -261,5 +345,53 @@ func TestBuilderPipelineStages(t *testing.T) {
 
 			assert.Equal(t, []string{"2"}, spinnaker.Stages[0].(*types.ManualJudgementStage).StageMetadata.RequisiteStageRefIds)
 		})
+
+		t.Run("PodAnnotations are assigned when overrides", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						ReliesOn: []string{"2"},
+						RunJob: &config.RunJobStage{
+							ManifestFile: file,
+							PodOverrides: &config.PodOverrides{
+								Annotations: map[string]string{"hello": "world"},
+							},
+						},
+					},
+				},
+			}
+
+			builder := builder.New(pipeline)
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			expected := map[string]string{"hello": "world", "test": "annotations"}
+			assert.Equal(t, expected, spinnaker.Stages[0].(*types.RunJobStage).Annotations)
+		})
+
+		t.Run("ServiceAccountName is assigned", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						ReliesOn: []string{"2"},
+						RunJob: &config.RunJobStage{
+							ManifestFile:       file,
+							ServiceAccountName: "test-svc-acc",
+						},
+					},
+				},
+			}
+
+			builder := builder.New(pipeline)
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			assert.Equal(t, "test-svc-acc", spinnaker.Stages[0].(*types.RunJobStage).ServiceAccountName)
+		})
 	})
+}
+
+func newFalse() *bool {
+	b := false
+	return &b
 }

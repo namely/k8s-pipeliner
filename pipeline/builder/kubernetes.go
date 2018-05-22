@@ -1,7 +1,6 @@
 package builder
 
 import (
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/namely/k8s-pipeliner/pipeline/builder/types"
 	"github.com/namely/k8s-pipeliner/pipeline/config"
+	"github.com/pkg/errors"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -74,7 +74,7 @@ func (mp *ManifestParser) ContainersFromScaffold(scaffold config.ContainerScaffo
 	decode := scheme.Codecs.UniversalDeserializer().Decode
 	obj, g, err := decode(b, nil, nil)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "marshaling failure: %s", path)
 	}
 
 	var mg ManifestGroup
@@ -107,6 +107,10 @@ func (mp *ManifestParser) ContainersFromScaffold(scaffold config.ContainerScaffo
 		mg.VolumeSources = mp.volumeSources(t.Spec.Volumes)
 	default:
 		return nil, fmt.Errorf("type not supported: %T", t)
+	}
+
+	if mg.PodAnnotations == nil {
+		mg.PodAnnotations = make(map[string]string)
 	}
 
 	return &mg, nil
@@ -151,6 +155,13 @@ func (mp *ManifestParser) volumeSources(vols []corev1.Volume) []*types.VolumeSou
 				ClaimName: ed.ClaimName,
 			}
 			spinVol.Type = "PERSISTENTVOLUMECLAIM"
+		}
+
+		if ed := vol.HostPath; ed != nil {
+			spinVol.HostPath = &types.HostPathVolumeSource{
+				Path: ed.Path,
+			}
+			spinVol.Type = "HOSTPATH"
 		}
 
 		vs = append(vs, spinVol)

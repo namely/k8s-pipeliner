@@ -17,6 +17,13 @@ var (
 	ErrOverrideContention = errors.New("builder: overrides were provided to a group that has multiple containers defined")
 )
 
+const (
+	// JenkinsTrigger is the name of the type in the spinnaker json for pipeline config for jenkins job triggers
+	JenkinsTrigger = "jenkins"
+	// WebhookTrigger is the name of the type in the spinnaker json for pipeline config for webhooks
+	WebhookTrigger = "webhook"
+)
+
 // Builder constructs a spinnaker pipeline JSON from a pipeliner config
 type Builder struct {
 	pipeline *config.Pipeline
@@ -45,22 +52,40 @@ func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
 	}
 
 	sp.Notifications = buildNotifications(b.pipeline.Notifications)
-
-	sp.Triggers = []types.Trigger{}
+	sp.Triggers = make([]types.Trigger, 0)
 
 	for _, trigger := range b.pipeline.Triggers {
-		if trigger.Jenkins != nil {
-			jt := trigger.Jenkins
-
+		if jt := trigger.Jenkins; jt != nil {
 			sp.Triggers = append(sp.Triggers, &types.JenkinsTrigger{
-				Enabled:      true,
+				TriggerObject: types.TriggerObject{
+					Enabled: newDefaultTrue(jt.Enabled),
+					Type:    JenkinsTrigger,
+				},
+
 				Job:          jt.Job,
 				Master:       jt.Master,
 				PropertyFile: jt.PropertyFile,
-				Type:         "jenkins",
 			})
+		}
 
-			continue
+		if wh := trigger.Webhook; wh != nil {
+			sp.Triggers = append(sp.Triggers, &types.WebhookTrigger{
+				TriggerObject: types.TriggerObject{
+					Enabled: wh.Enabled,
+					Type:    WebhookTrigger,
+				},
+				Source: wh.Source,
+			})
+		}
+	}
+
+	sp.Parameters = make([]types.Parameter, len(b.pipeline.Paramters))
+	for i, param := range b.pipeline.Paramters {
+		sp.Parameters[i] = types.Parameter{
+			Name:        param.Name,
+			Description: param.Description,
+			Default:     param.Default,
+			Required:    param.Required,
 		}
 	}
 
@@ -102,12 +127,13 @@ func (b *Builder) buildRunJobStage(index int, s config.Stage) (*types.RunJobStag
 	rjs := &types.RunJobStage{
 		StageMetadata: buildStageMetadata(s, "runJob", index, b.isLinear),
 
-		Account:           s.Account,
-		Application:       b.pipeline.Application,
-		Annotations:       make(map[string]string),
-		CloudProvider:     "kubernetes",
-		CloudProviderType: "kubernetes",
-		DNSPolicy:         "ClusterFirst", // hack for now
+		Account:            s.Account,
+		Application:        b.pipeline.Application,
+		Annotations:        make(map[string]string),
+		CloudProvider:      "kubernetes",
+		CloudProviderType:  "kubernetes",
+		DNSPolicy:          "ClusterFirst", // hack for now
+		ServiceAccountName: s.RunJob.ServiceAccountName,
 	}
 
 	parser := NewManfifestParser(b.pipeline, b.basePath)
@@ -123,6 +149,13 @@ func (b *Builder) buildRunJobStage(index int, s config.Stage) (*types.RunJobStag
 	rjs.Container = mg.Containers[0]
 	rjs.Namespace = mg.Namespace
 	rjs.VolumeSources = mg.VolumeSources
+	rjs.Annotations = mg.PodAnnotations
+
+	if po := s.RunJob.PodOverrides; po != nil {
+		for k, v := range po.Annotations {
+			rjs.Annotations[k] = v
+		}
+	}
 
 	// overrides can be provided for jobs since things like
 	// migrations typically need all of the same environment variables
@@ -184,6 +217,12 @@ func (b *Builder) buildDeployStage(index int, s config.Stage) (*types.DeployStag
 					Type: "RollingUpdate",
 				},
 				RevisionHistoryLimit: deployment.RevisionHistoryLimit,
+			}
+		}
+
+		if po := group.PodOverrides; po != nil {
+			for k, v := range po.Annotations {
+				mg.PodAnnotations[k] = v
 			}
 		}
 
@@ -276,4 +315,12 @@ func buildNotifications(notifications []config.Notification) []types.Notificatio
 	}
 
 	return nots
+}
+
+func newDefaultTrue(original *bool) bool {
+	if original == nil {
+		return true
+	}
+
+	return *original
 }
