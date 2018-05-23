@@ -201,10 +201,10 @@ func TestBuilderPipelineStages(t *testing.T) {
 
 			expected := map[string]string{"hello": "world", "test": "annotations"}
 			assert.Equal(t, expected, spinnaker.Stages[0].(*types.DeployStage).Clusters[0].PodAnnotations)
-			assert.Equal(t, (*types.Deployment)(nil), spinnaker.Stages[0].(*types.DeployStage).Clusters[0].Deployment)
+			assert.Nil(t, spinnaker.Stages[0].(*types.DeployStage).Clusters[0].Deployment)
 		})
 
-		t.Run("Deployments are functional", func(t *testing.T) {
+		t.Run("Deployments are parsed correctly when included", func(t *testing.T) {
 
 			pipeline := &config.Pipeline{
 				Stages: []config.Stage{
