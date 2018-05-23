@@ -93,7 +93,7 @@ type Cluster struct {
 	Application                    string            `json:"application"`
 	CloudProvider                  string            `json:"cloudProvider"`
 	Containers                     []*Container      `json:"containers"`
-	Deployment                     Deployment        `json:"deployment,omitempty"`
+	Deployment                     *Deployment       `json:"deployment,omitempty"`
 	DNSPolicy                      string            `json:"dnsPolicy"`
 	Events                         []interface{}     `json:"events"`
 	InitContainers                 []*Container      `json:"initContainers"`
@@ -125,7 +125,6 @@ type Deployment struct {
 	DeploymentStrategy   DeploymentStrategy `json:"deploymentStrategy"`
 	Enabled              bool               `json:"enabled"`
 	MinReadySeconds      int                `json:"minReadySeconds"`
-	Paused               bool               `json:"paused"`
 	RevisionHistoryLimit int                `json:"revisionHistoryLimit,omitempty"`
 }
 

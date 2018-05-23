@@ -92,8 +92,8 @@ stages:
           minReadySeconds: 1
           deploymentStrategy:
             rollingUpdate:
-              maxSurge: "3"
-              maxUnavailable: "0"
+              maxSurge: 3
+              maxUnavailable: 0
           enabled: true
           revisionHistoryLimit: 10
         imageDescriptions:

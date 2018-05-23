@@ -167,20 +167,18 @@ type Deployment struct {
 	DeploymentStrategy   DeploymentStrategy `yaml:"deploymentStrategy"`
 	Enabled              bool               `yaml:"enabled"`
 	MinReadySeconds      int                `yaml:"minReadySeconds"`
-	Paused               bool               `yaml:"paused"`
 	RevisionHistoryLimit int                `yaml:"revisionHistoryLimit"`
 }
 
 // DeploymentStrategy are generally either of type rolling update or recreate. Rolling update is preferred.
 type DeploymentStrategy struct {
 	RollingUpdate RollingUpdate `yaml:"rollingUpdate"`
-	Type          string        `yaml:"type"`
 }
 
 // RollingUpdate can have a maximum number of new pods and unavailable pods in type string.
 type RollingUpdate struct {
-	MaxSurge       string `yaml:"maxSurge"`
-	MaxUnavailable string `yaml:"maxUnavailable"`
+	MaxSurge       int `yaml:"maxSurge"`
+	MaxUnavailable int `yaml:"maxUnavailable"`
 }
 
 // ManualJudgementStage is the configuration for pausing a pipeline awaiting
@@ -201,7 +199,7 @@ type ContainerOverrides struct {
 // PodOverrides are used to override certain attributes about a pod spec
 // but defined from a pipeline.yml file
 type PodOverrides struct {
-  Annotations map[string]string `yaml:"annotations",omitempty`
+	Annotations map[string]string `yaml:"annotations",omitempty`
 }
 
 // ContainerScaffold is used to make it easy to get a file and image ref

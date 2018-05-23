@@ -202,17 +202,18 @@ func (b *Builder) buildDeployStage(index int, s config.Stage) (*types.DeployStag
 				container.Command = overrides.Command
 			}
 		}
-		var deploymentSettings types.Deployment
+
+		var deploymentSettings *types.Deployment
 
 		if deployment := group.Deployment; deployment != nil {
-			deploymentSettings = types.Deployment{
+
+			deploymentSettings = &types.Deployment{
 				Enabled:         deployment.Enabled,
 				MinReadySeconds: deployment.MinReadySeconds,
-				Paused:          deployment.Paused,
 				DeploymentStrategy: types.DeploymentStrategy{
 					RollingUpdate: types.RollingUpdate{
-						MaxSurge:       deployment.DeploymentStrategy.RollingUpdate.MaxSurge,
-						MaxUnavailable: deployment.DeploymentStrategy.RollingUpdate.MaxUnavailable,
+						MaxSurge:       fmt.Sprintf("%d", deployment.DeploymentStrategy.RollingUpdate.MaxSurge),
+						MaxUnavailable: fmt.Sprintf("%d", deployment.DeploymentStrategy.RollingUpdate.MaxUnavailable),
 					},
 					Type: "RollingUpdate",
 				},
