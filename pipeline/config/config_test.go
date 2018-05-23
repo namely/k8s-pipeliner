@@ -30,7 +30,10 @@ func TestNewConfig(t *testing.T) {
 	require.Len(t, cfg.Stages[1].Deploy.Groups, 1, "no groups on deploy stage")
 	assert.Equal(t, cfg.Stages[1].Deploy.Groups[0].ManifestFile, "manifests/deploy/connect.yml")
 
-	require.Len(t, cfg.ImageDescriptions, 1, "image descriptions was empty")
+	require.Len(t, cfg.ImageDescriptions, 2, "image descriptions was empty")
+
+	assert.Equal(t, "testImageRef", (cfg.Stages[0].RunJob.ImageDescriptionRef("example").Name))
+	assert.Equal(t, "testImageRef2", (cfg.Stages[1].Deploy.Groups[0].ImageDescriptionRef("example2").Name))
 }
 
 func TestNewConfigForPodAnnotations(t *testing.T) {
