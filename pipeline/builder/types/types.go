@@ -194,6 +194,7 @@ type EnvVar struct {
 type EnvSource struct {
 	SecretSource    *SecretSource    `json:"secretSource,omitempty"`
 	ConfigMapSource *ConfigMapSource `json:"configMapSource,omitempty"`
+	FieldRefSource  *FieldRefSource  `json:"fieldRef,omitempty"`
 }
 
 // SecretSource is a env var from a secret map in k8s
@@ -208,6 +209,12 @@ type ConfigMapSource struct {
 	ConfigMapName string `json:"configMapName"`
 	Key           string `json:"key"`
 	Optional      bool   `json:"optional"`
+}
+
+// FieldRefSource is an env var that references a value from the pod manifest
+// https://kubernetes.io/docs/tasks/inject-data-application/environment-variable-expose-pod-information/
+type FieldRefSource struct {
+	FieldPath string `json:"fieldPath"`
 }
 
 // ImageDescription is used to tell spinnaker which image to use for a stage
