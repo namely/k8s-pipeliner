@@ -317,6 +317,29 @@ func (mp *ManifestParser) parseContainer(container corev1.Container, scaffold co
 		})
 	}
 
+	// append security context
+	if sc := container.SecurityContext; sc != nil {
+		ssc := &types.SecurityContext{
+			Privileged:             sc.Privileged,
+			ReadOnlyRootFileSystem: sc.ReadOnlyRootFilesystem,
+			RunAsUser:              sc.RunAsUser,
+		}
+
+		if caps := sc.Capabilities; caps != nil {
+			ssc.Capabilities = &types.SecurityContextCapabilities{}
+
+			for _, add := range caps.Add {
+				ssc.Capabilities.Add = append(ssc.Capabilities.Add, string(add))
+			}
+
+			for _, drop := range caps.Drop {
+				ssc.Capabilities.Drop = append(ssc.Capabilities.Drop, string(drop))
+			}
+		}
+
+		spinContainer.SecurityContext = ssc
+	}
+
 	return spinContainer
 }
 

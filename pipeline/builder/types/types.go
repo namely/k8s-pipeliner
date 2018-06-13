@@ -4,6 +4,14 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+func Bool(b bool) *bool {
+	return &b
+}
+
+func Int64(i int64) *int64 {
+	return &i
+}
+
 // SpinnakerPipeline defines the fields for the top leve object of a spinnaker
 // pipeline. Mostly used for constructing JSON
 type SpinnakerPipeline struct {
@@ -138,6 +146,22 @@ type Container struct {
 
 	LivenessProbe  *Probe `json:"livenessProbe"`
 	ReadinessProbe *Probe `json:"readinessProbe"`
+
+	SecurityContext *SecurityContext `json:"securityContext"`
+}
+
+// SecurityContext is a containers security settings in Kubernetes
+type SecurityContext struct {
+	Privileged             *bool                        `json:"privileged,omitempty"`
+	ReadOnlyRootFileSystem *bool                        `json:"readOnlyRootFileSystem,omitempty"`
+	RunAsUser              *int64                       `json:"runAsUser,omitempty"`
+	Capabilities           *SecurityContextCapabilities `json:"capabilities,omitempty"`
+}
+
+// SecurityContextCapabilities are the syscall capabilities the container has added or dropped
+type SecurityContextCapabilities struct {
+	Add  []string `json:"add"`
+	Drop []string `json:"drop"`
 }
 
 // EnvFromSource is used to pull in a config map as a list of environment

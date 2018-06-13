@@ -199,6 +199,26 @@ func TestContainersFromManifests(t *testing.T) {
 		assert.NotNil(t, ev.EnvSource.FieldRefSource)
 	})
 
+	t.Run("SecurityContext is copied in the correct format", func(t *testing.T) {
+		file := filepath.Join(wd, "testdata", "deployment.security.yml")
+		parser := builder.NewManfifestParser(&config.Pipeline{})
+		group, err := parser.ContainersFromScaffold(scaffoldMock{
+			manifest: file,
+		})
+		require.NoError(t, err)
+
+		container := group.Containers[0]
+		require.NotNil(t, container.SecurityContext)
+
+		assert.True(t, *container.SecurityContext.Privileged)
+		assert.True(t, *container.SecurityContext.ReadOnlyRootFileSystem)
+		assert.Equal(t, int64(1337), *container.SecurityContext.RunAsUser)
+
+		require.NotNil(t, container.SecurityContext.Capabilities)
+		assert.Equal(t, []string{"FOO"}, container.SecurityContext.Capabilities.Add)
+		assert.Equal(t, []string{"BAR"}, container.SecurityContext.Capabilities.Drop)
+	})
+
 	t.Run("LivenessProbe is copied in the correct format", func(t *testing.T) {
 		file := filepath.Join(wd, "testdata", "deployment.probes.yml")
 		parser := builder.NewManfifestParser(&config.Pipeline{})
