@@ -183,6 +183,22 @@ func TestContainersFromManifests(t *testing.T) {
 		assert.Equal(t, false, container.EnvVars[2].EnvSource.ConfigMapSource.Optional)
 	})
 
+	t.Run("FieldRefs are copied in correctly", func(t *testing.T) {
+		file := filepath.Join(wd, "testdata", "deployment.fieldref.yml")
+		parser := builder.NewManfifestParser(&config.Pipeline{})
+		group, err := parser.ContainersFromScaffold(scaffoldMock{
+			manifest: file,
+		})
+		require.NoError(t, err)
+
+		container := group.Containers[0]
+		require.Len(t, container.EnvVars, 1)
+
+		ev := container.EnvVars[0]
+		assert.Equal(t, ev.Name, "MY_ENV")
+		assert.NotNil(t, ev.EnvSource.FieldRefSource)
+	})
+
 	t.Run("LivenessProbe is copied in the correct format", func(t *testing.T) {
 		file := filepath.Join(wd, "testdata", "deployment.probes.yml")
 		parser := builder.NewManfifestParser(&config.Pipeline{})

@@ -268,6 +268,14 @@ func (mp *ManifestParser) parseContainer(container corev1.Container, scaffold co
 					},
 				}
 			}
+
+			if vf.FieldRef != nil {
+				e.EnvSource = &types.EnvSource{
+					FieldRefSource: &types.FieldRefSource{
+						FieldPath: vf.FieldRef.FieldPath,
+					},
+				}
+			}
 		}
 
 		spinContainer.EnvVars = append(spinContainer.EnvVars, e)
