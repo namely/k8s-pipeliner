@@ -1,0 +1,25 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: example
+  namespace: fake-namespace
+  annotations:
+    fake-annotation-1: "Hello"
+    fake-annotation-2: "World"
+spec:
+  template:
+    metadata:
+      labels:
+        app: example
+    spec:
+      containers:
+      - command:
+          - echo
+          - hello
+        securityContext:
+          privileged: true
+          readOnlyRootFilesystem: true
+          runAsUser: 1337
+          capabilities:
+            add: [ FOO ]
+            drop: [ BAR ]
