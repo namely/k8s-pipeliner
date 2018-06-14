@@ -160,8 +160,8 @@ type SecurityContext struct {
 
 // SecurityContextCapabilities are the syscall capabilities the container has added or dropped
 type SecurityContextCapabilities struct {
-	Add  []string `json:"add"`
-	Drop []string `json:"drop"`
+	Add  []string `json:"add,omitempty"`
+	Drop []string `json:"drop,omitempty"`
 }
 
 // EnvFromSource is used to pull in a config map as a list of environment
