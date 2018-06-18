@@ -13,10 +13,20 @@ imageDescriptions:
     repository: repository
     tag: tag
     organization: organization
+  - name: testImageRef2
+    account: account
+    image_id: image_id
+    registry: registry
+    repository: repository
+    tag: tag
+    organization: organization
 stages:
 - account: int-k8s
   name: "Migrate INT"
   runJob:
+    imageDescriptions:
+      - name: testImageRef
+        containerName: example
     manifestFile: manifests/deploy/connect.yml
     container: # override default command defined in the manifest
       command:
@@ -29,3 +39,6 @@ stages:
   deploy:
     groups:
       - manifestFile: manifests/deploy/connect.yml
+        imageDescriptions:
+          - name: testImageRef2
+            containerName: example2

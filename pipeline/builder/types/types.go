@@ -101,6 +101,7 @@ type Cluster struct {
 	Application                    string            `json:"application"`
 	CloudProvider                  string            `json:"cloudProvider"`
 	Containers                     []*Container      `json:"containers"`
+	Deployment                     *Deployment       `json:"deployment,omitempty"`
 	DNSPolicy                      string            `json:"dnsPolicy"`
 	Events                         []interface{}     `json:"events"`
 	InitContainers                 []*Container      `json:"initContainers"`
@@ -125,6 +126,26 @@ type Cluster struct {
 	TerminationGracePeriodSeconds int               `json:"terminationGracePeriodSeconds"`
 	VolumeSources                 []*VolumeSource   `json:"volumeSources,omitempty"`
 	DelayBeforeDisableSec         int               `json:"delayBeforeDisableSec,omitempty"`
+}
+
+// Deployment allows you to create a server group of type deployment instead of replica sets
+type Deployment struct {
+	DeploymentStrategy   DeploymentStrategy `json:"deploymentStrategy"`
+	Enabled              bool               `json:"enabled"`
+	MinReadySeconds      int                `json:"minReadySeconds"`
+	RevisionHistoryLimit int                `json:"revisionHistoryLimit,omitempty"`
+}
+
+// DeploymentStrategy are generally either of type rolling update or recreate. Rolling update is preferred.
+type DeploymentStrategy struct {
+	RollingUpdate RollingUpdate `json:"rollingUpdate"`
+	Type          string        `json:"type"`
+}
+
+// RollingUpdate can have a maximum number of new pods and unavailable pods in type string.
+type RollingUpdate struct {
+	MaxSurge       string `json:"maxSurge"`
+	MaxUnavailable string `json:"maxUnavailable"`
 }
 
 // Container is a representation of a container to be deployed either as a job

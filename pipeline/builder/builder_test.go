@@ -201,6 +201,46 @@ func TestBuilderPipelineStages(t *testing.T) {
 
 			expected := map[string]string{"hello": "world", "test": "annotations"}
 			assert.Equal(t, expected, spinnaker.Stages[0].(*types.DeployStage).Clusters[0].PodAnnotations)
+			assert.Nil(t, spinnaker.Stages[0].(*types.DeployStage).Clusters[0].Deployment)
+		})
+
+		t.Run("Deployments are parsed correctly when included", func(t *testing.T) {
+
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						Name: "Test Cluster Group Type Deployment",
+						Deploy: &config.DeployStage{
+							Groups: []config.Group{
+								{
+									ManifestFile: file,
+									Deployment: &config.Deployment{
+										MinReadySeconds: 1,
+										DeploymentStrategy: config.DeploymentStrategy{
+											config.RollingUpdate{
+												MaxSurge:       2,
+												MaxUnavailable: 0,
+											},
+										},
+										Enabled:              true,
+										RevisionHistoryLimit: 10,
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+
+			builder := builder.New(pipeline)
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			assert.Equal(t, "Test Cluster Group Type Deployment", spinnaker.Stages[0].(*types.DeployStage).Name)
+			assert.Len(t, spinnaker.Stages[0].(*types.DeployStage).Clusters, 1)
+
+			assert.Equal(t, "2", spinnaker.Stages[0].(*types.DeployStage).Clusters[0].Deployment.DeploymentStrategy.RollingUpdate.MaxSurge)
+			assert.Equal(t, "0", spinnaker.Stages[0].(*types.DeployStage).Clusters[0].Deployment.DeploymentStrategy.RollingUpdate.MaxUnavailable)
 		})
 
 		t.Run("RequisiteStageRefIds defaults to an empty slice", func(t *testing.T) {
@@ -388,6 +428,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 
 			assert.Equal(t, "test-svc-acc", spinnaker.Stages[0].(*types.RunJobStage).ServiceAccountName)
 		})
+
 	})
 }
 

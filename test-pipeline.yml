@@ -88,6 +88,14 @@ stages:
         strategy: redblack
         targetSize: 2 # this is the total amount of replicas for the deployment
         containerOverrides: {}
+        deployment:
+          minReadySeconds: 1
+          deploymentStrategy:
+            rollingUpdate:
+              maxSurge: 3
+              maxUnavailable: 0
+          enabled: true
+          revisionHistoryLimit: 10
         imageDescriptions:
           - name: main-image
             containerName: example

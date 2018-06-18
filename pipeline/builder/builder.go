@@ -203,6 +203,24 @@ func (b *Builder) buildDeployStage(index int, s config.Stage) (*types.DeployStag
 			}
 		}
 
+		var deploymentSettings *types.Deployment
+
+		if deployment := group.Deployment; deployment != nil {
+
+			deploymentSettings = &types.Deployment{
+				Enabled:         deployment.Enabled,
+				MinReadySeconds: deployment.MinReadySeconds,
+				DeploymentStrategy: types.DeploymentStrategy{
+					RollingUpdate: types.RollingUpdate{
+						MaxSurge:       fmt.Sprintf("%d", deployment.DeploymentStrategy.RollingUpdate.MaxSurge),
+						MaxUnavailable: fmt.Sprintf("%d", deployment.DeploymentStrategy.RollingUpdate.MaxUnavailable),
+					},
+					Type: "RollingUpdate",
+				},
+				RevisionHistoryLimit: deployment.RevisionHistoryLimit,
+			}
+		}
+
 		if po := group.PodOverrides; po != nil {
 			for k, v := range po.Annotations {
 				mg.PodAnnotations[k] = v
@@ -213,6 +231,7 @@ func (b *Builder) buildDeployStage(index int, s config.Stage) (*types.DeployStag
 			Account:               s.Account,
 			Application:           b.pipeline.Application,
 			Containers:            mg.Containers,
+			Deployment:            deploymentSettings,
 			InitContainers:        mg.InitContainers,
 			LoadBalancers:         group.LoadBalancers,
 			Region:                mg.Namespace,
