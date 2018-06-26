@@ -213,6 +213,10 @@ func TestBuilderPipelineStages(t *testing.T) {
 							Groups: []config.Group{
 								{
 									ManifestFile: file,
+									ContainerOverrides: &config.ContainerOverrides{
+										Command: []string{"cat", "dog"},
+										Args:    []string{"mouse"},
+									},
 								},
 							},
 						},
@@ -220,7 +224,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 				},
 			}
 
-			builder := builder.New(pipeline, builder.WithV2Provider(true))
+			builder := builder.New(pipeline, builder.WithLinear(true), builder.WithV2Provider(true))
 			spinnaker, err := builder.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
 			assert.Equal(t, "Test V2 Deploy Stage", spinnaker.Stages[0].(*types.ManifestStage).Name)
@@ -288,16 +292,18 @@ func TestBuilderPipelineStages(t *testing.T) {
 							Name: "Test V2 RunJob Stage",
 							RunJob: &config.RunJobStage{
 								ManifestFile: podfile,
+								Container: &config.Container{
+									Command: []string{"cat", "dog"},
+									Args:    []string{"mouse"},
+								},
 							},
 						},
 					},
 				}
 
 				builder := builder.New(pipeline, builder.WithV2Provider(true))
-
 				spinnaker, err := builder.Pipeline()
 				require.NoError(t, err, "error generating pipeline json")
-
 				assert.Equal(t, "Test V2 RunJob Stage", spinnaker.Stages[0].(*types.ManifestStage).Name)
 
 			})

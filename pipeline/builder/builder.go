@@ -299,7 +299,6 @@ func (b *Builder) buildDeployStage(index int, s config.Stage) (*types.DeployStag
 
 	for _, group := range s.Deploy.Groups {
 		mg, err := parser.ContainersFromScaffold(group)
-
 		if err != nil {
 			return nil, err
 		}
