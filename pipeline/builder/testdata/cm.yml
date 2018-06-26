@@ -1,0 +1,7 @@
+apiVersion: v1
+data:
+  env: test
+kind: ConfigMap
+metadata:
+  name: testcm
+  namespace: tests
