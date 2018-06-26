@@ -53,6 +53,7 @@ func NewManfifestParser(config *config.Pipeline, basePath ...string) *ManifestPa
 	return mp
 }
 
+// ManifestFromScaffold creates a dynamic kubernetes object for a given pipeline config
 func (mp *ManifestParser) ManifestFromScaffold(scaffold config.ContainerScaffold) (runtime.Object, error) {
 	path := scaffold.Manifest()
 	if !filepath.IsAbs(scaffold.Manifest()) && mp.basePath != "" {
@@ -93,7 +94,7 @@ func (mp *ManifestParser) ManifestFromScaffold(scaffold config.ContainerScaffold
 	return obj, nil
 }
 
-// InjectDeploymentOverrides takes the manifest ->  injects them into the marshalled manifest
+// InjectDeploymentOverrides takes the manifest -> injects them into the marshalled manifest
 func (mp *ManifestParser) InjectDeploymentOverrides(manifest *appsv1.Deployment, scaffold config.ContainerScaffold) (*appsv1.Deployment, error) {
 	replicas := int32(scaffold.GetTargetSize())
 	manifest.Spec.Replicas = &replicas
@@ -107,6 +108,7 @@ func (mp *ManifestParser) InjectDeploymentOverrides(manifest *appsv1.Deployment,
 	return manifest, nil
 }
 
+// InjectPodOverrides takes the Pod object and injects the scaffolded overrides
 func (mp *ManifestParser) InjectPodOverrides(manifest *corev1.Pod, scaffold config.ContainerScaffold) (*corev1.Pod, error) {
 	for pos, container := range manifest.Spec.Containers {
 		manifest.Spec.Containers[pos] = mp.InjectContainerImageDescription(container, scaffold)
@@ -117,6 +119,7 @@ func (mp *ManifestParser) InjectPodOverrides(manifest *corev1.Pod, scaffold conf
 	return manifest, nil
 }
 
+// InjectContainerImageDescription takes a kubernetes container and inserts the corresponding image description from a trigger
 func (mp *ManifestParser) InjectContainerImageDescription(container corev1.Container, scaffold config.ContainerScaffold) corev1.Container {
 	if ref := scaffold.ImageDescriptionRef(container.Name); ref != nil {
 		for _, desc := range mp.config.ImageDescriptions {

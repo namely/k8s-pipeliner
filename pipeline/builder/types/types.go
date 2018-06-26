@@ -6,10 +6,12 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+// Bool returns a pointer to a boolean
 func Bool(b bool) *bool {
 	return &b
 }
 
+// Int64 returns a pointer to an int64
 func Int64(i int64) *int64 {
 	return &i
 }
@@ -51,6 +53,7 @@ type Stage interface {
 	spinnakerStage()
 }
 
+// ManifestStage is a struct representing the v2 Spinnaker Manifest stages
 type ManifestStage struct {
 	StageMetadata
 
@@ -75,6 +78,7 @@ type Relationships struct {
 	SecurityGroups []interface{} `json:"securityGroups"`
 }
 
+// Moniker is a component of the V2 Spinnaker Manifest Stage that allows users to label assets created by the Spinnaker v2 provider
 type Moniker struct {
 	App     string `json:"app"`
 	Cluster string `json:"cluster"`

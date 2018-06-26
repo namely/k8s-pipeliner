@@ -19,6 +19,7 @@ func WithBasePath(basePath string) OptFunc {
 	}
 }
 
+// WithV2Provider creates a json message adhering to the V2 Spinnaker Pipeline Spec
 func WithV2Provider(v bool) OptFunc {
 	return func(b *Builder) {
 		b.v2Provider = v

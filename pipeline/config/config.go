@@ -202,7 +202,7 @@ func (g Group) ImageDescriptionRef(containerName string) *ImageDescriptionRef {
 	return findImageDescription(containerName, g.ImageDescriptions)
 }
 
-// TargetSize returns target size of manifest group
+// GetTargetSize returns target size of manifest group
 func (g Group) GetTargetSize() int { return g.TargetSize }
 
 // Manifest implements ContainerScaffold
@@ -213,7 +213,7 @@ func (rj RunJobStage) ImageDescriptionRef(containerName string) *ImageDescriptio
 	return findImageDescription(containerName, rj.ImageDescriptions)
 }
 
-// TargetSize returns target size of manifest group
+// GetTargetSize returns target size of manifest group
 func (rj RunJobStage) GetTargetSize() int { return 1 }
 
 func findImageDescription(containerName string, refs []ImageDescriptionRef) *ImageDescriptionRef {
