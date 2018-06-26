@@ -7,6 +7,8 @@ import (
 
 	"github.com/namely/k8s-pipeliner/pipeline/builder/types"
 	"github.com/namely/k8s-pipeliner/pipeline/config"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 var (
@@ -15,6 +17,8 @@ var (
 
 	// ErrOverrideContention is returned when a manifest defines multiple containers and overrides were provided
 	ErrOverrideContention = errors.New("builder: overrides were provided to a group that has multiple containers defined")
+	// ErrDeploymentJob is returned when a manifest uses a deployment for a one shot job
+	ErrDeploymentJob = errors.New("builder: a deployment manifest was provided for a run job pod")
 )
 
 const (
@@ -28,8 +32,9 @@ const (
 type Builder struct {
 	pipeline *config.Pipeline
 
-	isLinear bool
-	basePath string
+	isLinear   bool
+	basePath   string
+	v2Provider bool
 }
 
 // New initializes a new builder for a pipeline config
@@ -49,6 +54,7 @@ func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
 		LimitConcurrent:      b.pipeline.DisableConcurrentExecutions,
 		KeepWaitingPipelines: b.pipeline.KeepQueuedPipelines,
 		Description:          b.pipeline.Description,
+		AppConfig:            map[string]interface{}{},
 	}
 
 	sp.Notifications = buildNotifications(b.pipeline.Notifications)
@@ -93,12 +99,22 @@ func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
 		var s types.Stage
 		var err error
 
-		if stage.RunJob != nil {
-			s, err = b.buildRunJobStage(stageIndex, stage)
+		if b.v2Provider {
+			if stage.RunJob != nil {
+				s, err = b.buildV2RunJobStage(stageIndex, stage)
+			}
+			if stage.Deploy != nil {
+				s, err = b.buildV2ManifestStage(stageIndex, stage)
+			}
+		} else {
+			if stage.RunJob != nil {
+				s, err = b.buildRunJobStage(stageIndex, stage)
+			}
+			if stage.Deploy != nil {
+				s, err = b.buildDeployStage(stageIndex, stage)
+			}
 		}
-		if stage.Deploy != nil {
-			s, err = b.buildDeployStage(stageIndex, stage)
-		}
+
 		if stage.ManualJudgement != nil {
 			s, err = b.buildManualJudgementStage(stageIndex, stage)
 		}
@@ -168,6 +184,110 @@ func (b *Builder) buildRunJobStage(index int, s config.Stage) (*types.RunJobStag
 	return rjs, nil
 }
 
+func (b *Builder) buildV2ManifestStage(index int, s config.Stage) (*types.ManifestStage, error) {
+	ds := &types.ManifestStage{
+		StageMetadata:           buildStageMetadata(s, "deployManifest", index, b.isLinear),
+		Account:                 s.Account,
+		CloudProvider:           "kubernetes",
+		Location:                "",
+		ManifestArtifactAccount: "embedded-artifact",
+		ManifestName:            "",
+		Moniker: types.Moniker{
+			App:     fmt.Sprintf("%s-%s", b.pipeline.Application, s.Account),
+			Cluster: b.pipeline.Application,
+			Detail:  "",
+			Stack:   "",
+		},
+		Relationships: types.Relationships{},
+		Source:        "text",
+	}
+
+	parser := NewManfifestParser(b.pipeline, b.basePath)
+
+	for _, group := range s.Deploy.Groups {
+		manifest, err := parser.ManifestFromScaffold(group)
+
+		if err != nil {
+			return nil, err
+		}
+
+		switch t := manifest.(type) {
+		case *appsv1.Deployment:
+			if len(t.Spec.Template.Spec.Containers) == 0 {
+				return nil, ErrNoContainers
+			}
+			if overrides := group.ContainerOverrides; overrides != nil {
+				if len(t.Spec.Template.Spec.Containers) > 1 {
+					return nil, ErrOverrideContention
+				}
+				if overrides.Args != nil {
+					t.Spec.Template.Spec.Containers[0].Args = overrides.Args
+				}
+
+				if overrides.Command != nil {
+					t.Spec.Template.Spec.Containers[0].Command = overrides.Command
+				}
+			}
+		}
+
+		j, err := json.Marshal(manifest)
+
+		if err != nil {
+			return nil, err
+		}
+		ds.Manifests = append(ds.Manifests, json.RawMessage(j))
+	}
+
+	return ds, nil
+}
+
+func (b *Builder) buildV2RunJobStage(index int, s config.Stage) (*types.ManifestStage, error) {
+	ds := &types.ManifestStage{
+		StageMetadata:           buildStageMetadata(s, "deployManifest", index, b.isLinear),
+		Account:                 s.Account,
+		CloudProvider:           "kubernetes",
+		Location:                "",
+		ManifestArtifactAccount: "embedded-artifact",
+		ManifestName:            "",
+		Moniker: types.Moniker{
+			App:     fmt.Sprintf("%s-%s", b.pipeline.Application, s.Account),
+			Cluster: b.pipeline.Application,
+			Detail:  "",
+			Stack:   "",
+		},
+		Relationships: types.Relationships{},
+		Source:        "text",
+	}
+
+	parser := NewManfifestParser(b.pipeline, b.basePath)
+	obj, err := parser.ManifestFromScaffold(s.RunJob)
+
+	if err != nil {
+		return nil, err
+	}
+
+	switch t := obj.(type) {
+	case *corev1.Pod:
+		if s.RunJob.Container != nil {
+			t.Spec.Containers[0].Command = s.RunJob.Container.Command
+			t.Spec.Containers[0].Args = s.RunJob.Container.Args
+		}
+	case *appsv1.Deployment:
+		return nil, ErrDeploymentJob
+	}
+
+	j, err := json.Marshal(obj)
+
+	if err != nil {
+		return nil, err
+	}
+
+	ds.Manifests = append(ds.Manifests, json.RawMessage(j))
+
+	return ds, nil
+
+}
+
 // As of right now, this tool only supports deploying one server group at a time from a
 // manifest file. So the clusters array will ALWAYS be 1 in length.
 func (b *Builder) buildDeployStage(index int, s config.Stage) (*types.DeployStage, error) {
@@ -179,6 +299,7 @@ func (b *Builder) buildDeployStage(index int, s config.Stage) (*types.DeployStag
 
 	for _, group := range s.Deploy.Groups {
 		mg, err := parser.ContainersFromScaffold(group)
+
 		if err != nil {
 			return nil, err
 		}

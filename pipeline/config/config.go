@@ -180,12 +180,13 @@ type ContainerOverrides struct {
 // PodOverrides are used to override certain attributes about a pod spec
 // but defined from a pipeline.yml file
 type PodOverrides struct {
-  Annotations map[string]string `yaml:"annotations",omitempty`
+	Annotations map[string]string `yaml:"annotations",omitempty`
 }
 
 // ContainerScaffold is used to make it easy to get a file and image ref
 // so you can build multiple types of stages (run job or deploys)
 type ContainerScaffold interface {
+	GetTargetSize() int
 	Manifest() string
 	ImageDescriptionRef(containerName string) *ImageDescriptionRef
 }
@@ -201,6 +202,9 @@ func (g Group) ImageDescriptionRef(containerName string) *ImageDescriptionRef {
 	return findImageDescription(containerName, g.ImageDescriptions)
 }
 
+// TargetSize returns target size of manifest group
+func (g Group) GetTargetSize() int { return g.TargetSize }
+
 // Manifest implements ContainerScaffold
 func (rj RunJobStage) Manifest() string { return rj.ManifestFile }
 
@@ -208,6 +212,9 @@ func (rj RunJobStage) Manifest() string { return rj.ManifestFile }
 func (rj RunJobStage) ImageDescriptionRef(containerName string) *ImageDescriptionRef {
 	return findImageDescription(containerName, rj.ImageDescriptions)
 }
+
+// TargetSize returns target size of manifest group
+func (rj RunJobStage) GetTargetSize() int { return 1 }
 
 func findImageDescription(containerName string, refs []ImageDescriptionRef) *ImageDescriptionRef {
 	for _, r := range refs {

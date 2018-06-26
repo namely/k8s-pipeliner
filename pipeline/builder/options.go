@@ -18,3 +18,9 @@ func WithBasePath(basePath string) OptFunc {
 		b.basePath = basePath
 	}
 }
+
+func WithV2Provider(v bool) OptFunc {
+	return func(b *Builder) {
+		b.v2Provider = v
+	}
+}
