@@ -217,6 +217,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 										Command: []string{"cat", "dog"},
 										Args:    []string{"mouse"},
 									},
+									LoadBalancers: []string{"lb1", "lb2"},
 								},
 							},
 						},
@@ -228,6 +229,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 			spinnaker, err := builder.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
 			assert.Equal(t, "Test V2 Deploy Stage", spinnaker.Stages[0].(*types.ManifestStage).Name)
+
 		})
 
 		t.Run("RequisiteStageRefIds defaults to an empty slice", func(t *testing.T) {

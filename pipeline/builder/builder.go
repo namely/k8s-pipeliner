@@ -9,6 +9,8 @@ import (
 	"github.com/namely/k8s-pipeliner/pipeline/config"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	v1beta1 "k8s.io/api/extensions/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
@@ -26,6 +28,8 @@ const (
 	JenkinsTrigger = "jenkins"
 	// WebhookTrigger is the name of the type in the spinnaker json for pipeline config for webhooks
 	WebhookTrigger = "webhook"
+	// LoadBalancerFormat creates the label selectors to attach pipeline.yml labels to deployment selectors
+	LoadBalancerFormat = "load-balancer-%s"
 )
 
 // Builder constructs a spinnaker pipeline JSON from a pipeliner config
@@ -212,21 +216,10 @@ func (b *Builder) buildV2ManifestStage(index int, s config.Stage) (*types.Manife
 		}
 
 		switch t := manifest.(type) {
-		case *appsv1.Deployment:
-			if len(t.Spec.Template.Spec.Containers) == 0 {
-				return nil, ErrNoContainers
-			}
-			if overrides := group.ContainerOverrides; overrides != nil {
-				if len(t.Spec.Template.Spec.Containers) > 1 {
-					return nil, ErrOverrideContention
-				}
-				if overrides.Args != nil {
-					t.Spec.Template.Spec.Containers[0].Args = overrides.Args
-				}
-
-				if overrides.Command != nil {
-					t.Spec.Template.Spec.Containers[0].Command = overrides.Command
-				}
+		case *v1beta1.Deployment:
+			_, err = buildDeployment(t, group)
+			if err != nil {
+				return nil, err
 			}
 		}
 
@@ -273,6 +266,8 @@ func (b *Builder) buildV2RunJobStage(index int, s config.Stage) (*types.Manifest
 			t.Spec.Containers[0].Args = s.RunJob.Container.Args
 		}
 	case *appsv1.Deployment:
+		return nil, ErrDeploymentJob
+	case *v1beta1.Deployment:
 		return nil, ErrDeploymentJob
 	}
 
@@ -417,6 +412,64 @@ func buildNotifications(notifications []config.Notification) []types.Notificatio
 	}
 
 	return nots
+}
+
+func buildDeployment(deploy *v1beta1.Deployment, group config.Group) (*v1beta1.Deployment, error) {
+
+	if len(deploy.Spec.Template.Spec.Containers) == 0 {
+		return nil, ErrNoContainers
+	}
+
+	if overrides := group.ContainerOverrides; overrides != nil {
+		if len(deploy.Spec.Template.Spec.Containers) > 1 {
+			return nil, ErrOverrideContention
+		}
+		if overrides.Args != nil {
+			deploy.Spec.Template.Spec.Containers[0].Args = overrides.Args
+		}
+		if overrides.Command != nil {
+			deploy.Spec.Template.Spec.Containers[0].Command = overrides.Command
+		}
+	}
+
+	if lb := group.LoadBalancers; lb != nil {
+		labels := make(map[string]string)
+
+		for _, l := range lb {
+			labels[fmt.Sprintf(LoadBalancerFormat, l)] = "true"
+		}
+
+		if deploy.Spec.Selector != nil {
+			for key, val := range labels {
+				deploy.Spec.Selector.MatchLabels[key] = val
+			}
+		} else {
+			deploy.Spec.Selector = &metav1.LabelSelector{
+				MatchLabels: labels,
+			}
+		}
+
+		l := deploy.ObjectMeta.GetLabels()
+
+		if l == nil {
+			l = make(map[string]string)
+		}
+
+		for key, val := range labels {
+			l[key] = val
+		}
+
+		deploy.ObjectMeta.SetLabels(l)
+
+		l = deploy.Spec.Template.GetLabels()
+
+		for key, val := range labels {
+			l[key] = val
+		}
+
+		deploy.Spec.Template.SetLabels(l)
+	}
+	return deploy, nil
 }
 
 func newDefaultTrue(original *bool) bool {
