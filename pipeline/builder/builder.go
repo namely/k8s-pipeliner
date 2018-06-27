@@ -193,12 +193,12 @@ func (b *Builder) buildV2ManifestStage(index int, s config.Stage) (*types.Manife
 		ManifestArtifactAccount: "embedded-artifact",
 		ManifestName:            "",
 		Moniker: types.Moniker{
-			App:     fmt.Sprintf("%s-%s", b.pipeline.Application, s.Account),
-			Cluster: b.pipeline.Application,
+			App:     b.pipeline.Application,
+			Cluster: fmt.Sprintf("%s-%s", b.pipeline.Application, s.Account),
 			Detail:  "",
 			Stack:   "",
 		},
-		Relationships: types.Relationships{},
+		Relationships: types.Relationships{LoadBalancers: []interface{}{}, SecurityGroups: []interface{}{}},
 		Source:        "text",
 	}
 
@@ -250,12 +250,12 @@ func (b *Builder) buildV2RunJobStage(index int, s config.Stage) (*types.Manifest
 		ManifestArtifactAccount: "embedded-artifact",
 		ManifestName:            "",
 		Moniker: types.Moniker{
-			App:     fmt.Sprintf("%s-%s", b.pipeline.Application, s.Account),
-			Cluster: b.pipeline.Application,
+			App:     b.pipeline.Application,
+			Cluster: fmt.Sprintf("%s-%s", b.pipeline.Application, s.Account),
 			Detail:  "",
 			Stack:   "",
 		},
-		Relationships: types.Relationships{},
+		Relationships: types.Relationships{LoadBalancers: []interface{}{}, SecurityGroups: []interface{}{}},
 		Source:        "text",
 	}
 
