@@ -7,7 +7,6 @@ import (
 
 	"github.com/namely/k8s-pipeliner/pipeline/builder/types"
 	"github.com/namely/k8s-pipeliner/pipeline/config"
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1beta1 "k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -265,8 +264,6 @@ func (b *Builder) buildV2RunJobStage(index int, s config.Stage) (*types.Manifest
 			t.Spec.Containers[0].Command = s.RunJob.Container.Command
 			t.Spec.Containers[0].Args = s.RunJob.Container.Args
 		}
-	case *appsv1.Deployment:
-		return nil, ErrDeploymentJob
 	case *v1beta1.Deployment:
 		return nil, ErrDeploymentJob
 	}
