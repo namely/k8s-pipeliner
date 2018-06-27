@@ -13,6 +13,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	v1beta1 "k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 )
@@ -77,7 +78,7 @@ func (mp *ManifestParser) ManifestFromScaffold(scaffold config.ContainerScaffold
 	}
 
 	switch t := obj.(type) {
-	case *appsv1.Deployment:
+	case *v1beta1.Deployment:
 		r, err := mp.InjectDeploymentOverrides(t, scaffold)
 		if err != nil {
 			return nil, errors.Wrapf(err, "error injecting overrides into deployment manifests")
@@ -95,7 +96,7 @@ func (mp *ManifestParser) ManifestFromScaffold(scaffold config.ContainerScaffold
 }
 
 // InjectDeploymentOverrides takes the manifest -> injects them into the marshalled manifest
-func (mp *ManifestParser) InjectDeploymentOverrides(manifest *appsv1.Deployment, scaffold config.ContainerScaffold) (*appsv1.Deployment, error) {
+func (mp *ManifestParser) InjectDeploymentOverrides(manifest *v1beta1.Deployment, scaffold config.ContainerScaffold) (*v1beta1.Deployment, error) {
 	replicas := int32(scaffold.GetTargetSize())
 	manifest.Spec.Replicas = &replicas
 
