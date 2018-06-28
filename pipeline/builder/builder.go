@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/namely/k8s-pipeliner/pipeline/builder/types"
 	"github.com/namely/k8s-pipeliner/pipeline/config"
@@ -15,11 +16,13 @@ import (
 var (
 	// ErrNoContainers is returned when a manifest has defined containers in it
 	ErrNoContainers = errors.New("builder: no containers were found in given manifest file")
-
+	// ErrNoDeployGroups is returned when a stage in the pipeline.yml does not have any deploy groups on it.
+	ErrNoDeployGroups = errors.New("builder: no deploy groups were defined in given pipeline.yml")
 	// ErrOverrideContention is returned when a manifest defines multiple containers and overrides were provided
 	ErrOverrideContention = errors.New("builder: overrides were provided to a group that has multiple containers defined")
 	// ErrDeploymentJob is returned when a manifest uses a deployment for a one shot job
 	ErrDeploymentJob = errors.New("builder: a deployment manifest was provided for a run job pod")
+	ErrKubernetesApi = errors.New("builder: could not marshal this type of kubernetes manifest")
 )
 
 const (
@@ -196,14 +199,21 @@ func (b *Builder) buildV2ManifestStage(index int, s config.Stage) (*types.Manife
 		ManifestArtifactAccount: "embedded-artifact",
 		ManifestName:            "",
 		Moniker: types.Moniker{
-			App:     b.pipeline.Application,
-			Cluster: fmt.Sprintf("%s-%s", b.pipeline.Application, s.Account),
-			Detail:  "",
-			Stack:   "",
+			App: b.pipeline.Application,
 		},
 		Relationships: types.Relationships{LoadBalancers: []interface{}{}, SecurityGroups: []interface{}{}},
 		Source:        "text",
 	}
+
+	if len(s.Deploy.Groups) == 0 {
+		return nil, ErrNoDeployGroups
+	}
+
+	cluster := []string{s.Account, b.pipeline.Application, s.Deploy.Groups[0].Details, s.Deploy.Groups[0].Stack}
+
+	ds.Moniker.Cluster = strings.Join(cluster, "-")
+	ds.Moniker.Detail = s.Deploy.Groups[0].Details
+	ds.Moniker.Stack = s.Deploy.Groups[0].Stack
 
 	parser := NewManfifestParser(b.pipeline, b.basePath)
 
@@ -220,6 +230,8 @@ func (b *Builder) buildV2ManifestStage(index int, s config.Stage) (*types.Manife
 			if err != nil {
 				return nil, err
 			}
+		default:
+			return nil, ErrKubernetesApi
 		}
 
 		j, err := json.Marshal(manifest)
@@ -264,7 +276,7 @@ func (b *Builder) buildV2RunJobStage(index int, s config.Stage) (*types.Manifest
 			t.Spec.Containers[0].Command = s.RunJob.Container.Command
 			t.Spec.Containers[0].Args = s.RunJob.Container.Args
 		}
-	case *v1beta1.Deployment:
+	default:
 		return nil, ErrDeploymentJob
 	}
 
