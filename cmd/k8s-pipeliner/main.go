@@ -34,6 +34,10 @@ func main() {
 					Name:  "linear, l",
 					Usage: "Assigns refs and reliesOn identifiers for you so you dont need to specify them. This is useful if your pipelines are always linear.",
 				},
+				cli.BoolFlag{
+					Name:  "v2",
+					Usage: "Create your manifests with the v2 kubernetes provider",
+				},
 			},
 		},
 		{
@@ -65,7 +69,7 @@ func createAction(ctx *cli.Context) error {
 		return err
 	}
 
-	builder := builder.New(p, builder.WithLinear(ctx.Bool("linear")))
+	builder := builder.New(p, builder.WithV2Provider(ctx.Bool("v2")), builder.WithLinear(ctx.Bool("linear")))
 	return json.NewEncoder(os.Stdout).Encode(builder)
 }
 

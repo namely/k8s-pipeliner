@@ -15,10 +15,15 @@ import (
 type scaffoldMock struct {
 	manifest             string
 	imageDescriptionRefs []config.ImageDescriptionRef
+	TargetSize           int
 }
 
 func (sm scaffoldMock) Manifest() string {
 	return sm.manifest
+}
+
+func (sm scaffoldMock) GetTargetSize() int {
+	return sm.TargetSize
 }
 
 func (sm scaffoldMock) ImageDescriptionRef(containerName string) *config.ImageDescriptionRef {
@@ -27,7 +32,6 @@ func (sm scaffoldMock) ImageDescriptionRef(containerName string) *config.ImageDe
 			return &ref
 		}
 	}
-
 	return nil
 }
 
@@ -93,6 +97,59 @@ func TestContainersFromManifests(t *testing.T) {
 		assert.Len(t, group.Containers, 1)
 		assert.Len(t, group.Annotations, 2)
 		assert.Equal(t, "fake-namespace", group.Namespace)
+	})
+
+	t.Run("V2 Provider Deployment", func(t *testing.T) {
+		file := filepath.Join(wd, "testdata", "deployment.full.yml")
+		parser := builder.NewManfifestParser(&config.Pipeline{
+			ImageDescriptions: []config.ImageDescription{
+				{
+					Name:    "test-ref",
+					ImageID: "this-is-the-v2-image",
+				},
+				{
+					Name:    "init-v2",
+					ImageID: "this-is-the-v2-init-image",
+				},
+			},
+		})
+		group, err := parser.ManifestFromScaffold(scaffoldMock{
+			manifest: file,
+			imageDescriptionRefs: []config.ImageDescriptionRef{
+				{
+					Name:          "test-ref",
+					ContainerName: "test-container",
+				},
+				{
+					Name:          "init-v2",
+					ContainerName: "init-container",
+				},
+			},
+			TargetSize: 5,
+		})
+
+		require.NoError(t, err, "error on retrieving the deployment manifest")
+		assert.Equal(t, "extensions/v1beta1, Kind=Deployment", group.GetObjectKind().GroupVersionKind().String())
+	})
+	t.Run("V2 Provider Pod Spec", func(t *testing.T) {
+		file := filepath.Join(wd, "testdata", "podspec.yml")
+		parser := builder.NewManfifestParser(&config.Pipeline{})
+		group, err := parser.ManifestFromScaffold(scaffoldMock{
+			manifest: file,
+		})
+
+		require.NoError(t, err, "error on retrieving the pod manifest")
+		assert.Equal(t, "/v1, Kind=Pod", group.GetObjectKind().GroupVersionKind().String())
+	})
+	t.Run("V2 Provider Configmap Spec", func(t *testing.T) {
+		file := filepath.Join(wd, "testdata", "cm.yml")
+		parser := builder.NewManfifestParser(&config.Pipeline{})
+		group, err := parser.ManifestFromScaffold(scaffoldMock{
+			manifest: file,
+		})
+
+		require.NoError(t, err, "error on retrieving the configmap manifest")
+		assert.Equal(t, "/v1, Kind=ConfigMap", group.GetObjectKind().GroupVersionKind().String())
 	})
 
 	t.Run("PodSpecs work as manifest references", func(t *testing.T) {

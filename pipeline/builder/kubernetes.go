@@ -13,6 +13,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	v1beta1 "k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 )
@@ -53,9 +54,88 @@ func NewManfifestParser(config *config.Pipeline, basePath ...string) *ManifestPa
 	return mp
 }
 
+// ManifestFromScaffold creates a dynamic kubernetes object for a given pipeline config
+func (mp *ManifestParser) ManifestFromScaffold(scaffold config.ContainerScaffold) (runtime.Object, error) {
+	path := scaffold.Manifest()
+	if !filepath.IsAbs(scaffold.Manifest()) && mp.basePath != "" {
+		path = filepath.Join(mp.basePath, scaffold.Manifest())
+	}
+
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+
+	b, err := ioutil.ReadAll(f)
+	if err != nil {
+		return nil, err
+	}
+
+	decode := scheme.Codecs.UniversalDeserializer().Decode
+	obj, _, err := decode(b, nil, nil)
+	if err != nil {
+		return nil, errors.Wrapf(err, "marshaling failure: %s", path)
+	}
+
+	switch t := obj.(type) {
+	case *v1beta1.Deployment:
+		r, err := mp.InjectDeploymentOverrides(t, scaffold)
+		if err != nil {
+			return nil, errors.Wrapf(err, "error injecting overrides into deployment manifests")
+		}
+		return r, nil
+	case *corev1.Pod:
+		r, err := mp.InjectPodOverrides(t, scaffold)
+		if err != nil {
+			return nil, errors.Wrapf(err, "error injecting overrides into pod manifests")
+		}
+		return r, nil
+	}
+
+	return obj, nil
+}
+
+// InjectDeploymentOverrides takes the manifest -> injects them into the marshalled manifest
+func (mp *ManifestParser) InjectDeploymentOverrides(manifest *v1beta1.Deployment, scaffold config.ContainerScaffold) (*v1beta1.Deployment, error) {
+	replicas := int32(scaffold.GetTargetSize())
+	manifest.Spec.Replicas = &replicas
+
+	for pos, container := range manifest.Spec.Template.Spec.Containers {
+		manifest.Spec.Template.Spec.Containers[pos] = mp.InjectContainerImageDescription(container, scaffold)
+	}
+	for pos, container := range manifest.Spec.Template.Spec.InitContainers {
+		manifest.Spec.Template.Spec.InitContainers[pos] = mp.InjectContainerImageDescription(container, scaffold)
+	}
+	return manifest, nil
+}
+
+// InjectPodOverrides takes the Pod object and injects the scaffolded overrides
+func (mp *ManifestParser) InjectPodOverrides(manifest *corev1.Pod, scaffold config.ContainerScaffold) (*corev1.Pod, error) {
+	for pos, container := range manifest.Spec.Containers {
+		manifest.Spec.Containers[pos] = mp.InjectContainerImageDescription(container, scaffold)
+	}
+	for pos, container := range manifest.Spec.InitContainers {
+		manifest.Spec.InitContainers[pos] = mp.InjectContainerImageDescription(container, scaffold)
+	}
+	return manifest, nil
+}
+
+// InjectContainerImageDescription takes a kubernetes container and inserts the corresponding image description from a trigger
+func (mp *ManifestParser) InjectContainerImageDescription(container corev1.Container, scaffold config.ContainerScaffold) corev1.Container {
+	if ref := scaffold.ImageDescriptionRef(container.Name); ref != nil {
+		for _, desc := range mp.config.ImageDescriptions {
+			if desc.Name == ref.Name && ref.ContainerName == container.Name {
+				container.Image = desc.ImageID
+			}
+		}
+	}
+	return container
+}
+
 // ContainersFromScaffold loads a kubernetes manifest file and generates
 // spinnaker pipeline containers config from it.
 func (mp *ManifestParser) ContainersFromScaffold(scaffold config.ContainerScaffold) (*ManifestGroup, error) {
+
 	path := scaffold.Manifest()
 	if !filepath.IsAbs(scaffold.Manifest()) && mp.basePath != "" {
 		path = filepath.Join(mp.basePath, scaffold.Manifest())
@@ -195,6 +275,7 @@ func (mp *ManifestParser) parseContainer(container corev1.Container, scaffold co
 
 	// add the image description first off using the annotations on the container
 	var imageDescription config.ImageDescription
+
 	if ref := scaffold.ImageDescriptionRef(container.Name); ref != nil {
 		for _, desc := range mp.config.ImageDescriptions {
 			if desc.Name == ref.Name && ref.ContainerName == container.Name {
@@ -203,6 +284,7 @@ func (mp *ManifestParser) parseContainer(container corev1.Container, scaffold co
 			}
 		}
 	}
+
 	spinContainer.ImageDescription = types.ImageDescription{
 		Account:      imageDescription.Account,
 		ImageID:      imageDescription.ImageID,
@@ -211,7 +293,6 @@ func (mp *ManifestParser) parseContainer(container corev1.Container, scaffold co
 		Registry:     imageDescription.Registry,
 		Organization: imageDescription.Organization,
 	}
-
 	args := []string{}
 	if container.Args != nil {
 		args = container.Args

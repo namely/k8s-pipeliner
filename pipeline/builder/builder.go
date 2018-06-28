@@ -4,17 +4,26 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/namely/k8s-pipeliner/pipeline/builder/types"
 	"github.com/namely/k8s-pipeliner/pipeline/config"
+	corev1 "k8s.io/api/core/v1"
+	v1beta1 "k8s.io/api/extensions/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
 	// ErrNoContainers is returned when a manifest has defined containers in it
 	ErrNoContainers = errors.New("builder: no containers were found in given manifest file")
-
+	// ErrNoDeployGroups is returned when a stage in the pipeline.yml does not have any deploy groups on it.
+	ErrNoDeployGroups = errors.New("builder: no deploy groups were defined in given pipeline.yml")
 	// ErrOverrideContention is returned when a manifest defines multiple containers and overrides were provided
 	ErrOverrideContention = errors.New("builder: overrides were provided to a group that has multiple containers defined")
+	// ErrDeploymentJob is returned when a manifest uses a deployment for a one shot job
+	ErrDeploymentJob = errors.New("builder: a deployment manifest was provided for a run job pod")
+	// ErrKubernetesAPI defines whether the manifest we've provided falls within the scope
+	ErrKubernetesAPI = errors.New("builder: could not marshal this type of kubernetes manifest")
 )
 
 const (
@@ -22,14 +31,17 @@ const (
 	JenkinsTrigger = "jenkins"
 	// WebhookTrigger is the name of the type in the spinnaker json for pipeline config for webhooks
 	WebhookTrigger = "webhook"
+	// LoadBalancerFormat creates the label selectors to attach pipeline.yml labels to deployment selectors
+	LoadBalancerFormat = "load-balancer-%s"
 )
 
 // Builder constructs a spinnaker pipeline JSON from a pipeliner config
 type Builder struct {
 	pipeline *config.Pipeline
 
-	isLinear bool
-	basePath string
+	isLinear   bool
+	basePath   string
+	v2Provider bool
 }
 
 // New initializes a new builder for a pipeline config
@@ -49,6 +61,7 @@ func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
 		LimitConcurrent:      b.pipeline.DisableConcurrentExecutions,
 		KeepWaitingPipelines: b.pipeline.KeepQueuedPipelines,
 		Description:          b.pipeline.Description,
+		AppConfig:            map[string]interface{}{},
 	}
 
 	sp.Notifications = buildNotifications(b.pipeline.Notifications)
@@ -93,12 +106,22 @@ func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
 		var s types.Stage
 		var err error
 
-		if stage.RunJob != nil {
-			s, err = b.buildRunJobStage(stageIndex, stage)
+		if b.v2Provider {
+			if stage.RunJob != nil {
+				s, err = b.buildV2RunJobStage(stageIndex, stage)
+			}
+			if stage.Deploy != nil {
+				s, err = b.buildV2ManifestStage(stageIndex, stage)
+			}
+		} else {
+			if stage.RunJob != nil {
+				s, err = b.buildRunJobStage(stageIndex, stage)
+			}
+			if stage.Deploy != nil {
+				s, err = b.buildDeployStage(stageIndex, stage)
+			}
 		}
-		if stage.Deploy != nil {
-			s, err = b.buildDeployStage(stageIndex, stage)
-		}
+
 		if stage.ManualJudgement != nil {
 			s, err = b.buildManualJudgementStage(stageIndex, stage)
 		}
@@ -166,6 +189,108 @@ func (b *Builder) buildRunJobStage(index int, s config.Stage) (*types.RunJobStag
 	}
 
 	return rjs, nil
+}
+
+func (b *Builder) buildV2ManifestStage(index int, s config.Stage) (*types.ManifestStage, error) {
+	ds := &types.ManifestStage{
+		StageMetadata:           buildStageMetadata(s, "deployManifest", index, b.isLinear),
+		Account:                 s.Account,
+		CloudProvider:           "kubernetes",
+		Location:                "",
+		ManifestArtifactAccount: "embedded-artifact",
+		ManifestName:            "",
+		Moniker: types.Moniker{
+			App: b.pipeline.Application,
+		},
+		Relationships: types.Relationships{LoadBalancers: []interface{}{}, SecurityGroups: []interface{}{}},
+		Source:        "text",
+	}
+
+	if len(s.Deploy.Groups) == 0 {
+		return nil, ErrNoDeployGroups
+	}
+
+	cluster := []string{s.Account, b.pipeline.Application, s.Deploy.Groups[0].Details, s.Deploy.Groups[0].Stack}
+
+	ds.Moniker.Cluster = strings.Join(cluster, "-")
+	ds.Moniker.Detail = s.Deploy.Groups[0].Details
+	ds.Moniker.Stack = s.Deploy.Groups[0].Stack
+
+	parser := NewManfifestParser(b.pipeline, b.basePath)
+
+	for _, group := range s.Deploy.Groups {
+		manifest, err := parser.ManifestFromScaffold(group)
+
+		if err != nil {
+			return nil, err
+		}
+
+		switch t := manifest.(type) {
+		case *v1beta1.Deployment:
+			_, err = buildDeployment(t, group)
+			if err != nil {
+				return nil, err
+			}
+		default:
+			return nil, ErrKubernetesAPI
+		}
+
+		j, err := json.Marshal(manifest)
+
+		if err != nil {
+			return nil, err
+		}
+		ds.Manifests = append(ds.Manifests, json.RawMessage(j))
+	}
+
+	return ds, nil
+}
+
+func (b *Builder) buildV2RunJobStage(index int, s config.Stage) (*types.ManifestStage, error) {
+	ds := &types.ManifestStage{
+		StageMetadata:           buildStageMetadata(s, "deployManifest", index, b.isLinear),
+		Account:                 s.Account,
+		CloudProvider:           "kubernetes",
+		Location:                "",
+		ManifestArtifactAccount: "embedded-artifact",
+		ManifestName:            "",
+		Moniker: types.Moniker{
+			App:     b.pipeline.Application,
+			Cluster: fmt.Sprintf("%s-%s", b.pipeline.Application, s.Account),
+			Detail:  "",
+			Stack:   "",
+		},
+		Relationships: types.Relationships{LoadBalancers: []interface{}{}, SecurityGroups: []interface{}{}},
+		Source:        "text",
+	}
+
+	parser := NewManfifestParser(b.pipeline, b.basePath)
+	obj, err := parser.ManifestFromScaffold(s.RunJob)
+
+	if err != nil {
+		return nil, err
+	}
+
+	switch t := obj.(type) {
+	case *corev1.Pod:
+		if s.RunJob.Container != nil {
+			t.Spec.Containers[0].Command = s.RunJob.Container.Command
+			t.Spec.Containers[0].Args = s.RunJob.Container.Args
+		}
+	default:
+		return nil, ErrDeploymentJob
+	}
+
+	j, err := json.Marshal(obj)
+
+	if err != nil {
+		return nil, err
+	}
+
+	ds.Manifests = append(ds.Manifests, json.RawMessage(j))
+
+	return ds, nil
+
 }
 
 // As of right now, this tool only supports deploying one server group at a time from a
@@ -297,6 +422,64 @@ func buildNotifications(notifications []config.Notification) []types.Notificatio
 	}
 
 	return nots
+}
+
+func buildDeployment(deploy *v1beta1.Deployment, group config.Group) (*v1beta1.Deployment, error) {
+
+	if len(deploy.Spec.Template.Spec.Containers) == 0 {
+		return nil, ErrNoContainers
+	}
+
+	if overrides := group.ContainerOverrides; overrides != nil {
+		if len(deploy.Spec.Template.Spec.Containers) > 1 {
+			return nil, ErrOverrideContention
+		}
+		if overrides.Args != nil {
+			deploy.Spec.Template.Spec.Containers[0].Args = overrides.Args
+		}
+		if overrides.Command != nil {
+			deploy.Spec.Template.Spec.Containers[0].Command = overrides.Command
+		}
+	}
+
+	if lb := group.LoadBalancers; lb != nil {
+		labels := make(map[string]string)
+
+		for _, l := range lb {
+			labels[fmt.Sprintf(LoadBalancerFormat, l)] = "true"
+		}
+
+		if deploy.Spec.Selector != nil {
+			for key, val := range labels {
+				deploy.Spec.Selector.MatchLabels[key] = val
+			}
+		} else {
+			deploy.Spec.Selector = &metav1.LabelSelector{
+				MatchLabels: labels,
+			}
+		}
+
+		l := deploy.ObjectMeta.GetLabels()
+
+		if l == nil {
+			l = make(map[string]string)
+		}
+
+		for key, val := range labels {
+			l[key] = val
+		}
+
+		deploy.ObjectMeta.SetLabels(l)
+
+		l = deploy.Spec.Template.GetLabels()
+
+		for key, val := range labels {
+			l[key] = val
+		}
+
+		deploy.Spec.Template.SetLabels(l)
+	}
+	return deploy, nil
 }
 
 func newDefaultTrue(original *bool) bool {

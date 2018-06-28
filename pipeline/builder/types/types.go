@@ -1,13 +1,17 @@
 package types
 
 import (
+	"encoding/json"
+
 	corev1 "k8s.io/api/core/v1"
 )
 
+// Bool returns a pointer to a boolean
 func Bool(b bool) *bool {
 	return &b
 }
 
+// Int64 returns a pointer to an int64
 func Int64(i int64) *int64 {
 	return &i
 }
@@ -15,9 +19,10 @@ func Int64(i int64) *int64 {
 // SpinnakerPipeline defines the fields for the top leve object of a spinnaker
 // pipeline. Mostly used for constructing JSON
 type SpinnakerPipeline struct {
-	ID          string `json:"id,omitempty"`
-	Name        string `json:"name,omitempty"`
-	Application string `json:"application,omitempty"`
+	AppConfig   map[string]interface{} `json:"appConfig"`
+	ID          string                 `json:"id,omitempty"`
+	Name        string                 `json:"name,omitempty"`
+	Application string                 `json:"application,omitempty"`
 
 	Triggers      []Trigger      `json:"triggers"`
 	Stages        []Stage        `json:"stages"`
@@ -46,6 +51,39 @@ type Parameter struct {
 // Stage is an interface to represent a Stage struct such as RunJob or Deploy
 type Stage interface {
 	spinnakerStage()
+}
+
+// ManifestStage is a struct representing the v2 Spinnaker Manifest stages
+type ManifestStage struct {
+	StageMetadata
+
+	Account                 string            `json:"account"`
+	CloudProvider           string            `json:"cloudProvider"`
+	Location                string            `json:"location"`
+	ManifestArtifactAccount string            `json:"manifestArtifactAccount"`
+	ManifestName            string            `json:"manifestName"`
+	Manifests               []json.RawMessage `json:"manifests"`
+	Moniker                 Moniker           `json:"moniker"`
+	Relationships           Relationships     `json:"relationships"`
+	Source                  string            `json:"source"`
+}
+
+func (ms ManifestStage) spinnakerStage() {}
+
+var _ Stage = ManifestStage{}
+
+// Relationships are how Spinnaker associates k8s-services and k8s-ingresses to manifests
+type Relationships struct {
+	LoadBalancers  []interface{} `json:"loadBalancers"`
+	SecurityGroups []interface{} `json:"securityGroups"`
+}
+
+// Moniker is a component of the V2 Spinnaker Manifest Stage that allows users to label assets created by the Spinnaker v2 provider
+type Moniker struct {
+	App     string `json:"app"`
+	Cluster string `json:"cluster"`
+	Detail  string `json:"detail,omitempty"`
+	Stack   string `json:"stack,omitempty"`
 }
 
 // RunJobStage is used to represent a job that needs to be ran in a pipeline

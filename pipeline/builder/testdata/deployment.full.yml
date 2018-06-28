@@ -1,4 +1,4 @@
-apiVersion: apps/v1
+apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: example
@@ -7,6 +7,9 @@ metadata:
     fake-annotation-1: "Hello"
     fake-annotation-2: "World"
 spec:
+  selector:
+    matchLabels:
+      run: my-nginx
   template:
     metadata:
       labels:

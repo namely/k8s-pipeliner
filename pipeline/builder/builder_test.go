@@ -55,6 +55,7 @@ func TestBuilderAssignsPipelineConfiguration(t *testing.T) {
 func TestBuilderPipelineStages(t *testing.T) {
 	wd, _ := os.Getwd()
 	file := filepath.Join(wd, "testdata", "deployment.full.yml")
+	podfile := filepath.Join(wd, "testdata", "podspec.yml")
 
 	t.Run("Triggers", func(t *testing.T) {
 		t.Run("Defaults to an empty slice", func(t *testing.T) {
@@ -203,6 +204,34 @@ func TestBuilderPipelineStages(t *testing.T) {
 			assert.Equal(t, expected, spinnaker.Stages[0].(*types.DeployStage).Clusters[0].PodAnnotations)
 		})
 
+		t.Run("V2 - Clusters are assigned", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						Name: "Test V2 Deploy Stage",
+						Deploy: &config.DeployStage{
+							Groups: []config.Group{
+								{
+									ManifestFile: file,
+									ContainerOverrides: &config.ContainerOverrides{
+										Command: []string{"cat", "dog"},
+										Args:    []string{"mouse"},
+									},
+									LoadBalancers: []string{"lb1", "lb2"},
+								},
+							},
+						},
+					},
+				},
+			}
+
+			builder := builder.New(pipeline, builder.WithLinear(true), builder.WithV2Provider(true))
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+			assert.Equal(t, "Test V2 Deploy Stage", spinnaker.Stages[0].(*types.ManifestStage).Name)
+
+		})
+
 		t.Run("RequisiteStageRefIds defaults to an empty slice", func(t *testing.T) {
 			pipeline := &config.Pipeline{
 				Stages: []config.Stage{
@@ -256,6 +285,32 @@ func TestBuilderPipelineStages(t *testing.T) {
 
 			assert.Equal(t, "Test RunJob Stage", spinnaker.Stages[0].(*types.RunJobStage).Name)
 		})
+
+		t.Run("RunJob V2 stage is parsed correctly", func(t *testing.T) {
+			t.Run("Name is assigned", func(t *testing.T) {
+				pipeline := &config.Pipeline{
+					Stages: []config.Stage{
+						{
+							Name: "Test V2 RunJob Stage",
+							RunJob: &config.RunJobStage{
+								ManifestFile: podfile,
+								Container: &config.Container{
+									Command: []string{"cat", "dog"},
+									Args:    []string{"mouse"},
+								},
+							},
+						},
+					},
+				}
+
+				builder := builder.New(pipeline, builder.WithV2Provider(true))
+				spinnaker, err := builder.Pipeline()
+				require.NoError(t, err, "error generating pipeline json")
+				assert.Equal(t, "Test V2 RunJob Stage", spinnaker.Stages[0].(*types.ManifestStage).Name)
+
+			})
+		},
+		)
 
 		t.Run("RequisiteStageRefIds defaults to an empty slice", func(t *testing.T) {
 			pipeline := &config.Pipeline{
@@ -367,6 +422,40 @@ func TestBuilderPipelineStages(t *testing.T) {
 
 			expected := map[string]string{"hello": "world", "test": "annotations"}
 			assert.Equal(t, expected, spinnaker.Stages[0].(*types.RunJobStage).Annotations)
+		})
+
+		t.Run("Image Descriptions are assigned", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						Name: "Test Deploy Stage",
+						Deploy: &config.DeployStage{
+							Groups: []config.Group{
+								{
+									ManifestFile: file,
+									PodOverrides: &config.PodOverrides{
+										Annotations: map[string]string{"hello": "world"},
+									},
+								},
+							},
+						},
+					},
+				},
+				ImageDescriptions: []config.ImageDescription{
+					{
+						Name:         "hcm",
+						Account:      "namely-registry",
+						ImageID:      "${ parameters.docker_image }",
+						Registry:     "registry.namely.land",
+						Repository:   "namely/namely",
+						Tag:          "${ parameters.docker_tag }",
+						Organization: "namely",
+					},
+				},
+			}
+			builder := builder.New(pipeline)
+			_, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
 		})
 
 		t.Run("ServiceAccountName is assigned", func(t *testing.T) {
