@@ -22,7 +22,8 @@ var (
 	ErrOverrideContention = errors.New("builder: overrides were provided to a group that has multiple containers defined")
 	// ErrDeploymentJob is returned when a manifest uses a deployment for a one shot job
 	ErrDeploymentJob = errors.New("builder: a deployment manifest was provided for a run job pod")
-	ErrKubernetesApi = errors.New("builder: could not marshal this type of kubernetes manifest")
+	// ErrKubernetesAPI defines whether the manifest we've provided falls within the scope
+	ErrKubernetesAPI = errors.New("builder: could not marshal this type of kubernetes manifest")
 )
 
 const (
@@ -231,7 +232,7 @@ func (b *Builder) buildV2ManifestStage(index int, s config.Stage) (*types.Manife
 				return nil, err
 			}
 		default:
-			return nil, ErrKubernetesApi
+			return nil, ErrKubernetesAPI
 		}
 
 		j, err := json.Marshal(manifest)
