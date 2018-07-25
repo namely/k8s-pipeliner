@@ -481,23 +481,6 @@ func TestBuilderPipelineStages(t *testing.T) {
 	})
 
 	t.Run("DeployEmbeddedManifests propagates files correctly", func(t *testing.T) {
-		// pipeline := &config.Pipeline{
-		// 		Stages: []config.Stage{
-		// 			{
-		// 				Name: "Test Deploy Stage",
-		// 				Deploy: &config.DeployStage{
-		// 					Groups: []config.Group{
-		// 						{
-		// 							ManifestFile: file,
-		// 							PodOverrides: &config.PodOverrides{
-		// 								Annotations: map[string]string{"hello": "world"},
-		// 							},
-		// 						},
-		// 					},
-		// 				},
-		// 			},
-		// 		},
-
 		pipeline := &config.Pipeline{
 			Stages: []config.Stage{{
 				Account: "",
