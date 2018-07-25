@@ -478,6 +478,10 @@ func TestBuilderPipelineStages(t *testing.T) {
 			assert.Equal(t, "test-svc-acc", spinnaker.Stages[0].(*types.RunJobStage).ServiceAccountName)
 		})
 	})
+
+	t.Run("DeployEmbeddedManifests propagates files correctly", func(t *testing.T) {
+
+	})
 }
 
 func newFalse() *bool {

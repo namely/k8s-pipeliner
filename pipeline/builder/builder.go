@@ -111,7 +111,7 @@ func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
 				s, err = b.buildV2RunJobStage(stageIndex, stage)
 			}
 			if stage.Deploy != nil {
-				s, err = b.buildV2ManifestStage(stageIndex, stage)
+				s, err = b.buildV2ManifestStageFromDeploy(stageIndex, stage)
 			}
 		} else {
 			if stage.RunJob != nil {
@@ -191,7 +191,7 @@ func (b *Builder) buildRunJobStage(index int, s config.Stage) (*types.RunJobStag
 	return rjs, nil
 }
 
-func (b *Builder) buildV2ManifestStage(index int, s config.Stage) (*types.ManifestStage, error) {
+func (b *Builder) buildV2ManifestStageFromDeploy(index int, s config.Stage) (*types.ManifestStage, error) {
 	ds := &types.ManifestStage{
 		StageMetadata:           buildStageMetadata(s, "deployManifest", index, b.isLinear),
 		Account:                 s.Account,
