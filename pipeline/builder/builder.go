@@ -2,15 +2,16 @@ package builder
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/namely/k8s-pipeliner/pipeline/builder/types"
 	"github.com/namely/k8s-pipeliner/pipeline/config"
+	"github.com/pkg/errors"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	v1beta1 "k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/scheme"
 )
 
 var (
@@ -24,6 +25,8 @@ var (
 	ErrDeploymentJob = errors.New("builder: a deployment manifest was provided for a run job pod")
 	// ErrKubernetesAPI defines whether the manifest we've provided falls within the scope
 	ErrKubernetesAPI = errors.New("builder: could not marshal this type of kubernetes manifest")
+	// ErrNoManifestFiles is returned when a manifest stage does not
+	ErrNoManifestFiles = errors.New("builder: no manifest files defined")
 )
 
 const (
@@ -126,6 +129,10 @@ func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
 			s, err = b.buildManualJudgementStage(stageIndex, stage)
 		}
 
+		if stage.DeployEmbeddedManifests != nil {
+			s, err = b.buildDeployEmbeddedManifestStage(stageIndex, stage)
+		}
+
 		if err != nil {
 			return nil, err
 		}
@@ -191,20 +198,37 @@ func (b *Builder) buildRunJobStage(index int, s config.Stage) (*types.RunJobStag
 	return rjs, nil
 }
 
-func (b *Builder) buildV2ManifestStageFromDeploy(index int, s config.Stage) (*types.ManifestStage, error) {
-	ds := &types.ManifestStage{
-		StageMetadata:           buildStageMetadata(s, "deployManifest", index, b.isLinear),
-		Account:                 s.Account,
-		CloudProvider:           "kubernetes",
-		Location:                "",
-		ManifestArtifactAccount: "embedded-artifact",
-		ManifestName:            "",
-		Moniker: types.Moniker{
-			App: b.pipeline.Application,
-		},
-		Relationships: types.Relationships{LoadBalancers: []interface{}{}, SecurityGroups: []interface{}{}},
-		Source:        "text",
+func (b *Builder) buildDeployEmbeddedManifestStage(index int, s config.Stage) (*types.ManifestStage, error) {
+	ds := b.defaultManifestStage(index, s)
+	maniStage := s.DeployEmbeddedManifests
+
+	if len(maniStage.Files) < 1 {
+		return nil, ErrNoManifestFiles
 	}
+
+	// update the moniker
+	ds.Moniker = types.Moniker{
+		App:     maniStage.Moniker.App,
+		Detail:  maniStage.Moniker.Detail,
+		Stack:   maniStage.Moniker.Stack,
+		Cluster: maniStage.Moniker.Cluster,
+	}
+
+	parser := NewManfifestParser(b.pipeline, b.basePath)
+	for _, path := range maniStage.Files {
+		obj, err := parser.ManifestFromFile(path)
+		if err != nil {
+			return nil, errors.Wrapf(err, "could not parse manifest file: %s", path)
+		}
+
+		ds.Manifests = append(ds.Manifests, obj)
+	}
+
+	return ds, nil
+}
+
+func (b *Builder) buildV2ManifestStageFromDeploy(index int, s config.Stage) (*types.ManifestStage, error) {
+	ds := b.defaultManifestStage(index, s)
 
 	if len(s.Deploy.Groups) == 0 {
 		return nil, ErrNoDeployGroups
@@ -225,25 +249,41 @@ func (b *Builder) buildV2ManifestStageFromDeploy(index int, s config.Stage) (*ty
 			return nil, err
 		}
 
-		switch t := manifest.(type) {
-		case *v1beta1.Deployment:
-			_, err = buildDeployment(t, group)
-			if err != nil {
+		resource := &appsv1.Deployment{}
+		switch manifest.GetObjectKind().GroupVersionKind().Kind {
+		case "Deployment":
+			if err := scheme.Scheme.Convert(manifest, resource, nil); err != nil {
 				return nil, err
 			}
 		default:
 			return nil, ErrKubernetesAPI
 		}
 
-		j, err := json.Marshal(manifest)
-
+		_, err = buildDeployment(resource, group)
 		if err != nil {
 			return nil, err
 		}
-		ds.Manifests = append(ds.Manifests, json.RawMessage(j))
+
+		ds.Manifests = append(ds.Manifests, manifest)
 	}
 
 	return ds, nil
+}
+
+func (b *Builder) defaultManifestStage(index int, s config.Stage) *types.ManifestStage {
+	return &types.ManifestStage{
+		StageMetadata:           buildStageMetadata(s, "deployManifest", index, b.isLinear),
+		Account:                 s.Account,
+		CloudProvider:           "kubernetes",
+		Location:                "",
+		ManifestArtifactAccount: "embedded-artifact",
+		ManifestName:            "",
+		Moniker: types.Moniker{
+			App: b.pipeline.Application,
+		},
+		Relationships: types.Relationships{LoadBalancers: []interface{}{}, SecurityGroups: []interface{}{}},
+		Source:        "text",
+	}
 }
 
 func (b *Builder) buildV2RunJobStage(index int, s config.Stage) (*types.ManifestStage, error) {
@@ -281,13 +321,7 @@ func (b *Builder) buildV2RunJobStage(index int, s config.Stage) (*types.Manifest
 		return nil, ErrDeploymentJob
 	}
 
-	j, err := json.Marshal(obj)
-
-	if err != nil {
-		return nil, err
-	}
-
-	ds.Manifests = append(ds.Manifests, json.RawMessage(j))
+	ds.Manifests = append(ds.Manifests, obj)
 
 	return ds, nil
 
@@ -424,7 +458,7 @@ func buildNotifications(notifications []config.Notification) []types.Notificatio
 	return nots
 }
 
-func buildDeployment(deploy *v1beta1.Deployment, group config.Group) (*v1beta1.Deployment, error) {
+func buildDeployment(deploy *appsv1.Deployment, group config.Group) (*appsv1.Deployment, error) {
 
 	if len(deploy.Spec.Template.Spec.Containers) == 0 {
 		return nil, ErrNoContainers
