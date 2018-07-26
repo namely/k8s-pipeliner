@@ -129,7 +129,7 @@ func TestContainersFromManifests(t *testing.T) {
 		})
 
 		require.NoError(t, err, "error on retrieving the deployment manifest")
-		assert.Equal(t, "extensions/v1beta1, Kind=Deployment", group.GetObjectKind().GroupVersionKind().String())
+		assert.Equal(t, "apps/v1, Kind=Deployment", group.GetObjectKind().GroupVersionKind().String())
 	})
 	t.Run("V2 Provider Pod Spec", func(t *testing.T) {
 		file := filepath.Join(wd, "testdata", "podspec.yml")

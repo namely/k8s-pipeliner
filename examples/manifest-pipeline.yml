@@ -1,0 +1,14 @@
+name: Example Deployment
+application: example
+
+stages:
+- account: int-k8s
+  name: "Deploy Project"
+  deployEmbeddedManifests:
+    moniker:
+      app: app
+      cluster: cluster
+      detail: detail
+      stack: stack
+    files:
+      - test-deployment.yml

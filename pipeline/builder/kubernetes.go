@@ -54,11 +54,9 @@ func NewManfifestParser(config *config.Pipeline, basePath ...string) *ManifestPa
 	return mp
 }
 
-// ManifestFromScaffold creates a dynamic kubernetes object for a given pipeline config
-func (mp *ManifestParser) ManifestFromScaffold(scaffold config.ContainerScaffold) (runtime.Object, error) {
-	path := scaffold.Manifest()
-	if !filepath.IsAbs(scaffold.Manifest()) && mp.basePath != "" {
-		path = filepath.Join(mp.basePath, scaffold.Manifest())
+func (mp *ManifestParser) ManifestFromFile(path string) (runtime.Object, error) {
+	if !filepath.IsAbs(path) && mp.basePath != "" {
+		path = filepath.Join(mp.basePath, path)
 	}
 
 	f, err := os.Open(path)
@@ -74,7 +72,18 @@ func (mp *ManifestParser) ManifestFromScaffold(scaffold config.ContainerScaffold
 	decode := scheme.Codecs.UniversalDeserializer().Decode
 	obj, _, err := decode(b, nil, nil)
 	if err != nil {
-		return nil, errors.Wrapf(err, "marshaling failure: %s", path)
+		return nil, errors.Wrapf(err, "kubernetes decoding failure: %s", path)
+	}
+
+	return obj, nil
+}
+
+// ManifestFromScaffold creates a dynamic kubernetes object for a given pipeline config
+func (mp *ManifestParser) ManifestFromScaffold(scaffold config.ContainerScaffold) (runtime.Object, error) {
+	path := scaffold.Manifest()
+	obj, err := mp.ManifestFromFile(path)
+	if err != nil {
+		return nil, err
 	}
 
 	switch t := obj.(type) {

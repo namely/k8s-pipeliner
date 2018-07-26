@@ -298,3 +298,24 @@ parameters:
 ```
 
 This configures your pipeline to have parameters in the UI / enable pipeline expressions.
+
+## Version 2 Provider
+
+If you're using the V2 provider of Kubernetes in Spinnaker, you can use the `embeddedManifests` stage type and specify files to be applied in the stage.
+
+```yaml
+stages:
+- name: "Deploy"
+  deployEmbeddedManifests:
+    moniker:
+      app: app
+      cluster: cluster
+      detail: detail
+      stack: stack
+    files:
+      - manifests/deployment.yml
+      - manifests/service.yml
+      - manifests/migrate-job.yml
+```
+
+All of these files will be composed into a single stage deployment into the given account. This means you can deploy services and deployments in tandem together.

@@ -1,9 +1,8 @@
 package types
 
 import (
-	"encoding/json"
-
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // Bool returns a pointer to a boolean
@@ -57,15 +56,15 @@ type Stage interface {
 type ManifestStage struct {
 	StageMetadata
 
-	Account                 string            `json:"account"`
-	CloudProvider           string            `json:"cloudProvider"`
-	Location                string            `json:"location"`
-	ManifestArtifactAccount string            `json:"manifestArtifactAccount"`
-	ManifestName            string            `json:"manifestName"`
-	Manifests               []json.RawMessage `json:"manifests"`
-	Moniker                 Moniker           `json:"moniker"`
-	Relationships           Relationships     `json:"relationships"`
-	Source                  string            `json:"source"`
+	Account                 string           `json:"account"`
+	CloudProvider           string           `json:"cloudProvider"`
+	Location                string           `json:"location"`
+	ManifestArtifactAccount string           `json:"manifestArtifactAccount"`
+	ManifestName            string           `json:"manifestName"`
+	Manifests               []runtime.Object `json:"manifests"`
+	Moniker                 Moniker          `json:"moniker"`
+	Relationships           Relationships    `json:"relationships"`
+	Source                  string           `json:"source"`
 }
 
 func (ms ManifestStage) spinnakerStage() {}
