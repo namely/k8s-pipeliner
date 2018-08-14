@@ -52,10 +52,11 @@ stages:
   name: "Migrate INT"
   refId: "1"
   runJob:
-    manifestFile: test-deployment.yml
+    deleteJob: true
+    manifestFile: test-pod.yml
     imageDescriptions:
       - name: main-image
-        containerName: example
+        containerName: sise
     container: # override default command defined in the manifest
       command:
         - bundle

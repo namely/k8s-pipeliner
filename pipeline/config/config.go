@@ -121,6 +121,7 @@ type RunJobStage struct {
 	Container          *Container    `yaml:"container"`
 	PodOverrides       *PodOverrides `yaml:"podOverrides,omitempty"`
 	ServiceAccountName string        `yaml:"serviceAccountName"`
+	DeleteJob          bool          `yaml:"deleteJob"`
 }
 
 // DeployStage is the configuration for deploying a cluster of servers (pods)
