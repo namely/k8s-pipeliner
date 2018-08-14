@@ -29,6 +29,8 @@ var (
 	ErrNoManifestFiles = errors.New("builder: no manifest files defined")
 	// ErrNoNamespace is returned when a manifest does not have a namespace
 	ErrNoNamespace = errors.New("builder: manifest does not have a namespace defined")
+	// ErrNoKubernetesMetadata is returned when a manifest does not have kubernetes metadata
+	ErrNoKubernetesMetadata = errors.New("builder: manifest does not have kubernetes metadata attached")
 )
 
 const (
@@ -367,7 +369,7 @@ func (b *Builder) buildV2DeleteManifestStage(index int, s config.Stage) (*types.
 	var labels map[string]string
 
 	switch t := obj.(type) {
-	case *corev1.Pod:
+	case metav1.Object:
 		labels = t.GetLabels()
 		namespace := t.GetNamespace()
 		if namespace == "" {
@@ -375,7 +377,7 @@ func (b *Builder) buildV2DeleteManifestStage(index int, s config.Stage) (*types.
 		}
 		dms.Location = namespace
 	default:
-		return nil, ErrDeploymentJob
+		return nil, ErrNoKubernetesMetadata
 	}
 
 	for key, value := range labels {

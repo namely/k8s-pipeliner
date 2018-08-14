@@ -310,6 +310,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 				require.NoError(t, err, "error generating pipeline json")
 				assert.Equal(t, "Test V2 RunJob Stage", spinnaker.Stages[0].(*types.ManifestStage).Name)
 				assert.Equal(t, "Delete Test V2 RunJob Stage", spinnaker.Stages[1].(*types.DeleteManifestStage).Name)
+				assert.Equal(t, "fake-namespace", spinnaker.Stages[1].(*types.DeleteManifestStage).Location)
 				assert.Equal(t, len(spinnaker.Stages), 2)
 			})
 		},
