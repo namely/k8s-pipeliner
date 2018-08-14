@@ -63,6 +63,20 @@
 			"revisionTime": "2018-01-25T14:14:21Z"
 		},
 		{
+			"checksumSHA1": "+rFpqBzC5IYq4fHuNyHtbkPXgC0=",
+			"origin": "k8s.io/apimachinery/vendor/github.com/modern-go/concurrent",
+			"path": "github.com/modern-go/concurrent",
+			"revision": "720795f37ef04a6d63ba53b0b43233b3f851c149",
+			"revisionTime": "2018-08-09T22:11:04Z"
+		},
+		{
+			"checksumSHA1": "TyxdmX5pTsJDUZ1406j+GLuzk5E=",
+			"origin": "k8s.io/apimachinery/vendor/github.com/modern-go/reflect2",
+			"path": "github.com/modern-go/reflect2",
+			"revision": "720795f37ef04a6d63ba53b0b43233b3f851c149",
+			"revisionTime": "2018-08-09T22:11:04Z"
+		},
+		{
 			"checksumSHA1": "ljd3FhYRJ91cLZz3wsH9BQQ2JbA=",
 			"path": "github.com/pkg/errors",
 			"revision": "816c9085562cd7ee03e7f8188a1cfd942858cded",
@@ -99,6 +113,12 @@
 			"path": "github.com/urfave/cli",
 			"revision": "75104e932ac2ddb944a6ea19d9f9f26316ff1145",
 			"revisionTime": "2018-01-06T19:10:48Z"
+		},
+		{
+			"checksumSHA1": "pCY4YtdNKVBYRbNvODjx8hj0hIs=",
+			"path": "golang.org/x/net/http/httpguts",
+			"revision": "c39426892332e1bb5ec0a434a079bf82f5d30c54",
+			"revisionTime": "2018-07-15T06:54:04Z"
 		},
 		{
 			"checksumSHA1": "kyg0RtP8/9yWNDqf+hDaedKzf18=",
@@ -260,6 +280,12 @@
 			"revisionTime": "2018-01-26T12:34:33Z"
 		},
 		{
+			"checksumSHA1": "lOilI9bD1dSHbt+Xp9nfeXsNvTY=",
+			"path": "k8s.io/api/coordination/v1beta1",
+			"revision": "91bfdbcf0c2cab32ec1236cee4c300793abea68a",
+			"revisionTime": "2018-08-09T12:01:01Z"
+		},
+		{
 			"checksumSHA1": "EK9NE5K2jVgceH6uw4UI8DmMdCU=",
 			"path": "k8s.io/api/core/v1",
 			"revision": "dc0dd48d5a5cae9f8736bb0643cfe6052e450f1b",
@@ -314,6 +340,12 @@
 			"revisionTime": "2018-01-26T12:34:33Z"
 		},
 		{
+			"checksumSHA1": "byaZc4/ja52U1d8CXDy4bx9JaLM=",
+			"path": "k8s.io/api/scheduling/v1beta1",
+			"revision": "91bfdbcf0c2cab32ec1236cee4c300793abea68a",
+			"revisionTime": "2018-08-09T12:01:01Z"
+		},
+		{
 			"checksumSHA1": "N57nqFB1iyd/+/tR2sTCGJGhAL0=",
 			"path": "k8s.io/api/settings/v1alpha1",
 			"revision": "dc0dd48d5a5cae9f8736bb0643cfe6052e450f1b",
@@ -348,6 +380,12 @@
 			"path": "k8s.io/apimachinery/pkg/apis/meta/v1",
 			"revision": "b621949a1923cee3fce8bca9613e9a83609f0bbc",
 			"revisionTime": "2018-01-25T14:14:21Z"
+		},
+		{
+			"checksumSHA1": "lqyM0x9dK8ld+UIco6ZIp+BwQmQ=",
+			"path": "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured",
+			"revision": "720795f37ef04a6d63ba53b0b43233b3f851c149",
+			"revisionTime": "2018-08-09T22:11:04Z"
 		},
 		{
 			"checksumSHA1": "8/jsASpUUea0tYX1SUbi3Gf3Zmw=",
@@ -450,6 +488,12 @@
 			"path": "k8s.io/apimachinery/pkg/util/json",
 			"revision": "b621949a1923cee3fce8bca9613e9a83609f0bbc",
 			"revisionTime": "2018-01-25T14:14:21Z"
+		},
+		{
+			"checksumSHA1": "y1dxj1ipJgt2PRXXSXDmXrSka6A=",
+			"path": "k8s.io/apimachinery/pkg/util/naming",
+			"revision": "720795f37ef04a6d63ba53b0b43233b3f851c149",
+			"revisionTime": "2018-08-09T22:11:04Z"
 		},
 		{
 			"checksumSHA1": "ZIXbEtfhobtnI/UvZ012LzMPPFs=",

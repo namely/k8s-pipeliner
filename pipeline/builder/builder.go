@@ -27,6 +27,10 @@ var (
 	ErrKubernetesAPI = errors.New("builder: could not marshal this type of kubernetes manifest")
 	// ErrNoManifestFiles is returned when a manifest stage does not
 	ErrNoManifestFiles = errors.New("builder: no manifest files defined")
+	// ErrNoNamespace is returned when a manifest does not have a namespace
+	ErrNoNamespace = errors.New("builder: manifest does not have a namespace defined")
+	// ErrNoKubernetesMetadata is returned when a manifest does not have kubernetes metadata
+	ErrNoKubernetesMetadata = errors.New("builder: manifest does not have kubernetes metadata attached")
 )
 
 const (
@@ -104,33 +108,45 @@ func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
 			Required:    param.Required,
 		}
 	}
-
-	for stageIndex, stage := range b.pipeline.Stages {
+	var stageIndex = 0
+	for _, stage := range b.pipeline.Stages {
 		var s types.Stage
 		var err error
 
 		if b.v2Provider {
 			if stage.RunJob != nil {
 				s, err = b.buildV2RunJobStage(stageIndex, stage)
+				stageIndex = stageIndex + 1
+				if stage.RunJob.DeleteJob == true {
+					sp.Stages = append(sp.Stages, s)
+					s, err = b.buildV2DeleteManifestStage(stageIndex, stage)
+					stageIndex = stageIndex + 1
+				}
 			}
+
 			if stage.Deploy != nil {
 				s, err = b.buildV2ManifestStageFromDeploy(stageIndex, stage)
+				stageIndex = stageIndex + 1
 			}
 		} else {
 			if stage.RunJob != nil {
 				s, err = b.buildRunJobStage(stageIndex, stage)
+				stageIndex = stageIndex + 1
 			}
 			if stage.Deploy != nil {
 				s, err = b.buildDeployStage(stageIndex, stage)
+				stageIndex = stageIndex + 1
 			}
 		}
 
 		if stage.ManualJudgement != nil {
 			s, err = b.buildManualJudgementStage(stageIndex, stage)
+			stageIndex = stageIndex + 1
 		}
 
 		if stage.DeployEmbeddedManifests != nil {
 			s, err = b.buildDeployEmbeddedManifestStage(stageIndex, stage)
+			stageIndex = stageIndex + 1
 		}
 
 		if err != nil {
@@ -324,6 +340,51 @@ func (b *Builder) buildV2RunJobStage(index int, s config.Stage) (*types.Manifest
 	ds.Manifests = append(ds.Manifests, obj)
 
 	return ds, nil
+
+}
+
+func (b *Builder) buildV2DeleteManifestStage(index int, s config.Stage) (*types.DeleteManifestStage, error) {
+	s.Name = "Delete " + s.Name
+	dms := &types.DeleteManifestStage{
+		StageMetadata: buildStageMetadata(s, "deleteManifest", index, b.isLinear),
+		Account:       s.Account,
+		CloudProvider: "kubernetes",
+		Kinds:         []string{"Job"},
+		LabelSelectors: types.LabelSelectors{
+			Selectors: []types.Selector{},
+		},
+		Location: "",
+		Options: types.Options{
+			Cascading: true,
+		},
+	}
+
+	parser := NewManfifestParser(b.pipeline, b.basePath)
+	obj, err := parser.ManifestFromScaffold(s.RunJob)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var labels map[string]string
+
+	switch t := obj.(type) {
+	case metav1.Object:
+		labels = t.GetLabels()
+		namespace := t.GetNamespace()
+		if namespace == "" {
+			return nil, ErrNoNamespace
+		}
+		dms.Location = namespace
+	default:
+		return nil, ErrNoKubernetesMetadata
+	}
+
+	for key, value := range labels {
+		dms.LabelSelectors.Selectors = append(dms.LabelSelectors.Selectors, types.Selector{Key: key, Values: []string{value}, Kind: "EQUALS"})
+	}
+
+	return dms, nil
 
 }
 

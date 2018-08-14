@@ -71,6 +71,39 @@ func (ms ManifestStage) spinnakerStage() {}
 
 var _ Stage = ManifestStage{}
 
+// DeleteManifestStage is a struct allowing you to delete resources in the spinnaker v2 provider via labels
+type DeleteManifestStage struct {
+	StageMetadata
+
+	Account        string         `json:"account"`
+	CloudProvider  string         `json:"cloudProvider"`
+	Kinds          []string       `json:"kinds"`
+	LabelSelectors LabelSelectors `json:"labelSelectors"`
+	Location       string         `json:"location"` // Location means kubernetes namespace
+	Options        Options        `json:"options"`
+}
+
+func (ms DeleteManifestStage) spinnakerStage() {}
+
+var _ Stage = DeleteManifestStage{}
+
+// LabelSelectors encompasses all of the labels you're selecting on
+type LabelSelectors struct {
+	Selectors []Selector `json:"selectors"`
+}
+
+// Selector allows you to characterize which labels and types you wish to capture, ie: get job -l app=cat,dog
+type Selector struct {
+	Key    string   `json:"key"`
+	Kind   string   `json:"kind"`
+	Values []string `json:"values"`
+}
+
+// Options to cascade delete in a delete manifest stage
+type Options struct {
+	Cascading bool `json:"cascading"`
+}
+
 // Relationships are how Spinnaker associates k8s-services and k8s-ingresses to manifests
 type Relationships struct {
 	LoadBalancers  []interface{} `json:"loadBalancers"`
