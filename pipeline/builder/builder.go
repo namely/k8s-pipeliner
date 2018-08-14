@@ -116,6 +116,7 @@ func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
 				s, err = b.buildV2RunJobStage(stageIndex, stage)
 				stageIndex = stageIndex + 1
 				if stage.RunJob.DeleteJob == true {
+					sp.Stages = append(sp.Stages, s)
 					s, err = b.buildV2DeleteManifestStage(stageIndex, stage)
 					stageIndex = stageIndex + 1
 				}
@@ -341,6 +342,7 @@ func (b *Builder) buildV2RunJobStage(index int, s config.Stage) (*types.Manifest
 }
 
 func (b *Builder) buildV2DeleteManifestStage(index int, s config.Stage) (*types.DeleteManifestStage, error) {
+	s.Name = "Delete " + s.Name
 	dms := &types.DeleteManifestStage{
 		StageMetadata: buildStageMetadata(s, "deleteManifest", index, b.isLinear),
 		Account:       s.Account,
