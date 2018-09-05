@@ -56,8 +56,10 @@ type Stage interface {
 type ManifestStage struct {
 	StageMetadata
 
-	Account                 string           `json:"account"`
-	CloudProvider           string           `json:"cloudProvider"`
+	Account       string `json:"account"`
+	CloudProvider string `json:"cloudProvider"`
+
+	// Location means kubernetes namespace
 	Location                string           `json:"location"`
 	ManifestArtifactAccount string           `json:"manifestArtifactAccount"`
 	ManifestName            string           `json:"manifestName"`
@@ -75,12 +77,20 @@ var _ Stage = ManifestStage{}
 type DeleteManifestStage struct {
 	StageMetadata
 
-	Account        string         `json:"account"`
-	CloudProvider  string         `json:"cloudProvider"`
+	Account       string `json:"account"`
+	CloudProvider string `json:"cloudProvider"`
+
+	// Kinds and LabelSelectors are used when using labels for deletes
 	Kinds          []string       `json:"kinds"`
 	LabelSelectors LabelSelectors `json:"labelSelectors"`
-	Location       string         `json:"location"` // Location means kubernetes namespace
-	Options        Options        `json:"options"`
+
+	// Name is used when deleting a manifest by kind / name. The format for this
+	// needs to be "kind manifestName", For example: "deployment application-deploy"
+	Name string `json:"manifestName,omitempty"`
+
+	// Location means kubernetes namespace
+	Location string  `json:"location"`
+	Options  Options `json:"options"`
 }
 
 func (ms DeleteManifestStage) spinnakerStage() {}
@@ -101,7 +111,8 @@ type Selector struct {
 
 // Options to cascade delete in a delete manifest stage
 type Options struct {
-	Cascading bool `json:"cascading"`
+	Cascading          bool   `json:"cascading"`
+	GracePeriodSeconds *int64 `json:"gracePeriodSeconds,omitempty"`
 }
 
 // Relationships are how Spinnaker associates k8s-services and k8s-ingresses to manifests

@@ -172,11 +172,17 @@ type ManualJudgementStage struct {
 	Inputs       []string `yaml:"inputs"`
 }
 
+// ManifestFile represents a single manifest file
+type ManifestFile struct {
+	Moniker Moniker `yaml:"moniker"`
+	File    string  `yaml:"file"`
+}
+
 // DeployEmbeddedManifests is a Kubernetes V2 provider stage configuration
 // for deploying YAML manifest files
 type DeployEmbeddedManifests struct {
-	Moniker Moniker  `yaml:"moniker"`
-	Files   []string `yaml:"files"`
+	DefaultMoniker *Moniker       `yaml:"defaultMoniker,omitempty"`
+	Files          []ManifestFile `yaml:"files"`
 }
 
 // Moniker describes a name set for a Spinnaker resource
