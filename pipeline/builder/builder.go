@@ -224,17 +224,17 @@ func (b *Builder) buildDeployEmbeddedManifestStage(index int, s config.Stage) (*
 
 	// update the moniker
 	ds.Moniker = types.Moniker{
-		App:     maniStage.Moniker.App,
-		Detail:  maniStage.Moniker.Detail,
-		Stack:   maniStage.Moniker.Stack,
-		Cluster: maniStage.Moniker.Cluster,
+		App:     maniStage.DefaultMoniker.App,
+		Detail:  maniStage.DefaultMoniker.Detail,
+		Stack:   maniStage.DefaultMoniker.Stack,
+		Cluster: maniStage.DefaultMoniker.Cluster,
 	}
 
 	parser := NewManfifestParser(b.pipeline, b.basePath)
-	for _, path := range maniStage.Files {
-		obj, err := parser.ManifestFromFile(path)
+	for _, file := range maniStage.Files {
+		obj, err := parser.ManifestFromFile(file.File)
 		if err != nil {
-			return nil, errors.Wrapf(err, "could not parse manifest file: %s", path)
+			return nil, errors.Wrapf(err, "could not parse manifest file: %s", file.File)
 		}
 
 		ds.Manifests = append(ds.Manifests, obj)

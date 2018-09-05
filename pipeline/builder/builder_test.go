@@ -489,13 +489,15 @@ func TestBuilderPipelineStages(t *testing.T) {
 				Account: "",
 				Name:    "",
 				DeployEmbeddedManifests: &config.DeployEmbeddedManifests{
-					Moniker: config.Moniker{
+					DefaultMoniker: &config.Moniker{
 						App:     "app-name",
 						Cluster: "cluster-name",
 						Detail:  "detail-name",
 						Stack:   "stack-name",
 					},
-					Files: []string{file},
+					Files: []config.ManifestFile{
+						{File: file},
+					},
 				},
 			}},
 		}
