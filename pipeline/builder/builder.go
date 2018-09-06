@@ -223,11 +223,13 @@ func (b *Builder) buildDeployEmbeddedManifestStage(index int, s config.Stage) (*
 	}
 
 	// update the moniker
-	ds.Moniker = types.Moniker{
-		App:     maniStage.DefaultMoniker.App,
-		Detail:  maniStage.DefaultMoniker.Detail,
-		Stack:   maniStage.DefaultMoniker.Stack,
-		Cluster: maniStage.DefaultMoniker.Cluster,
+	if maniStage.DefaultMoniker != nil {
+		ds.Moniker = types.Moniker{
+			App:     maniStage.DefaultMoniker.App,
+			Detail:  maniStage.DefaultMoniker.Detail,
+			Stack:   maniStage.DefaultMoniker.Stack,
+			Cluster: maniStage.DefaultMoniker.Cluster,
+		}
 	}
 
 	parser := NewManfifestParser(b.pipeline, b.basePath)

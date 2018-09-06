@@ -94,7 +94,7 @@ type Stage struct {
 	RunJob                  *RunJobStage             `yaml:"runJob,omitempty"`
 	Deploy                  *DeployStage             `yaml:"deploy,omitempty"`
 	ManualJudgement         *ManualJudgementStage    `yaml:"manualJudgement,omitempty"`
-	DeployEmbeddedManifests *DeployEmbeddedManifests `yaml:"deployEmbeddedManifests"`
+	DeployEmbeddedManifests *DeployEmbeddedManifests `yaml:"deployEmbeddedManifests,omitempty"`
 }
 
 // Notification config from pipeline configuration on a stage or pipeline
@@ -174,8 +174,8 @@ type ManualJudgementStage struct {
 
 // ManifestFile represents a single manifest file
 type ManifestFile struct {
-	Moniker Moniker `yaml:"moniker"`
-	File    string  `yaml:"file"`
+	Moniker *Moniker `yaml:"moniker,omitempty"`
+	File    string   `yaml:"file"`
 }
 
 // DeployEmbeddedManifests is a Kubernetes V2 provider stage configuration
