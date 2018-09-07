@@ -103,6 +103,10 @@ func (mp *ManifestParser) ManifestsFromFile(path string) ([]runtime.Object, erro
 			break
 		}
 
+		if err != nil {
+			return nil, err
+		}
+
 		document := buf[:i]
 		u := unstructured.Unstructured{}
 		obj, _, err := decode(document, nil, &u)
