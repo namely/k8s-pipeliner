@@ -24,84 +24,13 @@ parameters:
     default: "hello-world"
 
 triggers:
-- jenkins:
-    job: "Example/job/master"
-    master: "jenkins"
-    propertyFile: "build.properties"
-    enabled: true
 - webhook:
     source: "random-string"
     enabled: true
-imageDescriptions:
-  - name: main-image
-    account: "namely-registry"
-    image_id: "${ trigger.properties['docker_image'] }"
-    registry: "registry.namely.land"
-    repository: "namely/example-all-day"
-    tag: "${ trigger.properties['docker_tag'] }"
-    organization: "namely"
-  - name: second-image
-    account: "namely-registry"
-    image_id: "${ trigger.properties['docker_image'] }"
-    registry: "registry.namely.land"
-    repository: "namely/second-repo-name"
-    tag: "${ trigger.properties['docker_tag'] }"
-    organization: "namely"
 stages:
-- account: int-k8s
+- account: ops-k8s
   name: "Migrate INT"
-  refId: "1"
-  runJob:
-    deleteJob: true
-    manifestFile: test-pod.yml
-    imageDescriptions:
-      - name: main-image
-        containerName: sise
-    container: # override default command defined in the manifest
-      command:
-        - bundle
-        - exec
-        - rake
-        - db:migrate
-  notifications:
-    - address: "#launchpad"
-      type: "slack"
-      when:
-        - stage.complete
-        - stage.failed
-      message:
-        stage.complete: |
-          The stage has completed!
-        stage.failed: |
-          The stage has failed!
-- account: int-k8s
-  name: "Deploy to INT"
-  refId: "2"
-  reliesOn:
-    - "1"
-  deploy:
-    groups:
-      - manifestFile: test-deployment.yml
-        maxRemainingASGS: 2 # total amount of replica sets to keep around afterwards before deleting
-        scaleDown: true
-        stack: web # primarily for labeling purposes on the created resources
-        details: helloworld
-        strategy: redblack
-        targetSize: 2 # this is the total amount of replicas for the deployment
-        containerOverrides: {}
-        imageDescriptions:
-          - name: main-image
-            containerName: example
-          - name: second-image
-            containerName: init-example
-        loadBalancers:
-          - "test"
-- account: int-k8s
-  name: "Proceed to Staging?"
-  refId: "3"
-  reliesOn:
-    - "2"
-  manualJudgement:
-    failPipeline: true
-    instructions: |
-      If this stage has completed QA, press proceed.
+  deployEmbeddedManifests:
+    files:
+      - file: test-deployment.yml
+      - file: test-configmap.yml

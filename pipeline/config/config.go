@@ -174,8 +174,7 @@ type ManualJudgementStage struct {
 
 // ManifestFile represents a single manifest file
 type ManifestFile struct {
-	Moniker *Moniker `yaml:"moniker,omitempty"`
-	File    string   `yaml:"file"`
+	File string `yaml:"file"`
 }
 
 // DeployEmbeddedManifests is a Kubernetes V2 provider stage configuration

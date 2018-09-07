@@ -1,91 +1,29 @@
-apiVersion: apps/v1beta2
+apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: example
-  namespace: production
+  name: nginx-deployment
+  labels:
+    app: nginx
 spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
   template:
     metadata:
-      annotations:
-        my-annotations: "cool"
       labels:
-        app: example
+        app: nginx
     spec:
-      volumes:
-        - name: configmap-volume
-          configMap:
-            name: "my-configmap-name"
-            items:
-              - key: "hello"
-                path: "/my/file/path"
       containers:
-      - name: example
-        livenessProbe:
-          exec:
-            command:
-            - cat
-            - /tmp/healthy
-        command:
-        - bundle
-        - exec
-        - unicorn
-        - -p
-        - "80"
-        - -c
-        - ./config/unicorn.rb
-        volumeMounts:
-          - name: configmap-volume
-            mountPath: "/thisisthemount"
-            readOnly: true
-        env:
-        - name: ADMIN_PASSWORD
-          valueFrom:
-            configMapKeyRef:
-              key: ADMIN_PASSWORD
-              name: super-secret-password
-              optional: true
-        - name: ADMIN_USERNAME
-          valueFrom:
-            secretKeyRef:
-              key: ADMIN_USERNAME
-              name: super-secret-username
-        # this image doesn't really matter, its going to be replaced, but its not to show intent
-        image: your.registry.land/org/example:latest
-        imagePullPolicy: IfNotPresent
+      - name: nginx
+        image: nginx:1.7.9
         ports:
         - containerPort: 80
-          name: http
-          protocol: TCP
-      initContainers:
-      - name: init-example
-        livenessProbe:
-          exec:
-            command:
-            - cat
-            - /tmp/healthy
-        command:
-        - echo
-        - hello init container
-        volumeMounts:
-          - name: configmap-volume
-            mountPath: "/thisisthemount"
-            readOnly: true
         env:
-        - name: ADMIN_PASSWORD
+        - name: HELLO
           valueFrom:
             configMapKeyRef:
-              key: ADMIN_PASSWORD
-              name: super-secret-password
-              optional: true
-        - name: ADMIN_USERNAME
-          valueFrom:
-            secretKeyRef:
-              key: ADMIN_USERNAME
-              name: super-secret-username
-        # this image doesn't really matter, its going to be replaced, but its not to show intent
-        image: your.registry.land/org/example:latest
-        imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 80
-          name: http
-          protocol: TCP
+              name: nginx-cm
+              key: hello
+        - name: TEST
+          value: ${ parameters.random }

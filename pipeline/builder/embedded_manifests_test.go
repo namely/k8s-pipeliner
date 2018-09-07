@@ -61,10 +61,15 @@ func (em *EmbeddedManifestTest) TestMonikerAnnotationsAreIncluded() {
 	em.AppendStage(config.Stage{
 		Name: "deploy nginx",
 		DeployEmbeddedManifests: &config.DeployEmbeddedManifests{
+			DefaultMoniker: &config.Moniker{
+				App:     "fake-app",
+				Stack:   "fake-stack",
+				Detail:  "fake-detail",
+				Cluster: "fake-cluster",
+			},
 			Files: []config.ManifestFile{
 				{
-					File:    "testdata/nginx-deployment-annotations.yml",
-					Moniker: &config.Moniker{App: "fake-app", Cluster: "fake-cluster", Stack: "fake-stack", Detail: "fake-details"},
+					File: "testdata/nginx-deployment.yml",
 				},
 			},
 		},
@@ -78,13 +83,14 @@ func (em *EmbeddedManifestTest) TestMonikerAnnotationsAreIncluded() {
 	em.Equal("deploy nginx", stg.Name)
 
 	em.Require().Len(stg.Manifests, 1)
+	em.Equal("fake-app", stg.Moniker.App)
+	em.Equal("fake-stack", stg.Moniker.Stack)
+	em.Equal("fake-detail", stg.Moniker.Detail)
+	em.Equal("fake-cluster", stg.Moniker.Cluster)
 
-	deploy, ok := stg.Manifests[0].(*appsv1.Deployment)
-	em.Require().True(ok)
-	em.Equal("fake-app", deploy.GetAnnotations()["moniker.spinnaker.io/application"])
-	em.Equal("fake-cluster", deploy.GetAnnotations()["moniker.spinnaker.io/cluster"])
-	em.Equal("fake-stack", deploy.GetAnnotations()["moniker.spinnaker.io/stack"])
-	em.Equal("fake-detail", deploy.GetAnnotations()["moniker.spinnaker.io/detail"])
+	_, dok := stg.Manifests[0].(*appsv1.Deployment)
+	em.Require().True(dok)
+
 }
 
 func TestEmbeddedManifests(t *testing.T) {

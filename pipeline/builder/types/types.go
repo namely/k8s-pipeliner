@@ -124,7 +124,7 @@ type Relationships struct {
 // Moniker is a component of the V2 Spinnaker Manifest Stage that allows users to label assets created by the Spinnaker v2 provider
 type Moniker struct {
 	App     string `json:"app"`
-	Cluster string `json:"cluster"`
+	Cluster string `json:"cluster,omitempty"`
 	Detail  string `json:"detail,omitempty"`
 	Stack   string `json:"stack,omitempty"`
 }
