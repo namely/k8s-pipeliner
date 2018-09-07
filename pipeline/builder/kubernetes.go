@@ -114,6 +114,10 @@ func (mp *ManifestParser) ManifestsFromFile(path string) ([]runtime.Object, erro
 			return nil, err
 		}
 
+		if u.GetKind() == "" || u.GetAPIVersion() == "" {
+			return nil, errors.New("missing type meta on resource")
+		}
+
 		objs = append(objs, obj)
 	}
 

@@ -58,7 +58,29 @@ func (em *EmbeddedManifestTest) TestFilesAreBuilt() {
 	em.Equal("Deployment", deploy.GetKind())
 }
 
-func (em *EmbeddedManifestTest) TestMultipleDocumeentsAreAdded() {
+func (em *EmbeddedManifestTest) TestBadMultipleDocumentsError() {
+	em.AppendStage(config.Stage{
+		Name: "deploy nginx",
+		DeployEmbeddedManifests: &config.DeployEmbeddedManifests{
+			DefaultMoniker: &config.Moniker{
+				App:     "fake-app",
+				Stack:   "fake-stack",
+				Detail:  "fake-detail",
+				Cluster: "fake-cluster",
+			},
+			Files: []config.ManifestFile{
+				{
+					File: "testdata/multiple-documents-bunk.yml",
+				},
+			},
+		},
+	})
+
+	_, err := em.Builder().Pipeline()
+	em.Require().Error(err)
+}
+
+func (em *EmbeddedManifestTest) TestMultipleDocumentsAreAdded() {
 	em.AppendStage(config.Stage{
 		Name: "deploy nginx",
 		DeployEmbeddedManifests: &config.DeployEmbeddedManifests{
@@ -84,6 +106,11 @@ func (em *EmbeddedManifestTest) TestMultipleDocumeentsAreAdded() {
 	em.Equal("deploy nginx", stg.Name)
 
 	em.Require().Len(stg.Manifests, 3)
+
+	dr, dok := stg.Manifests[2].(*unstructured.Unstructured)
+	em.Require().True(dok)
+	em.Equal("DestinationRule", dr.GetKind())
+	em.Equal("networking.istio.io/v1alpha3", dr.GetAPIVersion())
 }
 
 func (em *EmbeddedManifestTest) TestMonikerAnnotationsAreIncluded() {
