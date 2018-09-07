@@ -234,12 +234,12 @@ func (b *Builder) buildDeployEmbeddedManifestStage(index int, s config.Stage) (*
 
 	parser := NewManfifestParser(b.pipeline, b.basePath)
 	for _, file := range maniStage.Files {
-		obj, err := parser.ManifestFromFile(file.File)
+		objs, err := parser.ManifestsFromFile(file.File)
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not parse manifest file: %s", file.File)
 		}
 
-		ds.Manifests = append(ds.Manifests, obj)
+		ds.Manifests = append(ds.Manifests, objs...)
 	}
 
 	return ds, nil

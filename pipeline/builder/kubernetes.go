@@ -2,6 +2,7 @@ package builder
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -11,10 +12,12 @@ import (
 	"github.com/namely/k8s-pipeliner/pipeline/config"
 	"github.com/pkg/errors"
 
+	"github.com/kubernetes/apimachinery/pkg/apis/meta/v1/unstructured"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1beta1 "k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes/scheme"
 )
 
@@ -76,6 +79,41 @@ func (mp *ManifestParser) ManifestFromFile(path string) (runtime.Object, error) 
 	}
 
 	return obj, nil
+}
+
+func (mp *ManifestParser) ManifestsFromFile(path string) ([]runtime.Object, error) {
+	if !filepath.IsAbs(path) && mp.basePath != "" {
+		path = filepath.Join(mp.basePath, path)
+	}
+
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+
+	objs := make([]runtime.Object, 0)
+
+	r := yaml.NewDocumentDecoder(f)
+	decode := scheme.Codecs.UniversalDeserializer().Decode
+
+	for {
+		buf := make([]byte, 4096)
+		i, err := r.Read(buf)
+		if err == io.EOF {
+			break
+		}
+
+		document := buf[:i]
+		u := unstructured.Unstructured{}
+		obj, _, err := decode(document, nil, &u)
+		if err != nil {
+			return nil, err
+		}
+
+		objs = append(objs, obj)
+	}
+
+	return objs, nil
 }
 
 // ManifestFromScaffold creates a dynamic kubernetes object for a given pipeline config

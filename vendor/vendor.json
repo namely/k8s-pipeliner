@@ -63,6 +63,12 @@
 			"revisionTime": "2018-01-25T14:14:21Z"
 		},
 		{
+			"checksumSHA1": "cHCbMn2VdJ4giaVVyr5CEYXh0tE=",
+			"path": "github.com/kubernetes/apimachinery/pkg/apis/meta/v1/unstructured",
+			"revision": "6429050ef506887d121f3e7306e894f8900d8a63",
+			"revisionTime": "2018-09-04T00:17:49Z"
+		},
+		{
 			"checksumSHA1": "+rFpqBzC5IYq4fHuNyHtbkPXgC0=",
 			"origin": "k8s.io/apimachinery/vendor/github.com/modern-go/concurrent",
 			"path": "github.com/modern-go/concurrent",
