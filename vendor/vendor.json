@@ -115,6 +115,12 @@
 			"revisionTime": "2017-12-31T12:27:32Z"
 		},
 		{
+			"checksumSHA1": "uefllr2OtKBGo/kQSAPbW3w6p0A=",
+			"path": "github.com/stretchr/testify/suite",
+			"revision": "c679ae2cc0cb27ec3293fea7e254e47386f05d69",
+			"revisionTime": "2018-03-14T08:05:35Z"
+		},
+		{
 			"checksumSHA1": "H1Ne82yYzWRQ2DKBsmRd0Hwcl04=",
 			"path": "github.com/urfave/cli",
 			"revision": "75104e932ac2ddb944a6ea19d9f9f26316ff1145",
