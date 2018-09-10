@@ -34,3 +34,7 @@ stages:
     files:
       - file: test-deployment.yml
       - file: test-configmap.yml
+- account: ops-k8s
+  name: "Delete INT"
+  deleteEmbeddedManifest:
+    file: test-deployment.yml

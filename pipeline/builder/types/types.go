@@ -81,12 +81,12 @@ type DeleteManifestStage struct {
 	CloudProvider string `json:"cloudProvider"`
 
 	// Kinds and LabelSelectors are used when using labels for deletes
-	Kinds          []string       `json:"kinds"`
-	LabelSelectors LabelSelectors `json:"labelSelectors"`
+	Kinds          []string        `json:"kinds,omitempty"`
+	LabelSelectors *LabelSelectors `json:"labelSelectors,omitempty"`
 
 	// Name is used when deleting a manifest by kind / name. The format for this
 	// needs to be "kind manifestName", For example: "deployment application-deploy"
-	Name string `json:"manifestName,omitempty"`
+	ManifestName string `json:"manifestName,omitempty"`
 
 	// Location means kubernetes namespace
 	Location string  `json:"location"`

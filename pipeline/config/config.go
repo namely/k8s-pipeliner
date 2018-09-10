@@ -95,6 +95,7 @@ type Stage struct {
 	Deploy                  *DeployStage             `yaml:"deploy,omitempty"`
 	ManualJudgement         *ManualJudgementStage    `yaml:"manualJudgement,omitempty"`
 	DeployEmbeddedManifests *DeployEmbeddedManifests `yaml:"deployEmbeddedManifests,omitempty"`
+	DeleteEmbeddedManifest  *DeleteEmbeddedManifest  `yaml:"deleteEmbeddedManifest,omitempty"`
 }
 
 // Notification config from pipeline configuration on a stage or pipeline
@@ -182,6 +183,14 @@ type ManifestFile struct {
 type DeployEmbeddedManifests struct {
 	DefaultMoniker *Moniker       `yaml:"defaultMoniker,omitempty"`
 	Files          []ManifestFile `yaml:"files"`
+}
+
+// DeleteEmbeddedManifest represents a single resource to be deleted
+// that is identified automatically by the manifest file provided
+// Internally, the builder uses a Delete Manifest stage that matches on
+// name and type. The namespace is populated from the manifest metadata.
+type DeleteEmbeddedManifest struct {
+	File string `yaml:"file"`
 }
 
 // Moniker describes a name set for a Spinnaker resource

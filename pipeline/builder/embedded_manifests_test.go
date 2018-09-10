@@ -146,7 +146,23 @@ func (em *EmbeddedManifestTest) TestMonikerAnnotationsAreIncluded() {
 
 	_, dok := stg.Manifests[0].(*unstructured.Unstructured)
 	em.Require().True(dok)
+}
 
+func (em *EmbeddedManifestTest) TestDeleteEmbeddedManifest() {
+	em.AppendStage(config.Stage{
+		Name: "delete nginx",
+		DeleteEmbeddedManifest: &config.DeleteEmbeddedManifest{
+			File: "testdata/nginx-deployment.yml",
+		},
+	})
+
+	pipeline, err := em.Builder().Pipeline()
+	em.Require().NoError(err, "error building pipeline config")
+
+	stg, ok := pipeline.Stages[0].(*types.DeleteManifestStage)
+	em.Require().True(ok, "was not a delete manifest stage")
+	em.Equal("delete nginx", stg.Name)
+	em.Equal("Deployment nginx-deployment", stg.ManifestName)
 }
 
 func TestEmbeddedManifests(t *testing.T) {

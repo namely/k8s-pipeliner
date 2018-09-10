@@ -149,6 +149,11 @@ func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
 			stageIndex = stageIndex + 1
 		}
 
+		if stage.DeleteEmbeddedManifest != nil {
+			s, err = b.buildDeleteEmbeddedManifestStage(stageIndex, stage)
+			stageIndex = stageIndex + 1
+		}
+
 		if err != nil {
 			return nil, err
 		}
@@ -243,6 +248,44 @@ func (b *Builder) buildDeployEmbeddedManifestStage(index int, s config.Stage) (*
 	}
 
 	return ds, nil
+}
+
+func (b *Builder) buildDeleteEmbeddedManifestStage(index int, s config.Stage) (*types.DeleteManifestStage, error) {
+	parser := NewManfifestParser(b.pipeline, b.basePath)
+	file := s.DeleteEmbeddedManifest.File
+
+	objs, err := parser.ManifestsFromFile(file)
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not parse manifest file: %s", file)
+	}
+
+	if len(objs) > 1 {
+		return nil, fmt.Errorf("the manifest file %s declared more than one resource which cant be used in a delete embedded manifest stage", file)
+	}
+
+	if len(objs) == 0 {
+		return nil, fmt.Errorf("the manifest file %s doesnt define a resource which cant be used in a delete embedded manifest stage", file)
+	}
+
+	obj := objs[0]
+	mObj := obj.(metav1.Object)
+	tObj := obj.(metav1.Type)
+
+	ns := mObj.GetNamespace()
+	if ns == "" {
+		ns = "default"
+	}
+
+	stage := &types.DeleteManifestStage{
+		StageMetadata: buildStageMetadata(s, "deleteManifest", index, b.isLinear),
+		CloudProvider: "kubernetes",
+		Account:       s.Account,
+
+		ManifestName: fmt.Sprintf("%s %s", tObj.GetKind(), mObj.GetName()),
+		Location:     ns,
+	}
+
+	return stage, nil
 }
 
 func (b *Builder) buildV2ManifestStageFromDeploy(index int, s config.Stage) (*types.ManifestStage, error) {
@@ -352,10 +395,7 @@ func (b *Builder) buildV2DeleteManifestStage(index int, s config.Stage) (*types.
 		Account:       s.Account,
 		CloudProvider: "kubernetes",
 		Kinds:         []string{"Job"},
-		LabelSelectors: types.LabelSelectors{
-			Selectors: []types.Selector{},
-		},
-		Location: "",
+		Location:      "",
 		Options: types.Options{
 			Cascading: true,
 		},

@@ -2,6 +2,7 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: nginx-deployment
+  namespace: applications
   labels:
     app: nginx
 spec:
@@ -19,22 +20,3 @@ spec:
         image: nginx:1.7.9
         ports:
         - containerPort: 80
-        env:
-        - name: HELLO
-          valueFrom:
-            configMapKeyRef:
-              name: nginx-cm
-              key: hello
-        - name: TEST
-          value: ${ parameters.random }
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: nginx
-spec:
-  selector:
-    app: nginx
-  ports:
-    - name: http
-      port: 80
