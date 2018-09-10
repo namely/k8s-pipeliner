@@ -10,7 +10,6 @@ import (
 	"github.com/namely/k8s-pipeliner/pipeline/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	appsv1 "k8s.io/api/apps/v1"
 )
 
 func TestBuilderAssignsNotifications(t *testing.T) {
@@ -451,37 +450,6 @@ func TestBuilderPipelineStages(t *testing.T) {
 
 			assert.Equal(t, "test-svc-acc", spinnaker.Stages[0].(*types.RunJobStage).ServiceAccountName)
 		})
-	})
-
-	t.Run("DeployEmbeddedManifests propagates files correctly", func(t *testing.T) {
-		pipeline := &config.Pipeline{
-			Stages: []config.Stage{{
-				Account: "",
-				Name:    "",
-				DeployEmbeddedManifests: &config.DeployEmbeddedManifests{
-					DefaultMoniker: &config.Moniker{
-						App:     "app-name",
-						Cluster: "cluster-name",
-						Detail:  "detail-name",
-						Stack:   "stack-name",
-					},
-					Files: []config.ManifestFile{
-						{File: file},
-					},
-				},
-			}},
-		}
-
-		builder := builder.New(pipeline)
-		spinnaker, err := builder.Pipeline()
-		require.NoError(t, err, "error generating pipeline json")
-		require.IsType(t, (*types.ManifestStage)(nil), spinnaker.Stages[0])
-
-		manifestStage := spinnaker.Stages[0].(*types.ManifestStage)
-		deploy, ok := manifestStage.Manifests[0].(*appsv1.Deployment)
-		require.True(t, ok)
-
-		assert.Equal(t, "example", deploy.GetName())
 	})
 }
 
