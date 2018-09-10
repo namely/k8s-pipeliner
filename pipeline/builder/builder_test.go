@@ -10,7 +10,6 @@ import (
 	"github.com/namely/k8s-pipeliner/pipeline/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	appsv1 "k8s.io/api/apps/v1"
 )
 
 func TestBuilderAssignsNotifications(t *testing.T) {
@@ -56,7 +55,6 @@ func TestBuilderAssignsPipelineConfiguration(t *testing.T) {
 func TestBuilderPipelineStages(t *testing.T) {
 	wd, _ := os.Getwd()
 	file := filepath.Join(wd, "testdata", "deployment.full.yml")
-	podfile := filepath.Join(wd, "testdata", "podspec.yml")
 
 	t.Run("Triggers", func(t *testing.T) {
 		t.Run("Defaults to an empty slice", func(t *testing.T) {
@@ -287,35 +285,6 @@ func TestBuilderPipelineStages(t *testing.T) {
 			assert.Equal(t, "Test RunJob Stage", spinnaker.Stages[0].(*types.RunJobStage).Name)
 		})
 
-		t.Run("RunJob V2 stage is parsed correctly", func(t *testing.T) {
-			t.Run("Name is assigned", func(t *testing.T) {
-				pipeline := &config.Pipeline{
-					Stages: []config.Stage{
-						{
-							Name: "Test V2 RunJob Stage",
-							RunJob: &config.RunJobStage{
-								ManifestFile: podfile,
-								Container: &config.Container{
-									Command: []string{"cat", "dog"},
-									Args:    []string{"mouse"},
-								},
-								DeleteJob: true,
-							},
-						},
-					},
-				}
-
-				builder := builder.New(pipeline, builder.WithV2Provider(true))
-				spinnaker, err := builder.Pipeline()
-				require.NoError(t, err, "error generating pipeline json")
-				assert.Equal(t, "Test V2 RunJob Stage", spinnaker.Stages[0].(*types.ManifestStage).Name)
-				assert.Equal(t, "Delete Test V2 RunJob Stage", spinnaker.Stages[1].(*types.DeleteManifestStage).Name)
-				assert.Equal(t, "fake-namespace", spinnaker.Stages[1].(*types.DeleteManifestStage).Location)
-				assert.Equal(t, len(spinnaker.Stages), 2)
-			})
-		},
-		)
-
 		t.Run("RequisiteStageRefIds defaults to an empty slice", func(t *testing.T) {
 			pipeline := &config.Pipeline{
 				Stages: []config.Stage{
@@ -481,35 +450,6 @@ func TestBuilderPipelineStages(t *testing.T) {
 
 			assert.Equal(t, "test-svc-acc", spinnaker.Stages[0].(*types.RunJobStage).ServiceAccountName)
 		})
-	})
-
-	t.Run("DeployEmbeddedManifests propagates files correctly", func(t *testing.T) {
-		pipeline := &config.Pipeline{
-			Stages: []config.Stage{{
-				Account: "",
-				Name:    "",
-				DeployEmbeddedManifests: &config.DeployEmbeddedManifests{
-					Moniker: config.Moniker{
-						App:     "app-name",
-						Cluster: "cluster-name",
-						Detail:  "detail-name",
-						Stack:   "stack-name",
-					},
-					Files: []string{file},
-				},
-			}},
-		}
-
-		builder := builder.New(pipeline)
-		spinnaker, err := builder.Pipeline()
-		require.NoError(t, err, "error generating pipeline json")
-		require.IsType(t, (*types.ManifestStage)(nil), spinnaker.Stages[0])
-
-		manifestStage := spinnaker.Stages[0].(*types.ManifestStage)
-		deploy, ok := manifestStage.Manifests[0].(*appsv1.Deployment)
-		require.True(t, ok)
-
-		assert.Equal(t, "example", deploy.GetName())
 	})
 }
 

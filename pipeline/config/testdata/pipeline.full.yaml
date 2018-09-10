@@ -1,31 +1,13 @@
-name: Connect Deployment
-application: namelyconnect
+name: Nginx Deployment
+application: nginx
 triggers:
 - jenkins:
-    job: "Connect/job/master"
-    master: "namely-jenkins"
+    job: "nginx/job/master"
+    master: "jenkins"
     propertyFile: "build.properties"
-imageDescriptions:
-  - name: testImageRef
-    account: account
-    image_id: image_id
-    registry: registry
-    repository: repository
-    tag: tag
-    organization: organization
 stages:
 - account: int-k8s
-  name: "Migrate INT"
-  runJob:
-    manifestFile: manifests/deploy/connect.yml
-    container: # override default command defined in the manifest
-      command:
-        - bundle
-        - exec
-        - rake
-        - db:migrate
-- account: int-k8s
-  name: "Deploy INT"
-  deploy:
-    groups:
-      - manifestFile: manifests/deploy/connect.yml
+  name: "Deploy nginx"
+  deployEmbeddedManifests:
+    files:
+    - file: manifests/nginx-deployment.yml

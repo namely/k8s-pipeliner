@@ -63,6 +63,12 @@
 			"revisionTime": "2018-01-25T14:14:21Z"
 		},
 		{
+			"checksumSHA1": "cHCbMn2VdJ4giaVVyr5CEYXh0tE=",
+			"path": "github.com/kubernetes/apimachinery/pkg/apis/meta/v1/unstructured",
+			"revision": "6429050ef506887d121f3e7306e894f8900d8a63",
+			"revisionTime": "2018-09-04T00:17:49Z"
+		},
+		{
 			"checksumSHA1": "+rFpqBzC5IYq4fHuNyHtbkPXgC0=",
 			"origin": "k8s.io/apimachinery/vendor/github.com/modern-go/concurrent",
 			"path": "github.com/modern-go/concurrent",
@@ -107,6 +113,12 @@
 			"path": "github.com/stretchr/testify/require",
 			"revision": "87b1dfb5b2fa649f52695dd9eae19abe404a4308",
 			"revisionTime": "2017-12-31T12:27:32Z"
+		},
+		{
+			"checksumSHA1": "uefllr2OtKBGo/kQSAPbW3w6p0A=",
+			"path": "github.com/stretchr/testify/suite",
+			"revision": "c679ae2cc0cb27ec3293fea7e254e47386f05d69",
+			"revisionTime": "2018-03-14T08:05:35Z"
 		},
 		{
 			"checksumSHA1": "H1Ne82yYzWRQ2DKBsmRd0Hwcl04=",
