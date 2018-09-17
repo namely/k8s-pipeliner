@@ -97,7 +97,7 @@ func (mp *ManifestParser) ManifestsFromFile(path string) ([]runtime.Object, erro
 	decode := scheme.Codecs.UniversalDeserializer().Decode
 
 	for {
-		buf := make([]byte, 4096)
+		buf := make([]byte, 1000000)
 		i, err := r.Read(buf)
 		if err == io.EOF {
 			break
