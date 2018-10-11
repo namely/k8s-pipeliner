@@ -35,6 +35,13 @@ stages:
       - file: test-deployment.yml
       - file: test-configmap.yml
 - account: ops-k8s
+  name: "Scale Up"
+  scaleManifest:
+    namespace: "looker"
+    kind: "deployment"
+    name: "looker"
+    replicas: 5
+- account: ops-k8s
   name: "Delete INT"
   deleteEmbeddedManifest:
     file: test-deployment.yml

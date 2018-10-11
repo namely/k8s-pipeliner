@@ -154,6 +154,11 @@ func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
 			stageIndex = stageIndex + 1
 		}
 
+		if stage.ScaleManifest != nil {
+			s, err = b.buildScaleManifestStage(stageIndex, stage)
+			stageIndex = stageIndex + 1
+		}
+
 		if err != nil {
 			return nil, err
 		}
@@ -427,7 +432,20 @@ func (b *Builder) buildV2DeleteManifestStage(index int, s config.Stage) (*types.
 	}
 
 	return dms, nil
+}
 
+func (b *Builder) buildScaleManifestStage(index int, s config.Stage) (*types.ScaleManifestStage, error) {
+	stage := &types.ScaleManifestStage{
+		StageMetadata: buildStageMetadata(s, "scaleManifest", index, b.isLinear),
+		Account:       s.Account,
+		CloudProvider: "kubernetes",
+		Kind:          s.ScaleManifest.Kind,
+		Location:      s.ScaleManifest.Namespace,
+		ManifestName:  fmt.Sprintf("%s %s", s.ScaleManifest.Kind, s.ScaleManifest.Name),
+		Replicas:      s.ScaleManifest.Replicas,
+	}
+
+	return stage, nil
 }
 
 // As of right now, this tool only supports deploying one server group at a time from a

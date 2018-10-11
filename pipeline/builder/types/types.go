@@ -15,7 +15,7 @@ func Int64(i int64) *int64 {
 	return &i
 }
 
-// SpinnakerPipeline defines the fields for the top leve object of a spinnaker
+// SpinnakerPipeline defines the fields for the top level object of a spinnaker
 // pipeline. Mostly used for constructing JSON
 type SpinnakerPipeline struct {
 	AppConfig   map[string]interface{} `json:"appConfig"`
@@ -96,6 +96,28 @@ type DeleteManifestStage struct {
 func (ms DeleteManifestStage) spinnakerStage() {}
 
 var _ Stage = DeleteManifestStage{}
+
+// ScaleManifestStage is a struct representing the v2 Spinnaker Scale Manifest stage
+type ScaleManifestStage struct {
+	StageMetadata
+
+	Account       string `json:"account"`
+	CloudProvider string `json:"cloudProvider"`
+	Kind          string `json:"kind"`
+
+	// Location means kubernetes namespace
+	Location string `json:"location"`
+
+	// Name is used when deleting a manifest by kind / name. The format for this
+	// needs to be "kind manifestName", For example: "deployment application-deploy"
+	ManifestName string `json:"manifestName,omitempty"`
+
+	Replicas int `json:"replicas"`
+}
+
+func (ms ScaleManifestStage) spinnakerStage() {}
+
+var _ Stage = ScaleManifestStage{}
 
 // LabelSelectors encompasses all of the labels you're selecting on
 type LabelSelectors struct {

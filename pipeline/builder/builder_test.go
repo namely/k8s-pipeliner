@@ -451,6 +451,67 @@ func TestBuilderPipelineStages(t *testing.T) {
 			assert.Equal(t, "test-svc-acc", spinnaker.Stages[0].(*types.RunJobStage).ServiceAccountName)
 		})
 	})
+
+	t.Run("ScaleManifest stage is parsed correctly", func(t *testing.T) {
+		t.Run("Name is assigned", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						Name: "Test ScaleManifest Stage",
+						ScaleManifest: &config.ScaleManifest{
+							Kind:      "deployment",
+							Name:      "mydeployname",
+							Namespace: "mynamespace",
+							Replicas:  5,
+						},
+					},
+				},
+			}
+
+			builder := builder.New(pipeline)
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			assert.Equal(t, "Test ScaleManifest Stage", spinnaker.Stages[0].(*types.ScaleManifestStage).Name)
+			assert.Equal(t, "deployment", spinnaker.Stages[0].(*types.ScaleManifestStage).Kind)
+			assert.Equal(t, "deployment mydeployname", spinnaker.Stages[0].(*types.ScaleManifestStage).ManifestName)
+			assert.Equal(t, "mynamespace", spinnaker.Stages[0].(*types.ScaleManifestStage).Location)
+			assert.Equal(t, 5, spinnaker.Stages[0].(*types.ScaleManifestStage).Replicas)
+		})
+
+		t.Run("RequisiteStageRefIds defaults to an empty slice", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						ScaleManifest: &config.ScaleManifest{},
+					},
+				},
+			}
+
+			builder := builder.New(pipeline)
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			assert.Equal(t, []string{}, spinnaker.Stages[0].(*types.ScaleManifestStage).StageMetadata.RequisiteStageRefIds)
+		})
+
+		t.Run("RequisiteStageRefIds is assigned when ReliesOn is provided", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						ReliesOn:      []string{"2"},
+						ScaleManifest: &config.ScaleManifest{},
+					},
+				},
+			}
+
+			builder := builder.New(pipeline)
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			assert.Equal(t, []string{"2"}, spinnaker.Stages[0].(*types.ScaleManifestStage).StageMetadata.RequisiteStageRefIds)
+		})
+	})
 }
 
 func newFalse() *bool {
