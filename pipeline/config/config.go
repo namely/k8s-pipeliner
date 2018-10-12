@@ -96,6 +96,7 @@ type Stage struct {
 	ManualJudgement         *ManualJudgementStage    `yaml:"manualJudgement,omitempty"`
 	DeployEmbeddedManifests *DeployEmbeddedManifests `yaml:"deployEmbeddedManifests,omitempty"`
 	DeleteEmbeddedManifest  *DeleteEmbeddedManifest  `yaml:"deleteEmbeddedManifest,omitempty"`
+	ScaleManifest           *ScaleManifest           `yaml:"scaleManifest,omitempty"`
 }
 
 // Notification config from pipeline configuration on a stage or pipeline
@@ -199,6 +200,15 @@ type Moniker struct {
 	Cluster string `yaml:"cluster"`
 	Detail  string `yaml:"detail"`
 	Stack   string `yaml:"stack"`
+}
+
+// ScaleManifest is a Kubernetes V2 provider stage configuration
+// for scaling a Kubernetes object
+type ScaleManifest struct {
+	Kind      string `yaml:"kind"`
+	Name      string `yaml:"name"`
+	Namespace string `yaml:"namespace"`
+	Replicas  int    `yaml:"replicas"`
 }
 
 // ContainerOverrides are used to override a containers values for simple
