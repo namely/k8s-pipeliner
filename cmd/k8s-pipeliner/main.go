@@ -38,6 +38,10 @@ func main() {
 					Name:  "v2",
 					Usage: "Create your manifests with the v2 kubernetes provider",
 				},
+				cli.IntFlag{
+					Name:  "timeout",
+					Usage: "override the default 72 hour timeout (unit: int)",
+				},
 			},
 		},
 		{
@@ -69,7 +73,7 @@ func createAction(ctx *cli.Context) error {
 		return err
 	}
 
-	builder := builder.New(p, builder.WithV2Provider(ctx.Bool("v2")), builder.WithLinear(ctx.Bool("linear")))
+	builder := builder.New(p, builder.WithV2Provider(ctx.Bool("v2")), builder.WithLinear(ctx.Bool("linear")), builder.WithTimeoutOverride(ctx.Int("timeout")))
 	return json.NewEncoder(os.Stdout).Encode(builder)
 }
 

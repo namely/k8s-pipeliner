@@ -188,9 +188,11 @@ var _ Stage = DeployStage{}
 type ManualJudgementStage struct {
 	StageMetadata
 
-	FailPipeline bool     `json:"failPipeline"`
-	Instructions string   `json:"instructions"`
-	Inputs       []string `json:"inputs,omitempty"`
+	FailPipeline    bool     `json:"failPipeline"`
+	Instructions    string   `json:"instructions"`
+	Inputs          []string `json:"inputs,omitempty"`
+	OverrideTimeout bool     `json:"overrideTimeout,omitempty"`
+	StageTimeoutMS  int64    `json:"stageTimeoutMs,omitempty"`
 }
 
 func (mjs ManualJudgementStage) spinnakerStage() {}

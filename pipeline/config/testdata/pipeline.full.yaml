@@ -11,3 +11,16 @@ stages:
   deployEmbeddedManifests:
     files:
     - file: manifests/nginx-deployment.yml
+- account: int-k8s
+  name: Deploy to staging-k8s?
+  manualJudgement:
+    failPipeline: true
+    instructions: Should this pipeline continue?
+    inputs: []
+    timeoutHours: 100
+- account: int-k8s
+  name: Deploy to staging-k8s?
+  manualJudgement:
+    failPipeline: true
+    instructions: Should this pipeline continue?
+    inputs: []

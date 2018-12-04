@@ -118,6 +118,7 @@ stages:
   reliesOn:
     - "2"
   manualJudgement:
+    timeoutHours: 48
     failPipeline: true
     instructions: |
       If this stage has completed QA, press proceed.
