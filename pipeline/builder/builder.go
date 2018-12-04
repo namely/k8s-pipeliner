@@ -40,15 +40,18 @@ const (
 	WebhookTrigger = "webhook"
 	// LoadBalancerFormat creates the label selectors to attach pipeline.yml labels to deployment selectors
 	LoadBalancerFormat = "load-balancer-%s"
+	// HourInMS provides 1 hour in milliseconds
+	HourInMS int64 = 3600000
 )
 
 // Builder constructs a spinnaker pipeline JSON from a pipeliner config
 type Builder struct {
 	pipeline *config.Pipeline
 
-	isLinear   bool
-	basePath   string
-	v2Provider bool
+	isLinear     bool
+	basePath     string
+	v2Provider   bool
+	timeoutHours int
 }
 
 // New initializes a new builder for a pipeline config
@@ -529,11 +532,15 @@ func (b *Builder) buildManualJudgementStage(index int, s config.Stage) (*types.M
 		Instructions:  s.ManualJudgement.Instructions,
 		Inputs:        s.ManualJudgement.Inputs,
 	}
-
-	// if the timeout is actually set
+	// if global timeout override has been set
+	if b.timeoutHours != 0 {
+		mjs.OverrideTimeout = true
+		mjs.StageTimeoutMS = int64(b.timeoutHours) * HourInMS
+	}
+	// if the timeout is actually set go
 	if s.ManualJudgement.Timeout != 0 {
 		mjs.OverrideTimeout = true
-		mjs.StageTimeoutMS = int64(s.ManualJudgement.Timeout) * int64(3600000)
+		mjs.StageTimeoutMS = int64(s.ManualJudgement.Timeout) * HourInMS
 	}
 
 	return mjs, nil

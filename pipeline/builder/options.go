@@ -25,3 +25,10 @@ func WithV2Provider(v bool) OptFunc {
 		b.v2Provider = v
 	}
 }
+
+// WithTimeoutOverride overrides every stage's default 72 hour timeout
+func WithTimeoutOverride(hours int) OptFunc {
+	return func(b *Builder) {
+		b.timeoutHours = hours
+	}
+}
