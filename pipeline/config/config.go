@@ -172,6 +172,7 @@ type ManualJudgementStage struct {
 	FailPipeline bool     `yaml:"failPipeline"`
 	Instructions string   `yaml:"instructions"`
 	Inputs       []string `yaml:"inputs"`
+	Timeout      int      `yaml:"timeoutHours,omitempty"`
 }
 
 // ManifestFile represents a single manifest file

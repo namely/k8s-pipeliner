@@ -508,7 +508,7 @@ func (b *Builder) buildDeployStage(index int, s config.Stage) (*types.DeployStag
 			VolumeSources:         mg.VolumeSources,
 
 			// TODO(bobbytables): allow these to be configurable
-			Events: []interface{}{},
+			Events:                         []interface{}{},
 			InterestingHealthProviderNames: []string{"KubernetesContainer", "KubernetesPod"},
 			Provider:                       "kubernetes",
 			CloudProvider:                  "kubernetes",
@@ -525,10 +525,15 @@ func (b *Builder) buildDeployStage(index int, s config.Stage) (*types.DeployStag
 func (b *Builder) buildManualJudgementStage(index int, s config.Stage) (*types.ManualJudgementStage, error) {
 	mjs := &types.ManualJudgementStage{
 		StageMetadata: buildStageMetadata(s, "manualJudgment", index, b.isLinear),
+		FailPipeline:  s.ManualJudgement.FailPipeline,
+		Instructions:  s.ManualJudgement.Instructions,
+		Inputs:        s.ManualJudgement.Inputs,
+	}
 
-		FailPipeline: s.ManualJudgement.FailPipeline,
-		Instructions: s.ManualJudgement.Instructions,
-		Inputs:       s.ManualJudgement.Inputs,
+	// if the timeout is actually set
+	if s.ManualJudgement.Timeout != 0 {
+		mjs.OverrideTimeout = true
+		mjs.StageTimeoutMS = int64(s.ManualJudgement.Timeout) * int64(3600000)
 	}
 
 	return mjs, nil
