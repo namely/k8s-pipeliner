@@ -1,0 +1,11 @@
+default:
+  DB_NAME: Trax
+  DB_USER: svc_tester
+name: test-sre
+overrides:
+  int:
+    DB_HOST: int-nothing
+  ops:
+    DB_HOST: env-auto-discovery-test
+  production:
+    DB_HOST: prod-nothing

@@ -36,7 +36,7 @@ type Pipeline struct {
 	Description                 string `yaml:"description"`
 
 	Notifications []Notification `yaml:"notifications"`
-	Paramters     []Parameter    `yaml:"parameters"`
+	Parameters    []Parameter    `yaml:"parameters"`
 }
 
 // Parameter defines a single parameter in a pipeline config
@@ -177,14 +177,16 @@ type ManualJudgementStage struct {
 
 // ManifestFile represents a single manifest file
 type ManifestFile struct {
-	File string `yaml:"file"`
+	Environment string `yaml:"env,omitempty"`
+	File        string `yaml:"file"`
 }
 
 // DeployEmbeddedManifests is a Kubernetes V2 provider stage configuration
 // for deploying YAML manifest files
 type DeployEmbeddedManifests struct {
-	DefaultMoniker *Moniker       `yaml:"defaultMoniker,omitempty"`
-	Files          []ManifestFile `yaml:"files"`
+	DefaultMoniker    *Moniker       `yaml:"defaultMoniker,omitempty"`
+	ConfiguratorFiles []ManifestFile `yaml:"configuratorFiles,omitempty"`
+	Files             []ManifestFile `yaml:"files"`
 }
 
 // DeleteEmbeddedManifest represents a single resource to be deleted

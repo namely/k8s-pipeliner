@@ -57,6 +57,7 @@ func NewManfifestParser(config *config.Pipeline, basePath ...string) *ManifestPa
 	return mp
 }
 
+// ManifestFromFile creates a dynamic kubernetes objects for a given pipeline config
 func (mp *ManifestParser) ManifestFromFile(path string) (runtime.Object, error) {
 	if !filepath.IsAbs(path) && mp.basePath != "" {
 		path = filepath.Join(mp.basePath, path)
@@ -81,6 +82,7 @@ func (mp *ManifestParser) ManifestFromFile(path string) (runtime.Object, error) 
 	return obj, nil
 }
 
+// ManifestsFromFile creates an array of dynamic kubernetes objects for a given pipeline config
 func (mp *ManifestParser) ManifestsFromFile(path string) ([]runtime.Object, error) {
 	if !filepath.IsAbs(path) && mp.basePath != "" {
 		path = filepath.Join(mp.basePath, path)

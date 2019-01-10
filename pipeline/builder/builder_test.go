@@ -149,7 +149,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 
 	t.Run("Parameter configuration is parsed correctly", func(t *testing.T) {
 		pipeline := &config.Pipeline{
-			Paramters: []config.Parameter{
+			Parameters: []config.Parameter{
 				{
 					Name:        "param1",
 					Description: "parameter description",
