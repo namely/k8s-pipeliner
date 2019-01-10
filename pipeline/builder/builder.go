@@ -275,11 +275,13 @@ func (b *Builder) buildDeployEmbeddedManifestStage(index int, s config.Stage) (*
 			return nil, errors.Wrapf(err, "could not read from configurator manifest file: %s", configuratorFile.File)
 		}
 
-		env := "default"
+		env, ok := Stages[s.Account] // Set env based on account by default
 		if len(configuratorFile.Environment) > 0 {
-			env = configuratorFile.Environment
-		} else if _, ok := Stages[s.Account]; ok {
-			env = Stages[s.Account]
+			env = configuratorFile.Environment // Allow an override to be set
+		}
+
+		if len(env) == 0 && !ok {
+			env = "default" // If env was not set and can not be found in the Stages map, fall back to default
 		}
 
 		destFile := configuratorFile.File + "." + env
@@ -287,10 +289,12 @@ func (b *Builder) buildDeployEmbeddedManifestStage(index int, s config.Stage) (*
 
 		err = cnfgrtr.Generate(file, env, configuredConfigMap)
 		if err != nil {
+			os.Remove(destFile)
 			return nil, errors.Wrapf(err, "k8s-configurator could not generate manifest file: %s for env: %s", configuratorFile.File, env)
 		}
 
 		objs, err := parser.ManifestsFromFile(destFile)
+		os.Remove(destFile)
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not parse manifest file: %s", configuratorFile.File)
 		}
