@@ -272,7 +272,7 @@ func (b *Builder) buildDeployEmbeddedManifestStage(index int, s config.Stage) (*
 
 		file, err := ioutil.ReadFile(configuratorFile.File)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapf(err, "could not read from configurator manifest file: %s", configuratorFile.File)
 		}
 
 		env := "default"
@@ -287,7 +287,7 @@ func (b *Builder) buildDeployEmbeddedManifestStage(index int, s config.Stage) (*
 
 		err = cnfgrtr.Generate(file, env, configuredConfigMap)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapf(err, "k8s-configurator could not generate manifest file: %s for env: %s", configuratorFile.File, env)
 		}
 
 		objs, err := parser.ManifestsFromFile(destFile)
@@ -295,7 +295,6 @@ func (b *Builder) buildDeployEmbeddedManifestStage(index int, s config.Stage) (*
 			return nil, errors.Wrapf(err, "could not parse manifest file: %s", configuratorFile.File)
 		}
 
-		os.Remove(destFile)
 		ds.Manifests = append(ds.Manifests, objs...)
 
 	}
