@@ -59,10 +59,11 @@ const (
 type Builder struct {
 	pipeline *config.Pipeline
 
-	isLinear     bool
-	basePath     string
-	v2Provider   bool
-	timeoutHours int
+	isLinear         bool
+	basePath         string
+	v2Provider       bool
+	timeoutHours     int
+	overrideAccounts map[string]string
 }
 
 // New initializes a new builder for a pipeline config
@@ -127,6 +128,11 @@ func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
 	for _, stage := range b.pipeline.Stages {
 		var s types.Stage
 		var err error
+
+		// if the account has an override, switch the account name
+		if account, ok := b.overrideAccounts[stage.Account]; ok {
+			stage.Account = account
+		}
 
 		if b.v2Provider {
 			if stage.RunJob != nil {
