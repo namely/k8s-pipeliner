@@ -304,9 +304,14 @@ This configures your pipeline to have parameters in the UI / enable pipeline exp
 
 If you're using the V2 provider of Kubernetes in Spinnaker, you can use the `embeddedManifests` stage type and specify files to be applied in the stage.
 
+Files under the `files` section will be treated as manifests for kubernetes resources and deployed to the given account as is.
+
+Files under the `configuratorFiles` section are expected to be in the [k8s-configurator format](https://github.com/namely/k8s-configurator/blob/master/README.md#input-file-and-envs). These will be run through k8s-configurator to generate the environment-specific manifest. By default, the environment used by k8s-configurator will be determined by the account used in this stage. However, you may set the optional `env` property for configuratorFiles to override this.
+
 ```yaml
 stages:
-- name: "Deploy"
+- account: ops-k8s
+  name: "Deploy"
   deployEmbeddedManifests:
     moniker:
       app: app
@@ -317,6 +322,9 @@ stages:
       - manifests/deployment.yml
       - manifests/service.yml
       - manifests/migrate-job.yml
+    configuratorFiles:
+      - file: test-configurator.yml
+        env: superOps
 ```
 
 All of these files will be composed into a single stage deployment into the given account. This means you can deploy services and deployments in tandem together.
