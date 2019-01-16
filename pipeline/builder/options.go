@@ -32,3 +32,10 @@ func WithTimeoutOverride(hours int) OptFunc {
 		b.timeoutHours = hours
 	}
 }
+
+// WithAccountOverride lets you override an account with a different account
+func WithAccountOverride(accounts map[string]string) OptFunc {
+	return func(b *Builder) {
+		b.overrideAccounts = accounts
+	}
+}

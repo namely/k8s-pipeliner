@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/namely/k8s-pipeliner/pipeline"
 	"github.com/namely/k8s-pipeliner/pipeline/builder"
@@ -42,6 +43,10 @@ func main() {
 					Name:  "timeout",
 					Usage: "override the default 72 hour timeout (unit: int)",
 				},
+				cli.StringSliceFlag{
+					Name:  "override",
+					Usage: "override an environment with a different environment (example --override=int-k8s:int), --override=<old env>:<new env>, must be separated by colon",
+				},
 			},
 		},
 		{
@@ -73,7 +78,17 @@ func createAction(ctx *cli.Context) error {
 		return err
 	}
 
-	builder := builder.New(p, builder.WithV2Provider(ctx.Bool("v2")), builder.WithLinear(ctx.Bool("linear")), builder.WithTimeoutOverride(ctx.Int("timeout")))
+	overrideEnvs := map[string]string{}
+	for _, newEnv := range ctx.StringSlice("override") {
+		mapping := strings.Split(newEnv, ":")
+		if len(mapping) != 2 {
+			return fmt.Errorf("environment override flag was not formatted correctly")
+		}
+		overrideEnvs[mapping[0]] = mapping[1]
+	}
+
+	builder := builder.New(p, builder.WithV2Provider(ctx.Bool("v2")), builder.WithLinear(ctx.Bool("linear")), builder.WithTimeoutOverride(ctx.Int("timeout")), builder.WithAccountOverride(overrideEnvs))
+
 	return json.NewEncoder(os.Stdout).Encode(builder)
 }
 

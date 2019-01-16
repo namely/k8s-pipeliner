@@ -83,10 +83,16 @@
 			"revisionTime": "2018-08-09T22:11:04Z"
 		},
 		{
-			"checksumSHA1": "UdgOEimjVVIIvrSjTGzD4oDaYjI=",
+			"checksumSHA1": "kWc69gh2NaXdo63gbfp77LTXiS4=",
 			"path": "github.com/namely/k8s-configurator",
 			"revision": "db775ef189eb77fdde753d1f0c447fff1f8a6e9b",
 			"revisionTime": "2018-09-20T16:51:51Z"
+		},
+		{
+			"checksumSHA1": "RS/TqWQGmuk6pxcdNXtlM4+mALU=",
+			"path": "github.com/namely/k8s-pipeliner/pipeline/config",
+			"revision": "4a76cecf31ac0d03e372bd08ce3ba1826ed39ed5",
+			"revisionTime": "2019-01-16T19:06:37Z"
 		},
 		{
 			"checksumSHA1": "ljd3FhYRJ91cLZz3wsH9BQQ2JbA=",
@@ -202,10 +208,10 @@
 			"revisionTime": "2018-01-25T14:14:21Z"
 		},
 		{
-			"checksumSHA1": "qOmvuDm+F+2nQQecUZBVkZrTn6Y=",
+			"checksumSHA1": "QqDq2x8XOU7IoOR98Cx1eiV5QY8=",
 			"path": "gopkg.in/yaml.v2",
-			"revision": "d670f9405373e636a5a2765eea47fac0c9bc91a4",
-			"revisionTime": "2018-01-09T11:43:31Z"
+			"revision": "51d6538a90f86fe93ac480b35f37b2be17fef232",
+			"revisionTime": "2018-11-15T11:05:04Z"
 		},
 		{
 			"checksumSHA1": "xwvGTst/xgcrHZB2fy3PhWHAXAk=",
