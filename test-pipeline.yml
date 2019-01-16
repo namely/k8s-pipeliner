@@ -34,6 +34,10 @@ stages:
     files:
       - file: test-deployment.yml
       - file: test-configmap.yml
+    configuratorFiles:
+      - file: test-configurator2.yml
+        env: superOps
+      - file: test-configurator.yml
 - account: ops-k8s
   name: "Scale Up"
   scaleManifest:

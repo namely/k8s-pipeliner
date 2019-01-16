@@ -1,0 +1,10 @@
+default:
+  DB_NAME: Trax
+  DB_USER: svc_tester
+  DB_HOST: default-value
+name: configurator-test
+overrides:
+  garbo:
+    DB_HOST: ops-default
+  superGarbo:
+    DB_HOST: env_override_test

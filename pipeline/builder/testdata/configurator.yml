@@ -1,0 +1,12 @@
+default:
+  DB_NAME: Trax
+  DB_USER: svc_tester
+  DB_HOST: default-value
+name: configurator-test
+overrides:
+  ops:
+    DB_HOST: ops-default
+  superOps:
+    DB_HOST: env_override_test
+  int:
+    DB_HOST: int-nothing

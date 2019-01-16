@@ -58,6 +58,78 @@ func (em *EmbeddedManifestTest) TestFilesAreBuilt() {
 	em.Equal("Deployment", deploy.GetKind())
 }
 
+func (em *EmbeddedManifestTest) TestConfiguratorFilesNoEnv() {
+	em.AppendStage(config.Stage{
+		Name: "deploy cm",
+		DeployEmbeddedManifests: &config.DeployEmbeddedManifests{
+			ConfiguratorFiles: []config.ManifestFile{
+				{
+					File: "testdata/configurator.yml",
+				},
+			},
+		},
+	})
+
+	pipeline, err := em.Builder().Pipeline()
+	em.Require().NoError(err, "error building pipeline config")
+
+	stg, ok := pipeline.Stages[0].(*types.ManifestStage)
+	em.Require().True(ok)
+	em.Equal("deploy cm", stg.Name)
+
+	em.Require().Len(stg.Manifests, 1)
+
+	cm, ok := stg.Manifests[0].(*unstructured.Unstructured)
+	em.Require().True(ok)
+	em.Equal("configurator-test", cm.GetName())
+	em.Equal("ConfigMap", cm.GetKind())
+}
+
+func (em *EmbeddedManifestTest) TestConfiguratorFiles() {
+	em.AppendStage(config.Stage{
+		Name: "deploy cm",
+		DeployEmbeddedManifests: &config.DeployEmbeddedManifests{
+			ConfiguratorFiles: []config.ManifestFile{
+				{
+					File:        "testdata/configurator.yml",
+					Environment: "superOps",
+				},
+			},
+		},
+	})
+
+	pipeline, err := em.Builder().Pipeline()
+	em.Require().NoError(err, "error building pipeline config")
+
+	stg, ok := pipeline.Stages[0].(*types.ManifestStage)
+	em.Require().True(ok)
+	em.Equal("deploy cm", stg.Name)
+
+	em.Require().Len(stg.Manifests, 1)
+
+	cm, ok := stg.Manifests[0].(*unstructured.Unstructured)
+	em.Require().True(ok)
+	em.Equal("configurator-test", cm.GetName())
+	em.Equal("ConfigMap", cm.GetKind())
+}
+
+func (em *EmbeddedManifestTest) TestBadConfiguratorFiles() {
+	em.AppendStage(config.Stage{
+		Name: "deploy cm",
+		DeployEmbeddedManifests: &config.DeployEmbeddedManifests{
+			ConfiguratorFiles: []config.ManifestFile{
+				{
+					File:        "testdata/bad-configurator.yml",
+					Environment: "ops",
+				},
+			},
+		},
+	})
+
+	_, err := em.Builder().Pipeline()
+	em.Require().Error(err)
+}
+
 func (em *EmbeddedManifestTest) TestBadMultipleDocumentsError() {
 	em.AppendStage(config.Stage{
 		Name: "deploy nginx",

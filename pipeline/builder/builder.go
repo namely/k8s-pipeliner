@@ -3,8 +3,11 @@ package builder
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"strings"
 
+	cnfgrtr "github.com/namely/k8s-configurator"
 	"github.com/namely/k8s-pipeliner/pipeline/builder/types"
 	"github.com/namely/k8s-pipeliner/pipeline/config"
 	"github.com/pkg/errors"
@@ -31,6 +34,14 @@ var (
 	ErrNoNamespace = errors.New("builder: manifest does not have a namespace defined")
 	// ErrNoKubernetesMetadata is returned when a manifest does not have kubernetes metadata
 	ErrNoKubernetesMetadata = errors.New("builder: manifest does not have kubernetes metadata attached")
+
+	// Stages helps to translate from spinnaker account to configurator stages
+	Stages = map[string]string{
+		"int-k8s":        "int",
+		"staging-k8s":    "stage",
+		"production-k8s": "production",
+		"ops-k8s":        "ops",
+	}
 )
 
 const (
@@ -102,8 +113,8 @@ func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
 		}
 	}
 
-	sp.Parameters = make([]types.Parameter, len(b.pipeline.Paramters))
-	for i, param := range b.pipeline.Paramters {
+	sp.Parameters = make([]types.Parameter, len(b.pipeline.Parameters))
+	for i, param := range b.pipeline.Parameters {
 		sp.Parameters[i] = types.Parameter{
 			Name:        param.Name,
 			Description: param.Description,
@@ -111,6 +122,7 @@ func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
 			Required:    param.Required,
 		}
 	}
+
 	var stageIndex = 0
 	for _, stage := range b.pipeline.Stages {
 		var s types.Stage
@@ -231,7 +243,7 @@ func (b *Builder) buildDeployEmbeddedManifestStage(index int, s config.Stage) (*
 	ds := b.defaultManifestStage(index, s)
 	maniStage := s.DeployEmbeddedManifests
 
-	if len(maniStage.Files) < 1 {
+	if len(maniStage.Files)+len(maniStage.ConfiguratorFiles) < 1 {
 		return nil, ErrNoManifestFiles
 	}
 
@@ -253,6 +265,42 @@ func (b *Builder) buildDeployEmbeddedManifestStage(index int, s config.Stage) (*
 		}
 
 		ds.Manifests = append(ds.Manifests, objs...)
+	}
+
+	// Generate the configurator config map
+	for _, configuratorFile := range maniStage.ConfiguratorFiles {
+
+		file, err := ioutil.ReadFile(configuratorFile.File)
+		if err != nil {
+			return nil, errors.Wrapf(err, "could not read from configurator manifest file: %s", configuratorFile.File)
+		}
+
+		env, ok := Stages[s.Account] // Set env based on account by default
+		if len(configuratorFile.Environment) > 0 {
+			env = configuratorFile.Environment // Allow an override to be set
+		}
+
+		if len(env) == 0 && !ok {
+			env = "default" // If env was not set and can not be found in the Stages map, fall back to default
+		}
+
+		destFile := configuratorFile.File + "." + env
+		configuredConfigMap, err := os.Create(destFile)
+
+		err = cnfgrtr.Generate(file, env, configuredConfigMap)
+		if err != nil {
+			os.Remove(destFile)
+			return nil, errors.Wrapf(err, "k8s-configurator could not generate manifest file: %s for env: %s", configuratorFile.File, env)
+		}
+
+		objs, err := parser.ManifestsFromFile(destFile)
+		os.Remove(destFile)
+		if err != nil {
+			return nil, errors.Wrapf(err, "could not parse manifest file: %s", configuratorFile.File)
+		}
+
+		ds.Manifests = append(ds.Manifests, objs...)
+
 	}
 
 	return ds, nil
