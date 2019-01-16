@@ -306,7 +306,7 @@ If you're using the V2 provider of Kubernetes in Spinnaker, you can use the `emb
 
 Files under the `files` section will be treated as manifests for kubernetes resources and deployed to the given account as is.
 
-Files under the `configuratorFiles` section are expected to be in the k8s-configurator format. These will be run through k8s-configurator to generate the environment-specific manifest. By default, the environment used by k8s-configurator will be determined by the account used in this stage. However, you may set the optional `env` property for configuratorFiles to override this.
+Files under the `configuratorFiles` section are expected to be in the [k8s-configurator format](https://github.com/namely/k8s-configurator/blob/master/README.md#input-file-and-envs). These will be run through k8s-configurator to generate the environment-specific manifest. By default, the environment used by k8s-configurator will be determined by the account used in this stage. However, you may set the optional `env` property for configuratorFiles to override this.
 
 ```yaml
 stages:
