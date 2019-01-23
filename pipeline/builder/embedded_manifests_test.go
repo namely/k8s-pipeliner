@@ -31,6 +31,10 @@ func (em *EmbeddedManifestTest) Builder() *builder.Builder {
 	return builder.New(em.pipeline)
 }
 
+func (em *EmbeddedManifestTest) BuilderWithBasePath(basePath string) *builder.Builder {
+	return builder.New(em.pipeline, builder.WithBasePath(basePath))
+}
+
 func (em *EmbeddedManifestTest) TestFilesAreBuilt() {
 	em.AppendStage(config.Stage{
 		Name: "deploy nginx",
@@ -99,6 +103,34 @@ func (em *EmbeddedManifestTest) TestConfiguratorFiles() {
 	})
 
 	pipeline, err := em.Builder().Pipeline()
+	em.Require().NoError(err, "error building pipeline config")
+
+	stg, ok := pipeline.Stages[0].(*types.ManifestStage)
+	em.Require().True(ok)
+	em.Equal("deploy cm", stg.Name)
+
+	em.Require().Len(stg.Manifests, 1)
+
+	cm, ok := stg.Manifests[0].(*unstructured.Unstructured)
+	em.Require().True(ok)
+	em.Equal("configurator-test", cm.GetName())
+	em.Equal("ConfigMap", cm.GetKind())
+}
+
+func (em *EmbeddedManifestTest) TestConfiguratorFilesBasePath() {
+	em.AppendStage(config.Stage{
+		Name: "deploy cm",
+		DeployEmbeddedManifests: &config.DeployEmbeddedManifests{
+			ConfiguratorFiles: []config.ManifestFile{
+				{
+					File:        "configurator.yml",
+					Environment: "superOps",
+				},
+			},
+		},
+	})
+
+	pipeline, err := em.BuilderWithBasePath("testdata").Pipeline()
 	em.Require().NoError(err, "error building pipeline config")
 
 	stg, ok := pipeline.Stages[0].(*types.ManifestStage)
