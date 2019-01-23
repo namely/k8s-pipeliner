@@ -295,17 +295,18 @@ func (b *Builder) buildDeployEmbeddedManifestStage(index int, s config.Stage) (*
 			env = "default" // If env was not set and can not be found in the Stages map, fall back to default
 		}
 
-		destFile := configuratorFile.File + "." + env
-		configuredConfigMap, err := os.Create(destFile)
+		destFileName := configuratorFile.File + "." + env
+		destFilePath := path.Join(b.basePath, destFileName)
+		configuredConfigMap, err := os.Create(destFilePath)
 
 		err = cnfgrtr.Generate(file, env, configuredConfigMap)
 		if err != nil {
-			os.Remove(destFile)
+			os.Remove(destFilePath)
 			return nil, errors.Wrapf(err, "k8s-configurator could not generate manifest file: %s for env: %s", configuratorFile.File, env)
 		}
 
-		objs, err := parser.ManifestsFromFile(destFile)
-		os.Remove(destFile)
+		objs, err := parser.ManifestsFromFile(destFileName)
+		os.Remove(destFilePath)
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not parse manifest file: %s", configuratorFile.File)
 		}
