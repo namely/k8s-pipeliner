@@ -38,9 +38,13 @@ var (
 
 	// Stages helps to translate from spinnaker account to configurator stages
 	Stages = map[string]string{
+		"int":            "int",
 		"int-k8s":        "int",
+		"staging":        "stage",
 		"staging-k8s":    "stage",
+		"production":     "production",
 		"production-k8s": "production",
+		"ops":            "ops",
 		"ops-k8s":        "ops",
 	}
 )
