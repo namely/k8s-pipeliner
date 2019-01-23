@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path"
 	"strings"
 
 	cnfgrtr "github.com/namely/k8s-configurator"
@@ -276,7 +277,7 @@ func (b *Builder) buildDeployEmbeddedManifestStage(index int, s config.Stage) (*
 	// Generate the configurator config map
 	for _, configuratorFile := range maniStage.ConfiguratorFiles {
 
-		file, err := ioutil.ReadFile(configuratorFile.File)
+		file, err := ioutil.ReadFile(path.Join(b.basePath, configuratorFile.File))
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not read from configurator manifest file: %s", configuratorFile.File)
 		}
