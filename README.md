@@ -124,7 +124,7 @@ stages:
       If this stage has completed QA, press proceed.
 ```
 
-## Installation
+## <a name="installation"></a> Installation
 
 If you have a Go environment installed and configured, you can use `go get` to install the latest package of this project:
 
@@ -151,7 +151,7 @@ To copy the result to your clipboard and you're on a Mac, you can do:
 $ k8s-pipeliner create --linear pipeline.yml | pbcopy
 ```
 
-### Adding the Pipeline JSON
+### <a name="pipelinejson"></a> Adding the Pipeline JSON
 
 Once you've copied the resulting JSON from the pipeline configuration, you can go modify an already created Pipeline by clicking "Pipeline Actions" -> "Edit as JSON".
 
@@ -160,15 +160,15 @@ Once you've copied the resulting JSON from the pipeline configuration, you can g
 Paste the JSON, and then in the bottom right of the screen click "Save".
 
 
-## Schema
+## <a name="schema"></a> Schema
 
 Here are the independent pieces of schema for pipeline.yml that you can use. You can also take a look at the [Config Definitions](pipeline/config/config.go).
 
-### Triggers
+### <a name="triggers"></a> Triggers
 
 We currently support 2 types of triggers in k8s-pipeliner, webhooks and jenkins.
 
-#### Webhooks
+#### <a name="webhooks"></a> Webhooks
 
 ```yaml
 triggers:
@@ -179,7 +179,7 @@ triggers:
 
 The "source" field in webhooks is the endpoint that you need to hit in order to kick off Spinnaker. If you're running the gate API at "gate-api.example.com", your webhook endpoint from this configuration would be https://gate-api.example.com/webhooks/webhook/random-string (random-string is our source value)
 
-#### Jenkins
+#### <a name="jenkins"></a> Jenkins
 
 Spinnaker also supports triggering off of Jenkins jobs completing, to use this trigger include a `jenkins` field:
 
@@ -192,7 +192,7 @@ triggers:
     enabled: true
 ```
 
-### Manual Judgement
+### <a name="manualjudgement"></a> Manual Judgement
 
 If you want to have a manual judgement in your pipeline, you can define a `manualJudgement` step within the `stages` array:
 
@@ -208,7 +208,7 @@ stages:
 * If `failPipeline` is set to true, the manual judgement must be approved for the rest of the pipeline to continue.
 * The `instructions` are displayed within the UI when the pipeline is stalled waiting for a manual judgement. This is useful for whoever is providing the manual judgement to have context.
 
-### Run A Job
+### <a name="jobs"></a> Run A Job
 
 A Job is a step in a pipeline that runs a one off task. A good example might be running a database migration before rolling out a piece of code.
 
@@ -231,7 +231,7 @@ stages:
 * `command` portion of the container override overwrites the `command` portion of the container being run in the job.
 * `args` portion of the container override overwrites the `args` portion of the container being run in the job.
 
-### Deploying Groups
+### <a name="groups"></a> Deploying Groups
 
 A Deploy stage is used for running new server groups. You can use this stage to deploy several groups in-tandem. This is useful if you're deploying the same container for different application needs. IE: One is a consumer and another is a publisher.
 
@@ -272,7 +272,7 @@ stages:
 * `targetSize` is the amount of replicas to be deployed to the Kubernetes cluster. This is _not_ taken from the `deployment` manifest file
 * `loadBalancers` are the Spinnaker load balancers to be attached to this deployment. An array of strings. These will need to be defined inside of Spinnaker before a deploy to work.
 
-#### Image Descriptions
+#### <a name="images"></a> Image Descriptions
 
 `imageDescriptions` are a top level key in your YAML that define a Docker image to be deployed. You can use Spinnaker expression syntax in these fields to add dynamic images in your deployment pipeline.
 
@@ -286,7 +286,7 @@ imageDescriptions:
 
 What k8s-pipeliner does is it looks into the manifest you've supplied, finds the container with the name "my-container", and includes the image description for the Spinnaker JSON that is rendered for it. This allows you to specify multiple containers in your pods and be able to swap out the images based on dynamic values for them.
 
-### Parameter Support
+### <a name="parameters"></a> Parameter Support
 
 This tool also supports the ability to include parameters in your pipeline definitions:
 
@@ -300,7 +300,7 @@ parameters:
 
 This configures your pipeline to have parameters in the UI / enable pipeline expressions.
 
-## Version 2 Provider
+## <a name="v2provider"></a> Version 2 Provider
 
 If you're using the V2 provider of Kubernetes in Spinnaker, you can use the `embeddedManifests` stage type and specify files to be applied in the stage.
 
