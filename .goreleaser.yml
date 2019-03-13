@@ -15,7 +15,11 @@ brew:
 
   # Allows you to set a custom download strategy.
   # Default is empty.
-  download_strategy: GitHubPrivateRepositoryReleaseDownloadStrategy
+  download_strategy: CustomDownloadStrategies::GitHubPrivateRepositoryReleaseDownloadStrategy
+
+  # Add custom require_relative to include download strategy
+  # Default is empty.
+  custom_require: ../github_download_strategy
 
   # Git author used to commit to the repository.
   # Defaults are shown.
