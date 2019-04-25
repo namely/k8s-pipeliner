@@ -34,6 +34,7 @@ stages:
     files:
       - file: test-deployment.yml
       - file: test-configmap.yml
+      - file: test-sa.yml
     configuratorFiles:
       - file: test-configurator2.yml
         env: superOps

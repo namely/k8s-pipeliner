@@ -1,0 +1,28 @@
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: istio-ingressgateway-service-account
+  namespace: istio-system
+  labels:
+    app: ingressgateway
+    chart: gateways-1.0.5
+    heritage: Tiller
+    release: istio
+--- 
+
+--- # this would have failed before, as it expectes an object after "---"
+--- # and this one too
+
+# Source: istio/charts/mixer/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: istio-mixer-service-account
+  namespace: istio-system
+  labels:
+    app: mixer
+    chart: mixer-1.0.5
+    heritage: Tiller
+    release: istio
+

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path"
 	"strings"
@@ -66,7 +67,6 @@ type Builder struct {
 
 	isLinear         bool
 	basePath         string
-	v2Provider       bool
 	timeoutHours     int
 	overrideAccounts map[string]string
 }
@@ -139,49 +139,44 @@ func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
 			stage.Account = account
 		}
 
-		if b.v2Provider {
-			if stage.RunJob != nil {
-				s, err = b.buildV2RunJobStage(stageIndex, stage)
-				stageIndex = stageIndex + 1
-				if stage.RunJob.DeleteJob == true {
-					sp.Stages = append(sp.Stages, s)
-					s, err = b.buildV2DeleteManifestStage(stageIndex, stage)
-					stageIndex = stageIndex + 1
-				}
-			}
-
-			if stage.Deploy != nil {
-				s, err = b.buildV2ManifestStageFromDeploy(stageIndex, stage)
-				stageIndex = stageIndex + 1
-			}
-		} else {
-			if stage.RunJob != nil {
-				s, err = b.buildRunJobStage(stageIndex, stage)
-				stageIndex = stageIndex + 1
-			}
-			if stage.Deploy != nil {
-				s, err = b.buildDeployStage(stageIndex, stage)
-				stageIndex = stageIndex + 1
-			}
+		if stage.RunJob != nil {
+			s, err = b.buildRunJobStage(stageIndex, stage)
+			stageIndex = stageIndex + 1
+		}
+		if stage.Deploy != nil {
+			s, err = b.buildDeployStage(stageIndex, stage)
+			stageIndex = stageIndex + 1
 		}
 
 		if stage.ManualJudgement != nil {
 			s, err = b.buildManualJudgementStage(stageIndex, stage)
+			if err != nil {
+				log.Fatalf("Failed to buildManualJudgementStage with error: %v\n", err)
+			}
 			stageIndex = stageIndex + 1
 		}
 
 		if stage.DeployEmbeddedManifests != nil {
 			s, err = b.buildDeployEmbeddedManifestStage(stageIndex, stage)
+			if err != nil {
+				log.Fatalf("Failed to buildDeployEmbeddedManifestStage with error: %v\n", err)
+			}
 			stageIndex = stageIndex + 1
 		}
 
 		if stage.DeleteEmbeddedManifest != nil {
 			s, err = b.buildDeleteEmbeddedManifestStage(stageIndex, stage)
+			if err != nil {
+				log.Fatalf("Failed to buildDeleteEmbeddedManifestStage with error: %v\n", err)
+			}
 			stageIndex = stageIndex + 1
 		}
 
 		if stage.ScaleManifest != nil {
 			s, err = b.buildScaleManifestStage(stageIndex, stage)
+			if err != nil {
+				log.Fatalf("Failed to buildScaleManifestStage with error: %v\n", err)
+			}
 			stageIndex = stageIndex + 1
 		}
 
@@ -199,6 +194,7 @@ func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
 func (b *Builder) MarshalJSON() ([]byte, error) {
 	sp, err := b.Pipeline()
 	if err != nil {
+		fmt.Printf("Failed to build Pipeline() with error: %v\n", err)
 		return nil, err
 	}
 
