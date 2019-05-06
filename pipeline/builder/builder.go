@@ -690,6 +690,11 @@ func buildStageMetadata(s config.Stage, t string, index int, linear bool) types.
 		}
 	}
 
+	stageEnabled := types.OptionalStageSupport{
+		Expression: s.Condition,
+		Type:"expression",
+	}
+
 	notifications := buildNotifications(s.Notifications)
 	return types.StageMetadata{
 		Name:                 s.Name,
@@ -698,6 +703,7 @@ func buildStageMetadata(s config.Stage, t string, index int, linear bool) types.
 		Type:                 t,
 		Notifications:        notifications,
 		SendNotifications:    (len(notifications) > 0),
+		StageEnabled:         stageEnabled,
 	}
 }
 
