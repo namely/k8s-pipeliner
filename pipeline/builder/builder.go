@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"path"
 	"strings"
@@ -141,17 +140,23 @@ func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
 
 		if stage.RunJob != nil {
 			s, err = b.buildRunJobStage(stageIndex, stage)
+			if err != nil {
+				return sp, fmt.Errorf("Failed to b.buildRunJobStage with error: %v", err)
+			}
 			stageIndex = stageIndex + 1
 		}
 		if stage.Deploy != nil {
 			s, err = b.buildDeployStage(stageIndex, stage)
+			if err != nil {
+				return sp, fmt.Errorf("Failed to b.buildDeployStage with error: %v", err)
+			}
 			stageIndex = stageIndex + 1
 		}
 
 		if stage.ManualJudgement != nil {
 			s, err = b.buildManualJudgementStage(stageIndex, stage)
 			if err != nil {
-				log.Fatalf("Failed to buildManualJudgementStage with error: %v\n", err)
+				return sp, fmt.Errorf("Failed to buildManualJudgementStage with error: %v", err)
 			}
 			stageIndex = stageIndex + 1
 		}
@@ -159,7 +164,7 @@ func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
 		if stage.DeployEmbeddedManifests != nil {
 			s, err = b.buildDeployEmbeddedManifestStage(stageIndex, stage)
 			if err != nil {
-				log.Fatalf("Failed to buildDeployEmbeddedManifestStage with error: %v\n", err)
+				return sp, fmt.Errorf("Failed to buildDeployEmbeddedManifestStage with error: %s", err)
 			}
 			stageIndex = stageIndex + 1
 		}
@@ -167,7 +172,7 @@ func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
 		if stage.DeleteEmbeddedManifest != nil {
 			s, err = b.buildDeleteEmbeddedManifestStage(stageIndex, stage)
 			if err != nil {
-				log.Fatalf("Failed to buildDeleteEmbeddedManifestStage with error: %v\n", err)
+				return sp, fmt.Errorf("Failed to buildDeleteEmbeddedManifestStage with error: %v", err)
 			}
 			stageIndex = stageIndex + 1
 		}
@@ -175,13 +180,9 @@ func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
 		if stage.ScaleManifest != nil {
 			s, err = b.buildScaleManifestStage(stageIndex, stage)
 			if err != nil {
-				log.Fatalf("Failed to buildScaleManifestStage with error: %v\n", err)
+				return sp, fmt.Errorf("Failed to buildScaleManifestStage with error: %v", err)
 			}
 			stageIndex = stageIndex + 1
-		}
-
-		if err != nil {
-			return nil, err
 		}
 
 		sp.Stages = append(sp.Stages, s)
