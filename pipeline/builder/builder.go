@@ -195,7 +195,6 @@ func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
 func (b *Builder) MarshalJSON() ([]byte, error) {
 	sp, err := b.Pipeline()
 	if err != nil {
-		fmt.Printf("Failed to build Pipeline() with error: %v\n", err)
 		return nil, err
 	}
 
