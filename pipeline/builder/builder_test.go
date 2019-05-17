@@ -1,7 +1,6 @@
 package builder_test
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -202,87 +201,6 @@ func TestBuilderPipelineStages(t *testing.T) {
 
 			expected := map[string]string{"hello": "world", "test": "annotations"}
 			assert.Equal(t, expected, spinnaker.Stages[0].(*types.DeployStage).Clusters[0].PodAnnotations)
-		})
-
-		t.Run("V2 - Clusters are assigned", func(t *testing.T) {
-			pipeline := &config.Pipeline{
-				Stages: []config.Stage{
-					{
-						Name: "Test V2 Deploy Stage",
-						Deploy: &config.DeployStage{
-							Groups: []config.Group{
-								{
-									ManifestFile: file,
-									ContainerOverrides: &config.ContainerOverrides{
-										Command: []string{"cat", "dog"},
-										Args:    []string{"mouse"},
-									},
-									LoadBalancers: []string{"lb1", "lb2"},
-								},
-							},
-						},
-					},
-				},
-			}
-
-			builder := builder.New(pipeline, builder.WithLinear(true), builder.WithV2Provider(true))
-			spinnaker, err := builder.Pipeline()
-			require.NoError(t, err, "error generating pipeline json")
-			assert.Equal(t, "Test V2 Deploy Stage", spinnaker.Stages[0].(*types.ManifestStage).Name)
-		})
-
-		t.Run("Test Account Override is working", func(t *testing.T) {
-			pipeline := &config.Pipeline{
-				Stages: []config.Stage{
-					{Account: "int-k8s",
-						Name: "Test Deploy Stage",
-						Deploy: &config.DeployStage{
-							Groups: []config.Group{
-								{
-									ManifestFile: file,
-									PodOverrides: &config.PodOverrides{
-										Annotations: map[string]string{"hello": "world"},
-									},
-								},
-							},
-						},
-					},
-				},
-			}
-
-			builder := builder.New(pipeline, builder.WithLinear(true), builder.WithV2Provider(true), builder.WithAccountOverride(map[string]string{"int-k8s": "int"}))
-			spinnaker, err := builder.Pipeline()
-			require.NoError(t, err, "error generating pipeline json")
-			assert.Equal(t, "Test Deploy Stage", spinnaker.Stages[0].(*types.ManifestStage).Name)
-			assert.Equal(t, "int", spinnaker.Stages[0].(*types.ManifestStage).Account)
-			fmt.Println(spinnaker.Stages[0].(*types.ManifestStage).Account)
-		})
-
-		t.Run("Test account override ignores other accounts", func(t *testing.T) {
-			pipeline := &config.Pipeline{
-				Stages: []config.Stage{
-					{Account: "int-k8s",
-						Name: "Test Deploy Stage",
-						Deploy: &config.DeployStage{
-							Groups: []config.Group{
-								{
-									ManifestFile: file,
-									PodOverrides: &config.PodOverrides{
-										Annotations: map[string]string{"hello": "world"},
-									},
-								},
-							},
-						},
-					},
-				},
-			}
-
-			builder := builder.New(pipeline, builder.WithLinear(true), builder.WithV2Provider(true), builder.WithAccountOverride(map[string]string{"staging-k8s": "staging"}))
-			spinnaker, err := builder.Pipeline()
-			require.NoError(t, err, "error generating pipeline json")
-			assert.Equal(t, "Test Deploy Stage", spinnaker.Stages[0].(*types.ManifestStage).Name)
-			assert.Equal(t, "int-k8s", spinnaker.Stages[0].(*types.ManifestStage).Account)
-			fmt.Println(spinnaker.Stages[0].(*types.ManifestStage).Account)
 		})
 
 		t.Run("RequisiteStageRefIds defaults to an empty slice", func(t *testing.T) {

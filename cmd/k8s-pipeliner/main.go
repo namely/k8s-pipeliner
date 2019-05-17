@@ -35,10 +35,6 @@ func main() {
 					Name:  "linear, l",
 					Usage: "Assigns refs and reliesOn identifiers for you so you dont need to specify them. This is useful if your pipelines are always linear.",
 				},
-				cli.BoolFlag{
-					Name:  "v2",
-					Usage: "Create your manifests with the v2 kubernetes provider",
-				},
 				cli.IntFlag{
 					Name:  "timeout",
 					Usage: "override the default 72 hour timeout (unit: int)",
@@ -87,7 +83,7 @@ func createAction(ctx *cli.Context) error {
 		overrideEnvs[mapping[0]] = mapping[1]
 	}
 
-	builder := builder.New(p, builder.WithV2Provider(ctx.Bool("v2")), builder.WithLinear(ctx.Bool("linear")), builder.WithTimeoutOverride(ctx.Int("timeout")), builder.WithAccountOverride(overrideEnvs))
+	builder := builder.New(p, builder.WithLinear(ctx.Bool("linear")), builder.WithTimeoutOverride(ctx.Int("timeout")), builder.WithAccountOverride(overrideEnvs))
 
 	return json.NewEncoder(os.Stdout).Encode(builder)
 }

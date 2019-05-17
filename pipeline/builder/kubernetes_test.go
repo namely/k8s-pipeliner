@@ -338,4 +338,19 @@ func TestContainersFromManifests(t *testing.T) {
 			assert.Equal(t, "this-is-the-init-image-id", initContainer.ImageDescription.ImageID)
 		})
 	})
+
+}
+
+func TestEmpyYMLObject(t *testing.T) {
+	wd, _ := os.Getwd()
+
+	// testing for empty YML objects (eg: \n --- \n --- etc.)
+	t.Run("empty YML objects are ignored", func(t *testing.T) {
+		file := filepath.Join(wd, "testdata", "empty.yml")
+		parser := builder.NewManfifestParser(&config.Pipeline{})
+
+		_, err := parser.ManifestsFromFile(file)
+		require.NoError(t, err)
+
+	})
 }

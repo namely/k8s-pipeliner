@@ -66,7 +66,6 @@ type Builder struct {
 
 	isLinear         bool
 	basePath         string
-	v2Provider       bool
 	timeoutHours     int
 	overrideAccounts map[string]string
 }
@@ -139,54 +138,51 @@ func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
 			stage.Account = account
 		}
 
-		if b.v2Provider {
-			if stage.RunJob != nil {
-				s, err = b.buildV2RunJobStage(stageIndex, stage)
-				stageIndex = stageIndex + 1
-				if stage.RunJob.DeleteJob == true {
-					sp.Stages = append(sp.Stages, s)
-					s, err = b.buildV2DeleteManifestStage(stageIndex, stage)
-					stageIndex = stageIndex + 1
-				}
+		if stage.RunJob != nil {
+			s, err = b.buildRunJobStage(stageIndex, stage)
+			if err != nil {
+				return sp, fmt.Errorf("Failed to b.buildRunJobStage with error: %v", err)
 			}
-
-			if stage.Deploy != nil {
-				s, err = b.buildV2ManifestStageFromDeploy(stageIndex, stage)
-				stageIndex = stageIndex + 1
+			stageIndex = stageIndex + 1
+		}
+		if stage.Deploy != nil {
+			s, err = b.buildDeployStage(stageIndex, stage)
+			if err != nil {
+				return sp, fmt.Errorf("Failed to b.buildDeployStage with error: %v", err)
 			}
-		} else {
-			if stage.RunJob != nil {
-				s, err = b.buildRunJobStage(stageIndex, stage)
-				stageIndex = stageIndex + 1
-			}
-			if stage.Deploy != nil {
-				s, err = b.buildDeployStage(stageIndex, stage)
-				stageIndex = stageIndex + 1
-			}
+			stageIndex = stageIndex + 1
 		}
 
 		if stage.ManualJudgement != nil {
 			s, err = b.buildManualJudgementStage(stageIndex, stage)
+			if err != nil {
+				return sp, fmt.Errorf("Failed to buildManualJudgementStage with error: %v", err)
+			}
 			stageIndex = stageIndex + 1
 		}
 
 		if stage.DeployEmbeddedManifests != nil {
 			s, err = b.buildDeployEmbeddedManifestStage(stageIndex, stage)
+			if err != nil {
+				return sp, fmt.Errorf("Failed to buildDeployEmbeddedManifestStage with error: %s", err)
+			}
 			stageIndex = stageIndex + 1
 		}
 
 		if stage.DeleteEmbeddedManifest != nil {
 			s, err = b.buildDeleteEmbeddedManifestStage(stageIndex, stage)
+			if err != nil {
+				return sp, fmt.Errorf("Failed to buildDeleteEmbeddedManifestStage with error: %v", err)
+			}
 			stageIndex = stageIndex + 1
 		}
 
 		if stage.ScaleManifest != nil {
 			s, err = b.buildScaleManifestStage(stageIndex, stage)
+			if err != nil {
+				return sp, fmt.Errorf("Failed to buildScaleManifestStage with error: %v", err)
+			}
 			stageIndex = stageIndex + 1
-		}
-
-		if err != nil {
-			return nil, err
 		}
 
 		sp.Stages = append(sp.Stages, s)
