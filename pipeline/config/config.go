@@ -81,6 +81,15 @@ type WebhookTrigger struct {
 	Source  string `yaml:"source"`
 }
 
+type WebHookStage struct {
+	Name          string              `yaml:"name"`
+	Description   string              `yaml:"description"`
+	Method        string              `yaml:"method"`
+	Url           string              `yaml:"url"`
+	CustomHeaders map[string][]string `yaml:"customHeaders"`
+	Payload       string              `yaml:"payload"`
+}
+
 // Stage is an individual stage within a spinnaker pipeline
 // It defines what type of stage and the reference to a manifest file (if applicable)
 type Stage struct {
@@ -97,6 +106,7 @@ type Stage struct {
 	DeployEmbeddedManifests *DeployEmbeddedManifests `yaml:"deployEmbeddedManifests,omitempty"`
 	DeleteEmbeddedManifest  *DeleteEmbeddedManifest  `yaml:"deleteEmbeddedManifest,omitempty"`
 	ScaleManifest           *ScaleManifest           `yaml:"scaleManifest,omitempty"`
+	WebHook                 *WebHookStage            `yaml:"webHook,omitempty"`
 }
 
 // Notification config from pipeline configuration on a stage or pipeline

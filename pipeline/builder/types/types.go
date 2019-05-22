@@ -454,3 +454,16 @@ type HTTPGetActionHeaders struct {
 type TCPSocketAction struct {
 	Port int `json:"port"`
 }
+
+type Webhook struct {
+	StageMetadata
+
+	Name          string              `json:"name"`
+	Description   string              `json:"description"`
+	Method        string              `json:"method"`
+	Url           string              `json:"url"`
+	CustomHeaders map[string][]string `json:"customHeaders"`
+	Payload       string              `json:"payload"`
+}
+
+func (whs Webhook) spinnakerStage() {}
