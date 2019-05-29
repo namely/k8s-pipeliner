@@ -89,10 +89,10 @@
 			"revisionTime": "2018-09-20T16:51:51Z"
 		},
 		{
-			"checksumSHA1": "RS/TqWQGmuk6pxcdNXtlM4+mALU=",
+			"checksumSHA1": "DFx/1fuIOBow+cZxhbAo56GOk2k=",
 			"path": "github.com/namely/k8s-pipeliner/pipeline/config",
-			"revision": "4a76cecf31ac0d03e372bd08ce3ba1826ed39ed5",
-			"revisionTime": "2019-01-16T19:06:37Z"
+			"revision": "ff725d3227b8e0ab1919628e2a3526eb032cdc31",
+			"revisionTime": "2019-05-27T07:50:54Z"
 		},
 		{
 			"checksumSHA1": "ljd3FhYRJ91cLZz3wsH9BQQ2JbA=",

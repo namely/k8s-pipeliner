@@ -12,3 +12,22 @@ stages:
       stack: stack
     files:
       - test-deployment.yml
+- webHook:
+    name: postBuildInfoToBugsnag
+    description: Post build info to Bugsnag
+    method: POST
+    url: https://build.bugsnag.com/
+    customHeaders:
+      Content-Type:
+        - application/json
+    payload: |-
+      {
+          "apiKey": "some_key",
+          "appVersion": "some_version",
+          "builderName": "some_builder",
+          "releaseStage": "int",
+          "sourceControl": {
+          "repository": "https://github.com/namely/repository",
+          "revision": "some_revision"
+          }
+      }

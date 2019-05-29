@@ -185,6 +185,14 @@ func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
 			stageIndex = stageIndex + 1
 		}
 
+		if stage.WebHook != nil {
+			s, err = b.buildWebHookStage(stageIndex, stage)
+			if err != nil {
+				return sp, fmt.Errorf("Failed to webhook stage with error: %v", err)
+			}
+			stageIndex = stageIndex + 1
+		}
+
 		sp.Stages = append(sp.Stages, s)
 	}
 
@@ -491,6 +499,20 @@ func (b *Builder) buildV2DeleteManifestStage(index int, s config.Stage) (*types.
 	}
 
 	return dms, nil
+}
+
+func (b *Builder) buildWebHookStage(index int, s config.Stage) (*types.Webhook, error) {
+	stage := &types.Webhook{
+		StageMetadata: buildStageMetadata(s, "webhook", index, b.isLinear),
+		CustomHeaders: s.WebHook.CustomHeaders,
+		Description:   s.WebHook.Description,
+		Method:        s.WebHook.Method,
+		Name:          s.WebHook.Name,
+		Payload:       s.WebHook.Payload,
+		Url:           s.WebHook.Url,
+	}
+
+	return stage, nil
 }
 
 func (b *Builder) buildScaleManifestStage(index int, s config.Stage) (*types.ScaleManifestStage, error) {
