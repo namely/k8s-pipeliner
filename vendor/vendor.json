@@ -83,10 +83,10 @@
 			"revisionTime": "2018-08-09T22:11:04Z"
 		},
 		{
-			"checksumSHA1": "kWc69gh2NaXdo63gbfp77LTXiS4=",
+			"checksumSHA1": "mps6r4BNt/WR/RPCL5iZKtz9vAQ=",
 			"path": "github.com/namely/k8s-configurator",
-			"revision": "db775ef189eb77fdde753d1f0c447fff1f8a6e9b",
-			"revisionTime": "2018-09-20T16:51:51Z"
+			"revision": "2c2e1d656fd3dcd12edc0543de72aa6140f24535",
+			"revisionTime": "2019-06-11T23:24:36Z"
 		},
 		{
 			"checksumSHA1": "DFx/1fuIOBow+cZxhbAo56GOk2k=",
