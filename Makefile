@@ -3,10 +3,10 @@ VERSION = $(shell go run cmd/k8s-pipeliner/main.go --version | awk '{print $$3}'
 
 install:
 	go install ./...
-	
+
 test:
 	go test ./...
-	golint -set_exit_status ./...
+	go list ./... | grep -v /vendor/ | xargs -L1 golint -set_exit_status
 
 .PHONY: deps
 deps:

@@ -193,6 +193,14 @@ func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
 			stageIndex = stageIndex + 1
 		}
 
+		if stage.Jenkins != nil {
+			s, err = b.buildJenkinsStage(stageIndex, stage)
+			if err != nil {
+				return sp, fmt.Errorf("Failed to build jenkins stage with error: %v", err)
+			}
+			stageIndex = stageIndex + 1
+		}
+
 		sp.Stages = append(sp.Stages, s)
 	}
 
@@ -509,7 +517,28 @@ func (b *Builder) buildWebHookStage(index int, s config.Stage) (*types.Webhook, 
 		Method:        s.WebHook.Method,
 		Name:          s.WebHook.Name,
 		Payload:       s.WebHook.Payload,
-		Url:           s.WebHook.Url,
+		URL:           s.WebHook.URL,
+	}
+
+	return stage, nil
+}
+
+func (b *Builder) buildJenkinsStage(index int, s config.Stage) (*types.JenkinsStage, error) {
+	stage := &types.JenkinsStage{
+		StageMetadata:                 buildStageMetadata(s, "jenkins", index, b.isLinear),
+		Type:                          JenkinsTrigger,
+		Master:                        s.Jenkins.Master,
+		Job:                           s.Jenkins.Job,
+		MarkUnstableAsSuccessful:      s.Jenkins.MarkUnstableAsSuccessful,
+		CompleteOtherBranchesThenFail: s.Jenkins.CompleteOtherBranchesThenFail,
+		FailPipeline:                  s.Jenkins.FailPipeline,
+		ContinuePipeline:              s.Jenkins.ContinuePipeline,
+		WaitForCompletion:             s.Jenkins.WaitForCompletion,
+		Parameters:                    make(map[string]string),
+	}
+
+	for _, p := range s.Jenkins.Parameters {
+		stage.Parameters[p.Key] = p.Value
 	}
 
 	return stage, nil

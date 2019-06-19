@@ -66,13 +66,37 @@ type Trigger struct {
 	Webhook *WebhookTrigger `yaml:"webhook"`
 }
 
-// JenkinsTrigger has all of the fields defining how a trigger
-// for a CI build should occur
+// JenkinsTrigger has the fields for triggering a Jenkins job
 type JenkinsTrigger struct {
 	Job          string `yaml:"job"`
 	Master       string `yaml:"master"`
-	PropertyFile string `yaml:"propertyFile"`
+	PropertyFile string `yaml:"propertyFile,omitempty"`
 	Enabled      *bool  `yaml:"enabled"`
+}
+
+// JenkinsStage has fields for triggering a Jenkins job
+type JenkinsStage struct {
+	Master string `yaml:"master"`
+	Job    string `yaml:"job"`
+	Type   string `yaml:"type,omitempty"`
+	// string:string map of parameters to pass into the build
+	Parameters []JenkinsParameter `yaml:"parameters,omitempty"`
+	// Should jobs with 'Unstable' result be marked as successful?
+	MarkUnstableAsSuccessful *bool `yaml:"markUnstableAsSuccessful,omitempty"`
+	// Should other branches of the job continue if this stage fails?
+	CompleteOtherBranchesThenFail *bool `yaml:"completeOtherBranchesThenFail,omitempty"`
+	// Should the pipeline continue if this stage fails?
+	ContinuePipeline *bool `yaml:"continuePipeline,omitempty"`
+	// Should the pipeline fail if this stage fails?
+	FailPipeline *bool `yaml:"failPipeline,omitempty"`
+	// Should we wait for the job to complete before continuing the pipeline (default: true)?
+	WaitForCompletion *bool `yaml:"waitForCompletion,omitempty"`
+}
+
+// JenkinsParameter represent a parameter that is passed to the Jenkins build
+type JenkinsParameter struct {
+	Key   string `yaml:"key"`
+	Value string `yaml:"value"`
 }
 
 // WebhookTrigger defines how a webhook can trigger a pipeline execution
@@ -81,11 +105,12 @@ type WebhookTrigger struct {
 	Source  string `yaml:"source"`
 }
 
+// WebHookStage is a stage that triggers a webhook
 type WebHookStage struct {
 	Name          string              `yaml:"name"`
 	Description   string              `yaml:"description"`
 	Method        string              `yaml:"method"`
-	Url           string              `yaml:"url"`
+	URL           string              `yaml:"url"`
 	CustomHeaders map[string][]string `yaml:"customHeaders"`
 	Payload       string              `yaml:"payload"`
 }
@@ -107,6 +132,7 @@ type Stage struct {
 	DeleteEmbeddedManifest  *DeleteEmbeddedManifest  `yaml:"deleteEmbeddedManifest,omitempty"`
 	ScaleManifest           *ScaleManifest           `yaml:"scaleManifest,omitempty"`
 	WebHook                 *WebHookStage            `yaml:"webHook,omitempty"`
+	Jenkins                 *JenkinsStage            `yaml:"jenkins,omitempty"`
 }
 
 // Notification config from pipeline configuration on a stage or pipeline
