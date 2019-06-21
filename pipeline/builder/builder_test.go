@@ -484,6 +484,101 @@ func TestBuilderPipelineStages(t *testing.T) {
 			assert.Equal(t, []string{"2"}, spinnaker.Stages[0].(*types.ScaleManifestStage).StageMetadata.RequisiteStageRefIds)
 		})
 	})
+
+	t.Run("Jenkins stage is parsed correctly", func(t *testing.T) {
+		t.Run("Properties are assigned", func(t *testing.T) {
+
+			boolt := true
+			boolf := false
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						Name: "Test Jenkins Stage",
+						Jenkins: &config.JenkinsStage{
+							Type: "jenkins",
+							Job:  "QA/job/stage/job/UI/job/SLI",
+							Parameters: []config.JenkinsParameter{
+								config.JenkinsParameter{
+									Key:   "BROWSER",
+									Value: "chrome",
+								},
+								config.JenkinsParameter{
+									Key:   "Environment",
+									Value: "stage",
+								},
+								config.JenkinsParameter{
+									Key:   "NPMSCRIPT",
+									Value: "test:sli",
+								},
+								config.JenkinsParameter{
+									Key:   "timeout",
+									Value: "10",
+								},
+							},
+							Master:                        "namely-jenkins",
+							CompleteOtherBranchesThenFail: &boolf,
+							ContinuePipeline:              &boolt,
+							FailPipeline:                  &boolf,
+							MarkUnstableAsSuccessful:      &boolf,
+							WaitForCompletion:             &boolt,
+						},
+					},
+				},
+			}
+
+			builder := builder.New(pipeline)
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			assert.Equal(t, "Test Jenkins Stage", spinnaker.Stages[0].(*types.JenkinsStage).Name)
+			assert.Equal(t, "jenkins", spinnaker.Stages[0].(*types.JenkinsStage).Type)
+			assert.Equal(t, "QA/job/stage/job/UI/job/SLI", spinnaker.Stages[0].(*types.JenkinsStage).Job)
+			assert.Equal(t, "chrome", spinnaker.Stages[0].(*types.JenkinsStage).Parameters["BROWSER"])
+			assert.Equal(t, "stage", spinnaker.Stages[0].(*types.JenkinsStage).Parameters["Environment"])
+			assert.Equal(t, "test:sli", spinnaker.Stages[0].(*types.JenkinsStage).Parameters["NPMSCRIPT"])
+			assert.Equal(t, "10", spinnaker.Stages[0].(*types.JenkinsStage).Parameters["timeout"])
+			assert.Equal(t, "namely-jenkins", spinnaker.Stages[0].(*types.JenkinsStage).Master)
+			assert.Equal(t, &boolf, spinnaker.Stages[0].(*types.JenkinsStage).CompleteOtherBranchesThenFail)
+			assert.Equal(t, &boolt, spinnaker.Stages[0].(*types.JenkinsStage).ContinuePipeline)
+			assert.Equal(t, &boolf, spinnaker.Stages[0].(*types.JenkinsStage).FailPipeline)
+			assert.Equal(t, &boolf, spinnaker.Stages[0].(*types.JenkinsStage).MarkUnstableAsSuccessful)
+			assert.Equal(t, &boolt, spinnaker.Stages[0].(*types.JenkinsStage).WaitForCompletion)
+		})
+
+		t.Run("RequisiteStageRefIds defaults to an empty slice", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						Jenkins: &config.JenkinsStage{},
+					},
+				},
+			}
+
+			builder := builder.New(pipeline)
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			assert.Equal(t, []string{}, spinnaker.Stages[0].(*types.JenkinsStage).StageMetadata.RequisiteStageRefIds)
+		})
+
+		t.Run("RequisiteStageRefIds is assigned when ReliesOn is provided", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						ReliesOn: []string{"2"},
+						Jenkins:  &config.JenkinsStage{},
+					},
+				},
+			}
+
+			builder := builder.New(pipeline)
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			assert.Equal(t, []string{"2"}, spinnaker.Stages[0].(*types.JenkinsStage).StageMetadata.RequisiteStageRefIds)
+		})
+	})
+
 }
 
 func newFalse() *bool {

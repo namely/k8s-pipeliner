@@ -193,6 +193,14 @@ func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
 			stageIndex = stageIndex + 1
 		}
 
+		if stage.Jenkins != nil {
+			s, err = b.buildJenkinsStage(stageIndex, stage)
+			if err != nil {
+				return sp, fmt.Errorf("Failed to build jenkins stage with error: %v", err)
+			}
+			stageIndex = stageIndex + 1
+		}
+
 		sp.Stages = append(sp.Stages, s)
 	}
 
@@ -509,10 +517,54 @@ func (b *Builder) buildWebHookStage(index int, s config.Stage) (*types.Webhook, 
 		Method:        s.WebHook.Method,
 		Name:          s.WebHook.Name,
 		Payload:       s.WebHook.Payload,
-		Url:           s.WebHook.Url,
+		URL:           s.WebHook.URL,
 	}
 
 	return stage, nil
+}
+
+func (b *Builder) buildJenkinsStage(index int, s config.Stage) (*types.JenkinsStage, error) {
+
+	// Set default values
+	master := s.Jenkins.Master
+	if len(master) == 0 {
+		master = "namely-jenkins"
+	}
+
+	completeOtherBranchesThenFail := setDefaultIfNil(s.Jenkins.CompleteOtherBranchesThenFail, false)
+	continuePipeline := setDefaultIfNil(s.Jenkins.ContinuePipeline, true)
+	failPipeline := setDefaultIfNil(s.Jenkins.FailPipeline, true)
+	markUnstableAsSuccessful := setDefaultIfNil(s.Jenkins.MarkUnstableAsSuccessful, false)
+	waitForCompletion := setDefaultIfNil(s.Jenkins.WaitForCompletion, false)
+
+	stage := &types.JenkinsStage{
+		StageMetadata:                 buildStageMetadata(s, "jenkins", index, b.isLinear),
+		Type:                          JenkinsTrigger,
+		Job:                           s.Jenkins.Job,
+		Parameters:                    make(map[string]string),
+		Master:                        master,
+		CompleteOtherBranchesThenFail: &completeOtherBranchesThenFail,
+		ContinuePipeline:              &continuePipeline,
+		FailPipeline:                  &failPipeline,
+		MarkUnstableAsSuccessful:      &markUnstableAsSuccessful,
+		WaitForCompletion:             &waitForCompletion,
+	}
+
+	for _, p := range s.Jenkins.Parameters {
+		stage.Parameters[p.Key] = p.Value
+	}
+
+	return stage, nil
+}
+
+// setDefaultIfNil is a helper function that returns defaultValue if givenValue is nil
+func setDefaultIfNil(givenValue *bool, defaultValue bool) bool {
+	retValue := defaultValue
+	if givenValue != nil {
+		retValue = *(givenValue)
+	}
+
+	return retValue
 }
 
 func (b *Builder) buildScaleManifestStage(index int, s config.Stage) (*types.ScaleManifestStage, error) {

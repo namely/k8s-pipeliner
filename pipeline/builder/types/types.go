@@ -199,6 +199,36 @@ func (mjs ManualJudgementStage) spinnakerStage() {}
 
 var _ Stage = ManualJudgementStage{}
 
+// JenkinsStage is a struct representing the Spinnaker Jenkins stage
+type JenkinsStage struct {
+	StageMetadata
+
+	// Not exposed in pipeline.yml file
+	Type string `json:"type,omitempty"`
+
+	// Required params from the pipeline file
+	Job string `json:"job"`
+
+	// Optional params from the pipeline, defaults are set if they are not included
+	Parameters                    map[string]string `json:"parameters,omitempty"`
+	Master                        string            `json:"master,omitempty"`
+	CompleteOtherBranchesThenFail *bool             `json:"completeOtherBranchesThenFail,omitempty"`
+	ContinuePipeline              *bool             `json:"continuePipeline,omitempty"`
+	FailPipeline                  *bool             `json:"failPipeline,omitempty"`
+	MarkUnstableAsSuccessful      *bool             `json:"markUnstableAsSuccessful,omitempty"`
+	WaitForCompletion             *bool             `json:"waitForCompletion,omitempty"`
+}
+
+// JenkinsParameter represent a parameter that is passed to the Jenkins build
+type JenkinsParameter struct {
+	Key   string `yaml:"key"`
+	Value string `yaml:"value"`
+}
+
+func (js JenkinsStage) spinnakerStage() {}
+
+var _ Stage = JenkinsStage{}
+
 // Cluster defines a server group to be deployed within a Deploy stage of a
 // pipeline
 type Cluster struct {
@@ -455,13 +485,14 @@ type TCPSocketAction struct {
 	Port int `json:"port"`
 }
 
+// Webhook is a struct for the Spinnaker webhook configuration
 type Webhook struct {
 	StageMetadata
 
 	Name          string              `json:"name"`
 	Description   string              `json:"description"`
 	Method        string              `json:"method"`
-	Url           string              `json:"url"`
+	URL           string              `json:"url"`
 	CustomHeaders map[string][]string `json:"customHeaders"`
 	Payload       string              `json:"payload"`
 }

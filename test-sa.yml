@@ -9,12 +9,12 @@ metadata:
     chart: gateways-1.0.5
     heritage: Tiller
     release: istio
---- 
+---
 
 --- # this would have failed before, as it expectes an object after "---"
 --- # and this one too
 
-# Source: istio/charts/mixer/templates/serviceaccount.yaml
+# Source: istio/charts/mixer/templates/serviceaccount.yml
 apiVersion: v1
 kind: ServiceAccount
 metadata:

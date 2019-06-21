@@ -216,7 +216,7 @@ A Job is a step in a pipeline that runs a one off task. A good example might be 
 stages:
 - name: "Run Migrations"
   runJob:
-    manifestFile: manifests/deployment.yaml
+    manifestFile: manifests/deployment.yml
     container:
       command:
         - bundle
@@ -249,7 +249,7 @@ stages:
 - name: "Deploy"
   deploy:
     groups:
-    - manifestFile: manifests/deployment.yaml
+    - manifestFile: manifests/deployment.yml
       maxRemainingASGS: 2
       scaleDown: true
       stack: web

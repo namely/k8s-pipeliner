@@ -29,7 +29,7 @@ triggers:
     enabled: true
 stages:
 - account: ops-k8s
-  name: "Migrate INT"
+  name: "Deploy Manifests"
   deployEmbeddedManifests:
     files:
       - file: test-deployment.yml
@@ -50,3 +50,19 @@ stages:
   name: "Delete INT"
   deleteEmbeddedManifest:
     file: test-deployment.yml
+- name: "Trigger Jenkins Job"
+  jenkins:
+    job: "QA/job/stage/job/UI/job/SLI"
+    parameters:                           # Optional, if excluded Jenkins will use default parameter values
+      - key: BROWSER
+        value: "chrome"
+      - key: Environment
+        value: "stage"
+      - key: NPMSCRIPT
+        value: test:sli
+    # master: "namely-jenkins"              # Optional, defaults to "namely-jenkins"
+    # completeOtherBranchesThenFail: false  # Optional, defaults to false
+    # continuePipeline: true                # Optional, defaults to true
+    # markUnstableAsSuccessful: false       # Optional, defaults to false
+    # failPipeline: false                   # Optional, defaults to false
+    # waitForCompletion: true               # Optional, defaults to true
