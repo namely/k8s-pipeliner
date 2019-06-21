@@ -76,19 +76,21 @@ type JenkinsTrigger struct {
 
 // JenkinsStage has fields for triggering a Jenkins job
 type JenkinsStage struct {
-	Master string `yaml:"master"`
-	Job    string `yaml:"job"`
-	Type   string `yaml:"type,omitempty"`
+	Type string `yaml:"type,omitempty"`
+
+	Job string `yaml:"job"`
 	// string:string map of parameters to pass into the build
 	Parameters []JenkinsParameter `yaml:"parameters,omitempty"`
-	// Should jobs with 'Unstable' result be marked as successful?
-	MarkUnstableAsSuccessful *bool `yaml:"markUnstableAsSuccessful,omitempty"`
+
+	Master string `yaml:"master"`
 	// Should other branches of the job continue if this stage fails?
 	CompleteOtherBranchesThenFail *bool `yaml:"completeOtherBranchesThenFail,omitempty"`
 	// Should the pipeline continue if this stage fails?
 	ContinuePipeline *bool `yaml:"continuePipeline,omitempty"`
 	// Should the pipeline fail if this stage fails?
 	FailPipeline *bool `yaml:"failPipeline,omitempty"`
+	// Should jobs with 'Unstable' result be marked as successful?
+	MarkUnstableAsSuccessful *bool `yaml:"markUnstableAsSuccessful,omitempty"`
 	// Should we wait for the job to complete before continuing the pipeline (default: true)?
 	WaitForCompletion *bool `yaml:"waitForCompletion,omitempty"`
 }

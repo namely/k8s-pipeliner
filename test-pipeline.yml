@@ -50,22 +50,19 @@ stages:
   name: "Delete INT"
   deleteEmbeddedManifest:
     file: test-deployment.yml
-- account: ops-k8s
-  name: "Trigger Jenkins Job"
+- name: "Trigger Jenkins Job"
   jenkins:
-    master: "namely-jenkins"
     job: "QA/job/stage/job/UI/job/SLI"
-    parameters:
+    parameters:                           # Optional, if excluded Jenkins will use default parameter values
       - key: BROWSER
         value: "chrome"
       - key: Environment
         value: "stage"
       - key: NPMSCRIPT
         value: test:sli
-      - key: timeout
-        value: 10
-    continuePipeline: true
-    waitForCompletion: true
-    markUnstableAsSuccessful: false
-    completeOtherBranchesThenFail: false
-    failPipeline: false
+    # master: "namely-jenkins"              # Optional, defaults to "namely-jenkins"
+    # completeOtherBranchesThenFail: false  # Optional, defaults to false
+    # continuePipeline: true                # Optional, defaults to true
+    # markUnstableAsSuccessful: false       # Optional, defaults to false
+    # failPipeline: false                   # Optional, defaults to false
+    # waitForCompletion: true               # Optional, defaults to true

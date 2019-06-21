@@ -203,14 +203,19 @@ var _ Stage = ManualJudgementStage{}
 type JenkinsStage struct {
 	StageMetadata
 
-	Master                        string            `json:"master"`
-	Job                           string            `json:"job"`
-	Type                          string            `json:"type,omitempty"`
+	// Not exposed in pipeline.yml file
+	Type string `json:"type,omitempty"`
+
+	// Required params from the pipeline file
+	Job string `json:"job"`
+
+	// Optional params from the pipeline, defaults are set if they are not included
 	Parameters                    map[string]string `json:"parameters,omitempty"`
-	MarkUnstableAsSuccessful      *bool             `json:"markUnstableAsSuccessful,omitempty"`
+	Master                        string            `json:"master,omitempty"`
 	CompleteOtherBranchesThenFail *bool             `json:"completeOtherBranchesThenFail,omitempty"`
 	ContinuePipeline              *bool             `json:"continuePipeline,omitempty"`
 	FailPipeline                  *bool             `json:"failPipeline,omitempty"`
+	MarkUnstableAsSuccessful      *bool             `json:"markUnstableAsSuccessful,omitempty"`
 	WaitForCompletion             *bool             `json:"waitForCompletion,omitempty"`
 }
 

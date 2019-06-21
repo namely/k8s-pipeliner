@@ -495,12 +495,8 @@ func TestBuilderPipelineStages(t *testing.T) {
 					{
 						Name: "Test Jenkins Stage",
 						Jenkins: &config.JenkinsStage{
-							CompleteOtherBranchesThenFail: &boolf,
-							ContinuePipeline:              &boolt,
-							FailPipeline:                  &boolf,
-							Job:                           "QA/job/stage/job/UI/job/SLI",
-							MarkUnstableAsSuccessful:      &boolf,
-							Master:                        "namely-jenkins",
+							Type: "jenkins",
+							Job:  "QA/job/stage/job/UI/job/SLI",
 							Parameters: []config.JenkinsParameter{
 								config.JenkinsParameter{
 									Key:   "BROWSER",
@@ -519,8 +515,12 @@ func TestBuilderPipelineStages(t *testing.T) {
 									Value: "10",
 								},
 							},
-							Type:              "jenkins",
-							WaitForCompletion: &boolt,
+							Master:                        "namely-jenkins",
+							CompleteOtherBranchesThenFail: &boolf,
+							ContinuePipeline:              &boolt,
+							FailPipeline:                  &boolf,
+							MarkUnstableAsSuccessful:      &boolf,
+							WaitForCompletion:             &boolt,
 						},
 					},
 				},
@@ -531,18 +531,17 @@ func TestBuilderPipelineStages(t *testing.T) {
 			require.NoError(t, err, "error generating pipeline json")
 
 			assert.Equal(t, "Test Jenkins Stage", spinnaker.Stages[0].(*types.JenkinsStage).Name)
-			assert.Equal(t, &boolf, spinnaker.Stages[0].(*types.JenkinsStage).CompleteOtherBranchesThenFail)
-			assert.Equal(t, &boolt, spinnaker.Stages[0].(*types.JenkinsStage).ContinuePipeline)
-			assert.Equal(t, &boolf, spinnaker.Stages[0].(*types.JenkinsStage).FailPipeline)
+			assert.Equal(t, "jenkins", spinnaker.Stages[0].(*types.JenkinsStage).Type)
 			assert.Equal(t, "QA/job/stage/job/UI/job/SLI", spinnaker.Stages[0].(*types.JenkinsStage).Job)
-			assert.Equal(t, &boolf, spinnaker.Stages[0].(*types.JenkinsStage).MarkUnstableAsSuccessful)
-			assert.Equal(t, "namely-jenkins", spinnaker.Stages[0].(*types.JenkinsStage).Master)
-			assert.Equal(t, "Test Jenkins Stage", spinnaker.Stages[0].(*types.JenkinsStage).Name)
 			assert.Equal(t, "chrome", spinnaker.Stages[0].(*types.JenkinsStage).Parameters["BROWSER"])
 			assert.Equal(t, "stage", spinnaker.Stages[0].(*types.JenkinsStage).Parameters["Environment"])
 			assert.Equal(t, "test:sli", spinnaker.Stages[0].(*types.JenkinsStage).Parameters["NPMSCRIPT"])
 			assert.Equal(t, "10", spinnaker.Stages[0].(*types.JenkinsStage).Parameters["timeout"])
-			assert.Equal(t, "jenkins", spinnaker.Stages[0].(*types.JenkinsStage).Type)
+			assert.Equal(t, "namely-jenkins", spinnaker.Stages[0].(*types.JenkinsStage).Master)
+			assert.Equal(t, &boolf, spinnaker.Stages[0].(*types.JenkinsStage).CompleteOtherBranchesThenFail)
+			assert.Equal(t, &boolt, spinnaker.Stages[0].(*types.JenkinsStage).ContinuePipeline)
+			assert.Equal(t, &boolf, spinnaker.Stages[0].(*types.JenkinsStage).FailPipeline)
+			assert.Equal(t, &boolf, spinnaker.Stages[0].(*types.JenkinsStage).MarkUnstableAsSuccessful)
 			assert.Equal(t, &boolt, spinnaker.Stages[0].(*types.JenkinsStage).WaitForCompletion)
 		})
 
