@@ -498,3 +498,9 @@ type Webhook struct {
 }
 
 func (whs Webhook) spinnakerStage() {}
+
+// OptionalStageSupport determines if a stage is enabled in the pipeline
+type OptionalStageSupport struct {
+	Expression string `json:"expression"`
+	Type       string `json:"type"`
+}

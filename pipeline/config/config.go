@@ -125,6 +125,7 @@ type Stage struct {
 	RefID         string         `yaml:"refId,omitempty"`
 	ReliesOn      []string       `yaml:"reliesOn,omitempty"`
 	Notifications []Notification `yaml:"notifications,omitempty"`
+	Condition     string         `yaml:"condition,omitempty"`
 
 	// All of the different supported stages, only one may be set
 	RunJob                  *RunJobStage             `yaml:"runJob,omitempty"`
