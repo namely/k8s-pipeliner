@@ -531,11 +531,11 @@ func (b *Builder) buildJenkinsStage(index int, s config.Stage) (*types.JenkinsSt
 		master = "namely-jenkins"
 	}
 
-	completeOtherBranchesThenFail := setDefaultIfNil(s.Jenkins.CompleteOtherBranchesThenFail, false)
+	completeOtherBranchesThenFail := setDefaultIfNil(s.Jenkins.CompleteOtherBranchesThenFail, true)
 	continuePipeline := setDefaultIfNil(s.Jenkins.ContinuePipeline, true)
-	failPipeline := setDefaultIfNil(s.Jenkins.FailPipeline, true)
+	failPipeline := setDefaultIfNil(s.Jenkins.FailPipeline, false)
 	markUnstableAsSuccessful := setDefaultIfNil(s.Jenkins.MarkUnstableAsSuccessful, false)
-	waitForCompletion := setDefaultIfNil(s.Jenkins.WaitForCompletion, false)
+	waitForCompletion := setDefaultIfNil(s.Jenkins.WaitForCompletion, true)
 
 	stage := &types.JenkinsStage{
 		StageMetadata:                 buildStageMetadata(s, "jenkins", index, b.isLinear),
@@ -690,21 +690,25 @@ func buildStageMetadata(s config.Stage, t string, index int, linear bool) types.
 		}
 	}
 
-	stageEnabled := types.OptionalStageSupport{
-		Expression: s.Condition,
-		Type:"expression",
-	}
-
 	notifications := buildNotifications(s.Notifications)
-	return types.StageMetadata{
+
+	metadata := types.StageMetadata{
 		Name:                 s.Name,
 		RefID:                refID,
 		RequisiteStageRefIds: reliesOn,
 		Type:                 t,
 		Notifications:        notifications,
 		SendNotifications:    (len(notifications) > 0),
-		StageEnabled:         stageEnabled,
 	}
+
+	if len(s.Condition) > 0 {
+		metadata.StageEnabled = &types.OptionalStageSupport{
+			Expression: s.Condition,
+			Type:       "expression",
+		}
+	}
+
+	return metadata
 }
 
 func buildNotifications(notifications []config.Notification) []types.Notification {
