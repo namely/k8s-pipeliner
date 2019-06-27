@@ -13,13 +13,13 @@ type TriggerObject struct {
 
 // StageMetadata is the common components of a stage in spinnaker such as name
 type StageMetadata struct {
-	RefID                string               `json:"refId,omitempty"`
-	RequisiteStageRefIds []string             `json:"requisiteStageRefIds"`
-	Name                 string               `json:"name"`
-	Type                 string               `json:"type"`
-	Notifications        []Notification       `json:"notifications,omitempty"`
-	SendNotifications    bool                 `json:"sendNotifications"`
-	StageEnabled         OptionalStageSupport `json:"stageEnabled"`
+	RefID                string                `json:"refId,omitempty"`
+	RequisiteStageRefIds []string              `json:"requisiteStageRefIds"`
+	Name                 string                `json:"name"`
+	Type                 string                `json:"type"`
+	Notifications        []Notification        `json:"notifications,omitempty"`
+	SendNotifications    bool                  `json:"sendNotifications,omitempty"`
+	StageEnabled         *OptionalStageSupport `json:"stageEnabled,omitempty"`
 }
 
 // JenkinsTrigger constructs the JSON necessary to include a Jenkins trigger
