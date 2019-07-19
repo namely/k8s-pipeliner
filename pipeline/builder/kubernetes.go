@@ -118,7 +118,7 @@ func (mp *ManifestParser) ManifestsFromFile(path string) ([]runtime.Object, erro
 			// second condition accounts for empty YAML object (eg: \n --- \n --- etc.)
 			// --> we'll just keep calm on chive on
 			if strings.Contains(err.Error(), "missing in 'null'") {
-				break
+				continue
 			}
 			// error decoding
 			fmt.Printf("Failed to decode: %v", err)
