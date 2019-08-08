@@ -151,6 +151,13 @@ To copy the result to your clipboard and you're on a Mac, you can do:
 $ k8s-pipeliner create --linear pipeline.yml | pbcopy
 ```
 
+### <a name="installation"></a> Upgrade k8s-pipeliner
+
+Pull the latest from master branch and run
+```
+make install
+```
+
 ### <a name="pipelinejson"></a> Adding the Pipeline JSON
 
 Once you've copied the resulting JSON from the pipeline configuration, you can go modify an already created Pipeline by clicking "Pipeline Actions" -> "Edit as JSON".
