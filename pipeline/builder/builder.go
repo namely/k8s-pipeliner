@@ -201,6 +201,14 @@ func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
 			stageIndex = stageIndex + 1
 		}
 
+		if stage.RunSpinnakerPipeline != nil {
+			s, err = b.buildRunSpinnakerPipelineStage(stageIndex, stage)
+			if err != nil {
+				return sp, fmt.Errorf("Failed to build spinnaker pipeline stage with error: %v", err)
+			}
+			stageIndex = stageIndex + 1
+		}
+
 		sp.Stages = append(sp.Stages, s)
 	}
 
@@ -589,6 +597,35 @@ func (b *Builder) buildJenkinsStage(index int, s config.Stage) (*types.JenkinsSt
 
 	for _, p := range s.Jenkins.Parameters {
 		stage.Parameters[p.Key] = p.Value
+	}
+
+	return stage, nil
+}
+
+func (b *Builder) buildRunSpinnakerPipelineStage(index int, s config.Stage) (*types.RunSpinnakerPipelineStage, error) {
+
+	// Set default values
+	completeOtherBranchesThenFail := setDefaultIfNil(s.RunSpinnakerPipeline.CompleteOtherBranchesThenFail, false)
+	continuePipeline := setDefaultIfNil(s.RunSpinnakerPipeline.ContinuePipeline, false)
+	failPipeline := setDefaultIfNil(s.RunSpinnakerPipeline.FailPipeline, true)
+	markUnstableAsSuccessful := setDefaultIfNil(s.RunSpinnakerPipeline.MarkUnstableAsSuccessful, false)
+	waitForCompletion := setDefaultIfNil(s.RunSpinnakerPipeline.WaitForCompletion, true)
+
+	stage := &types.RunSpinnakerPipelineStage{
+		StageMetadata:                 buildStageMetadata(s, "pipeline", index, b.isLinear),
+		Type:                          JenkinsTrigger,
+		Application:                   s.RunSpinnakerPipeline.Application,
+		Pipeline:                      s.RunSpinnakerPipeline.Pipeline,
+		PipelineParameters:            make(map[string]string),
+		CompleteOtherBranchesThenFail: &completeOtherBranchesThenFail,
+		ContinuePipeline:              &continuePipeline,
+		FailPipeline:                  &failPipeline,
+		MarkUnstableAsSuccessful:      &markUnstableAsSuccessful,
+		WaitForCompletion:             &waitForCompletion,
+	}
+
+	for _, p := range s.RunSpinnakerPipeline.PipelineParameters {
+		stage.PipelineParameters[p.Key] = p.Value
 	}
 
 	return stage, nil

@@ -145,22 +145,22 @@
 			"revisionTime": "2019-06-11T23:24:36Z"
 		},
 		{
-			"checksumSHA1": "hF8ikYTprQGfhlBJNBnvAKRYXq4=",
+			"checksumSHA1": "ydpngnupsrMPpr2SVbAXeFOgOCM=",
 			"path": "github.com/namely/k8s-pipeliner/pipeline/builder",
-			"revision": "cb53d150733e562f17f38c87068cfe0108bf7ee2",
-			"revisionTime": "2019-07-19T18:23:50Z"
+			"revision": "60705229ef7c4a5725e186fecfa106110d4dc6e7",
+			"revisionTime": "2019-08-18T04:31:59Z"
 		},
 		{
-			"checksumSHA1": "dzS5UVdHJ+VrhdzyX73iJQ79dGc=",
+			"checksumSHA1": "zr7VbENF1YcWhb5uQLtXEo/ptRQ=",
 			"path": "github.com/namely/k8s-pipeliner/pipeline/builder/types",
-			"revision": "cb53d150733e562f17f38c87068cfe0108bf7ee2",
-			"revisionTime": "2019-07-19T18:23:50Z"
+			"revision": "60705229ef7c4a5725e186fecfa106110d4dc6e7",
+			"revisionTime": "2019-08-18T04:31:59Z"
 		},
 		{
-			"checksumSHA1": "8zd0emarJEYo9UNqBK9q06MmVs8=",
+			"checksumSHA1": "p28xbNIVHQuBL+SYQ5N5lSVJ/aY=",
 			"path": "github.com/namely/k8s-pipeliner/pipeline/config",
-			"revision": "cb53d150733e562f17f38c87068cfe0108bf7ee2",
-			"revisionTime": "2019-07-19T18:23:50Z"
+			"revision": "60705229ef7c4a5725e186fecfa106110d4dc6e7",
+			"revisionTime": "2019-08-18T04:31:59Z"
 		},
 		{
 			"checksumSHA1": "0H/VjT8w1CB702qWpbYMqr65Mf0=",

@@ -236,15 +236,39 @@ type JenkinsStage struct {
 	WaitForCompletion             *bool             `json:"waitForCompletion,omitempty"`
 }
 
-// JenkinsParameter represent a parameter that is passed to the Jenkins build
-type JenkinsParameter struct {
-	Key   string `yaml:"key"`
-	Value string `yaml:"value"`
-}
-
 func (js JenkinsStage) spinnakerStage() {}
 
 var _ Stage = JenkinsStage{}
+
+// RunSpinnakerPipelineStage represents a stage where another pipeline is executed
+type RunSpinnakerPipelineStage struct {
+	StageMetadata
+
+	// Not exposed in pipeline.yml file
+	Type string `json:"type,omitempty"`
+
+	Application string `yaml:"application"`
+	Pipeline    string `yaml:"pipeline"`
+
+	// string:string map of parameters to pass into the build
+	PipelineParameters map[string]string `yaml:"pipelineParameters,omitempty"`
+
+	CompleteOtherBranchesThenFail *bool `yaml:"completeOtherBranchesThenFail,omitempty"`
+	ContinuePipeline              *bool `yaml:"continuePipeline,omitempty"`
+	FailPipeline                  *bool `yaml:"failPipeline,omitempty"`
+	MarkUnstableAsSuccessful      *bool `yaml:"markUnstableAsSuccessful,omitempty"`
+	WaitForCompletion             *bool `yaml:"waitForCompletion,omitempty"`
+}
+
+func (sps RunSpinnakerPipelineStage) spinnakerStage() {}
+
+var _ Stage = RunSpinnakerPipelineStage{}
+
+// PassthroughParameter represents a key value pair passed to a child process
+type PassthroughParameter struct {
+	Key   string `yaml:"key"`
+	Value string `yaml:"value"`
+}
 
 // Cluster defines a server group to be deployed within a Deploy stage of a
 // pipeline

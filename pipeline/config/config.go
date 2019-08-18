@@ -80,7 +80,7 @@ type JenkinsStage struct {
 
 	Job string `yaml:"job"`
 	// string:string map of parameters to pass into the build
-	Parameters []JenkinsParameter `yaml:"parameters,omitempty"`
+	Parameters []PassthroughParameter `yaml:"parameters,omitempty"`
 
 	Master string `yaml:"master"`
 
@@ -91,10 +91,29 @@ type JenkinsStage struct {
 	WaitForCompletion             *bool `yaml:"waitForCompletion,omitempty"`
 }
 
-// JenkinsParameter represent a parameter that is passed to the Jenkins build
-type JenkinsParameter struct {
+// PassthroughParameter represents a key value pair passed to a child process
+type PassthroughParameter struct {
 	Key   string `yaml:"key"`
 	Value string `yaml:"value"`
+}
+
+// RunSpinnakerPipelineStage represents a stage where another pipeline is executed
+type RunSpinnakerPipelineStage struct {
+	Type string `yaml:"type,omitempty"`
+
+	Job string `yaml:"job"`
+
+	Application string `yaml:"application"`
+	Pipeline    string `yaml:"pipeline"`
+
+	// string:string map of parameters to pass into the build
+	PipelineParameters []PassthroughParameter `yaml:"pipelineParameters,omitempty"`
+
+	CompleteOtherBranchesThenFail *bool `yaml:"completeOtherBranchesThenFail,omitempty"`
+	ContinuePipeline              *bool `yaml:"continuePipeline,omitempty"`
+	FailPipeline                  *bool `yaml:"failPipeline,omitempty"`
+	MarkUnstableAsSuccessful      *bool `yaml:"markUnstableAsSuccessful,omitempty"`
+	WaitForCompletion             *bool `yaml:"waitForCompletion,omitempty"`
 }
 
 // WebhookTrigger defines how a webhook can trigger a pipeline execution
@@ -124,14 +143,15 @@ type Stage struct {
 	Condition     string         `yaml:"condition,omitempty"`
 
 	// All of the different supported stages, only one may be set
-	RunJob                  *RunJobStage             `yaml:"runJob,omitempty"`
-	Deploy                  *DeployStage             `yaml:"deploy,omitempty"`
-	ManualJudgement         *ManualJudgementStage    `yaml:"manualJudgement,omitempty"`
-	DeployEmbeddedManifests *DeployEmbeddedManifests `yaml:"deployEmbeddedManifests,omitempty"`
-	DeleteEmbeddedManifest  *DeleteEmbeddedManifest  `yaml:"deleteEmbeddedManifest,omitempty"`
-	ScaleManifest           *ScaleManifest           `yaml:"scaleManifest,omitempty"`
-	WebHook                 *WebHookStage            `yaml:"webHook,omitempty"`
-	Jenkins                 *JenkinsStage            `yaml:"jenkins,omitempty"`
+	RunJob                  *RunJobStage               `yaml:"runJob,omitempty"`
+	Deploy                  *DeployStage               `yaml:"deploy,omitempty"`
+	ManualJudgement         *ManualJudgementStage      `yaml:"manualJudgement,omitempty"`
+	DeployEmbeddedManifests *DeployEmbeddedManifests   `yaml:"deployEmbeddedManifests,omitempty"`
+	DeleteEmbeddedManifest  *DeleteEmbeddedManifest    `yaml:"deleteEmbeddedManifest,omitempty"`
+	ScaleManifest           *ScaleManifest             `yaml:"scaleManifest,omitempty"`
+	WebHook                 *WebHookStage              `yaml:"webHook,omitempty"`
+	Jenkins                 *JenkinsStage              `yaml:"jenkins,omitempty"`
+	RunSpinnakerPipeline    *RunSpinnakerPipelineStage `yaml:"spinnaker,omitempty"`
 }
 
 // Notification config from pipeline configuration on a stage or pipeline
