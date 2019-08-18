@@ -67,6 +67,12 @@ type ManifestStage struct {
 	Moniker                 Moniker          `json:"moniker"`
 	Relationships           Relationships    `json:"relationships"`
 	Source                  string           `json:"source"`
+
+	CompleteOtherBranchesThenFail *bool `json:"completeOtherBranchesThenFail,omitempty"`
+	ContinuePipeline              *bool `json:"continuePipeline,omitempty"`
+	FailPipeline                  *bool `json:"failPipeline,omitempty"`
+	MarkUnstableAsSuccessful      *bool `json:"markUnstableAsSuccessful,omitempty"`
+	WaitForCompletion             *bool `json:"waitForCompletion,omitempty"`
 }
 
 func (ms ManifestStage) spinnakerStage() {}
@@ -91,6 +97,12 @@ type DeleteManifestStage struct {
 	// Location means kubernetes namespace
 	Location string  `json:"location"`
 	Options  Options `json:"options"`
+
+	CompleteOtherBranchesThenFail *bool `json:"completeOtherBranchesThenFail,omitempty"`
+	ContinuePipeline              *bool `json:"continuePipeline,omitempty"`
+	FailPipeline                  *bool `json:"failPipeline,omitempty"`
+	MarkUnstableAsSuccessful      *bool `json:"markUnstableAsSuccessful,omitempty"`
+	WaitForCompletion             *bool `json:"waitForCompletion,omitempty"`
 }
 
 func (ms DeleteManifestStage) spinnakerStage() {}
@@ -111,8 +123,13 @@ type ScaleManifestStage struct {
 	// Name is used when deleting a manifest by kind / name. The format for this
 	// needs to be "kind manifestName", For example: "deployment application-deploy"
 	ManifestName string `json:"manifestName,omitempty"`
+	Replicas     int    `json:"replicas"`
 
-	Replicas int `json:"replicas"`
+	CompleteOtherBranchesThenFail *bool `json:"completeOtherBranchesThenFail,omitempty"`
+	ContinuePipeline              *bool `json:"continuePipeline,omitempty"`
+	FailPipeline                  *bool `json:"failPipeline,omitempty"`
+	MarkUnstableAsSuccessful      *bool `json:"markUnstableAsSuccessful,omitempty"`
+	WaitForCompletion             *bool `json:"waitForCompletion,omitempty"`
 }
 
 func (ms ScaleManifestStage) spinnakerStage() {}

@@ -263,6 +263,7 @@ func (b *Builder) buildRunJobStage(index int, s config.Stage) (*types.RunJobStag
 }
 
 func (b *Builder) buildDeployEmbeddedManifestStage(index int, s config.Stage) (*types.ManifestStage, error) {
+
 	ds := b.defaultManifestStage(index, s)
 	maniStage := s.DeployEmbeddedManifests
 
@@ -356,13 +357,25 @@ func (b *Builder) buildDeleteEmbeddedManifestStage(index int, s config.Stage) (*
 		ns = "default"
 	}
 
+	// Set default values
+	completeOtherBranchesThenFail := setDefaultIfNil(s.DeleteEmbeddedManifest.CompleteOtherBranchesThenFail, false)
+	continuePipeline := setDefaultIfNil(s.DeleteEmbeddedManifest.ContinuePipeline, false)
+	failPipeline := setDefaultIfNil(s.DeleteEmbeddedManifest.FailPipeline, true)
+	markUnstableAsSuccessful := setDefaultIfNil(s.DeleteEmbeddedManifest.MarkUnstableAsSuccessful, false)
+	waitForCompletion := setDefaultIfNil(s.DeleteEmbeddedManifest.WaitForCompletion, true)
+
 	stage := &types.DeleteManifestStage{
 		StageMetadata: buildStageMetadata(s, "deleteManifest", index, b.isLinear),
 		CloudProvider: "kubernetes",
 		Account:       s.Account,
 
-		ManifestName: fmt.Sprintf("%s %s", tObj.GetKind(), mObj.GetName()),
-		Location:     ns,
+		ManifestName:                  fmt.Sprintf("%s %s", tObj.GetKind(), mObj.GetName()),
+		Location:                      ns,
+		CompleteOtherBranchesThenFail: &completeOtherBranchesThenFail,
+		ContinuePipeline:              &continuePipeline,
+		FailPipeline:                  &failPipeline,
+		MarkUnstableAsSuccessful:      &markUnstableAsSuccessful,
+		WaitForCompletion:             &waitForCompletion,
 	}
 
 	return stage, nil
@@ -412,6 +425,13 @@ func (b *Builder) buildV2ManifestStageFromDeploy(index int, s config.Stage) (*ty
 }
 
 func (b *Builder) defaultManifestStage(index int, s config.Stage) *types.ManifestStage {
+	// Set default values
+	completeOtherBranchesThenFail := setDefaultIfNil(s.DeployEmbeddedManifests.CompleteOtherBranchesThenFail, false)
+	continuePipeline := setDefaultIfNil(s.DeployEmbeddedManifests.ContinuePipeline, false)
+	failPipeline := setDefaultIfNil(s.DeployEmbeddedManifests.FailPipeline, true)
+	markUnstableAsSuccessful := setDefaultIfNil(s.DeployEmbeddedManifests.MarkUnstableAsSuccessful, false)
+	waitForCompletion := setDefaultIfNil(s.DeployEmbeddedManifests.WaitForCompletion, true)
+
 	return &types.ManifestStage{
 		StageMetadata:           buildStageMetadata(s, "deployManifest", index, b.isLinear),
 		Account:                 s.Account,
@@ -422,8 +442,13 @@ func (b *Builder) defaultManifestStage(index int, s config.Stage) *types.Manifes
 		Moniker: types.Moniker{
 			App: b.pipeline.Application,
 		},
-		Relationships: types.Relationships{LoadBalancers: []interface{}{}, SecurityGroups: []interface{}{}},
-		Source:        "text",
+		Relationships:                 types.Relationships{LoadBalancers: []interface{}{}, SecurityGroups: []interface{}{}},
+		Source:                        "text",
+		CompleteOtherBranchesThenFail: &completeOtherBranchesThenFail,
+		ContinuePipeline:              &continuePipeline,
+		FailPipeline:                  &failPipeline,
+		MarkUnstableAsSuccessful:      &markUnstableAsSuccessful,
+		WaitForCompletion:             &waitForCompletion,
 	}
 }
 
@@ -469,6 +494,13 @@ func (b *Builder) buildV2RunJobStage(index int, s config.Stage) (*types.Manifest
 }
 
 func (b *Builder) buildV2DeleteManifestStage(index int, s config.Stage) (*types.DeleteManifestStage, error) {
+	// Set default values
+	completeOtherBranchesThenFail := setDefaultIfNil(s.DeleteEmbeddedManifest.CompleteOtherBranchesThenFail, false)
+	continuePipeline := setDefaultIfNil(s.DeleteEmbeddedManifest.ContinuePipeline, false)
+	failPipeline := setDefaultIfNil(s.DeleteEmbeddedManifest.FailPipeline, true)
+	markUnstableAsSuccessful := setDefaultIfNil(s.DeleteEmbeddedManifest.MarkUnstableAsSuccessful, false)
+	waitForCompletion := setDefaultIfNil(s.DeleteEmbeddedManifest.WaitForCompletion, true)
+
 	s.Name = "Delete " + s.Name
 	dms := &types.DeleteManifestStage{
 		StageMetadata: buildStageMetadata(s, "deleteManifest", index, b.isLinear),
@@ -479,6 +511,11 @@ func (b *Builder) buildV2DeleteManifestStage(index int, s config.Stage) (*types.
 		Options: types.Options{
 			Cascading: true,
 		},
+		CompleteOtherBranchesThenFail: &completeOtherBranchesThenFail,
+		ContinuePipeline:              &continuePipeline,
+		FailPipeline:                  &failPipeline,
+		MarkUnstableAsSuccessful:      &markUnstableAsSuccessful,
+		WaitForCompletion:             &waitForCompletion,
 	}
 
 	parser := NewManfifestParser(b.pipeline, b.basePath)
@@ -568,14 +605,26 @@ func setDefaultIfNil(givenValue *bool, defaultValue bool) bool {
 }
 
 func (b *Builder) buildScaleManifestStage(index int, s config.Stage) (*types.ScaleManifestStage, error) {
+	// Set default values
+	completeOtherBranchesThenFail := setDefaultIfNil(s.ScaleManifest.CompleteOtherBranchesThenFail, false)
+	continuePipeline := setDefaultIfNil(s.ScaleManifest.ContinuePipeline, false)
+	failPipeline := setDefaultIfNil(s.ScaleManifest.FailPipeline, true)
+	markUnstableAsSuccessful := setDefaultIfNil(s.ScaleManifest.MarkUnstableAsSuccessful, false)
+	waitForCompletion := setDefaultIfNil(s.ScaleManifest.WaitForCompletion, true)
+
 	stage := &types.ScaleManifestStage{
-		StageMetadata: buildStageMetadata(s, "scaleManifest", index, b.isLinear),
-		Account:       s.Account,
-		CloudProvider: "kubernetes",
-		Kind:          s.ScaleManifest.Kind,
-		Location:      s.ScaleManifest.Namespace,
-		ManifestName:  fmt.Sprintf("%s %s", s.ScaleManifest.Kind, s.ScaleManifest.Name),
-		Replicas:      s.ScaleManifest.Replicas,
+		StageMetadata:                 buildStageMetadata(s, "scaleManifest", index, b.isLinear),
+		Account:                       s.Account,
+		CloudProvider:                 "kubernetes",
+		Kind:                          s.ScaleManifest.Kind,
+		Location:                      s.ScaleManifest.Namespace,
+		ManifestName:                  fmt.Sprintf("%s %s", s.ScaleManifest.Kind, s.ScaleManifest.Name),
+		Replicas:                      s.ScaleManifest.Replicas,
+		CompleteOtherBranchesThenFail: &completeOtherBranchesThenFail,
+		ContinuePipeline:              &continuePipeline,
+		FailPipeline:                  &failPipeline,
+		MarkUnstableAsSuccessful:      &markUnstableAsSuccessful,
+		WaitForCompletion:             &waitForCompletion,
 	}
 
 	return stage, nil

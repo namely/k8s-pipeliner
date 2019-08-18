@@ -83,16 +83,12 @@ type JenkinsStage struct {
 	Parameters []JenkinsParameter `yaml:"parameters,omitempty"`
 
 	Master string `yaml:"master"`
-	// Should other branches of the job continue if this stage fails?
+
 	CompleteOtherBranchesThenFail *bool `yaml:"completeOtherBranchesThenFail,omitempty"`
-	// Should the pipeline continue if this stage fails?
-	ContinuePipeline *bool `yaml:"continuePipeline,omitempty"`
-	// Should the pipeline fail if this stage fails?
-	FailPipeline *bool `yaml:"failPipeline,omitempty"`
-	// Should jobs with 'Unstable' result be marked as successful?
-	MarkUnstableAsSuccessful *bool `yaml:"markUnstableAsSuccessful,omitempty"`
-	// Should we wait for the job to complete before continuing the pipeline (default: true)?
-	WaitForCompletion *bool `yaml:"waitForCompletion,omitempty"`
+	ContinuePipeline              *bool `yaml:"continuePipeline,omitempty"`
+	FailPipeline                  *bool `yaml:"failPipeline,omitempty"`
+	MarkUnstableAsSuccessful      *bool `yaml:"markUnstableAsSuccessful,omitempty"`
+	WaitForCompletion             *bool `yaml:"waitForCompletion,omitempty"`
 }
 
 // JenkinsParameter represent a parameter that is passed to the Jenkins build
@@ -226,6 +222,12 @@ type DeployEmbeddedManifests struct {
 	DefaultMoniker    *Moniker       `yaml:"defaultMoniker,omitempty"`
 	ConfiguratorFiles []ManifestFile `yaml:"configuratorFiles,omitempty"`
 	Files             []ManifestFile `yaml:"files"`
+
+	CompleteOtherBranchesThenFail *bool `yaml:"completeOtherBranchesThenFail,omitempty"`
+	ContinuePipeline              *bool `yaml:"continuePipeline,omitempty"`
+	FailPipeline                  *bool `yaml:"failPipeline,omitempty"`
+	MarkUnstableAsSuccessful      *bool `yaml:"markUnstableAsSuccessful,omitempty"`
+	WaitForCompletion             *bool `yaml:"waitForCompletion,omitempty"`
 }
 
 // DeleteEmbeddedManifest represents a single resource to be deleted
@@ -234,6 +236,12 @@ type DeployEmbeddedManifests struct {
 // name and type. The namespace is populated from the manifest metadata.
 type DeleteEmbeddedManifest struct {
 	File string `yaml:"file"`
+
+	CompleteOtherBranchesThenFail *bool `yaml:"completeOtherBranchesThenFail,omitempty"`
+	ContinuePipeline              *bool `yaml:"continuePipeline,omitempty"`
+	FailPipeline                  *bool `yaml:"failPipeline,omitempty"`
+	MarkUnstableAsSuccessful      *bool `yaml:"markUnstableAsSuccessful,omitempty"`
+	WaitForCompletion             *bool `yaml:"waitForCompletion,omitempty"`
 }
 
 // Moniker describes a name set for a Spinnaker resource
@@ -251,6 +259,12 @@ type ScaleManifest struct {
 	Name      string `yaml:"name"`
 	Namespace string `yaml:"namespace"`
 	Replicas  int    `yaml:"replicas"`
+
+	CompleteOtherBranchesThenFail *bool `yaml:"completeOtherBranchesThenFail,omitempty"`
+	ContinuePipeline              *bool `yaml:"continuePipeline,omitempty"`
+	FailPipeline                  *bool `yaml:"failPipeline,omitempty"`
+	MarkUnstableAsSuccessful      *bool `yaml:"markUnstableAsSuccessful,omitempty"`
+	WaitForCompletion             *bool `yaml:"waitForCompletion,omitempty"`
 }
 
 // ContainerOverrides are used to override a containers values for simple

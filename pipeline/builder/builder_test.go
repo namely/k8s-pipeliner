@@ -426,15 +426,23 @@ func TestBuilderPipelineStages(t *testing.T) {
 
 	t.Run("ScaleManifest stage is parsed correctly", func(t *testing.T) {
 		t.Run("Name is assigned", func(t *testing.T) {
+
+			boolt := true
+			boolf := false
 			pipeline := &config.Pipeline{
 				Stages: []config.Stage{
 					{
 						Name: "Test ScaleManifest Stage",
 						ScaleManifest: &config.ScaleManifest{
-							Kind:      "deployment",
-							Name:      "mydeployname",
-							Namespace: "mynamespace",
-							Replicas:  5,
+							Kind:                          "deployment",
+							Name:                          "mydeployname",
+							Namespace:                     "mynamespace",
+							Replicas:                      5,
+							CompleteOtherBranchesThenFail: &boolf,
+							ContinuePipeline:              &boolt,
+							FailPipeline:                  &boolf,
+							MarkUnstableAsSuccessful:      &boolf,
+							WaitForCompletion:             &boolt,
 						},
 					},
 				},
@@ -449,6 +457,11 @@ func TestBuilderPipelineStages(t *testing.T) {
 			assert.Equal(t, "deployment mydeployname", spinnaker.Stages[0].(*types.ScaleManifestStage).ManifestName)
 			assert.Equal(t, "mynamespace", spinnaker.Stages[0].(*types.ScaleManifestStage).Location)
 			assert.Equal(t, 5, spinnaker.Stages[0].(*types.ScaleManifestStage).Replicas)
+			assert.Equal(t, &boolf, spinnaker.Stages[0].(*types.ScaleManifestStage).CompleteOtherBranchesThenFail)
+			assert.Equal(t, &boolt, spinnaker.Stages[0].(*types.ScaleManifestStage).ContinuePipeline)
+			assert.Equal(t, &boolf, spinnaker.Stages[0].(*types.ScaleManifestStage).FailPipeline)
+			assert.Equal(t, &boolf, spinnaker.Stages[0].(*types.ScaleManifestStage).MarkUnstableAsSuccessful)
+			assert.Equal(t, &boolt, spinnaker.Stages[0].(*types.ScaleManifestStage).WaitForCompletion)
 		})
 
 		t.Run("RequisiteStageRefIds defaults to an empty slice", func(t *testing.T) {
@@ -578,7 +591,6 @@ func TestBuilderPipelineStages(t *testing.T) {
 			assert.Equal(t, []string{"2"}, spinnaker.Stages[0].(*types.JenkinsStage).StageMetadata.RequisiteStageRefIds)
 		})
 	})
-
 }
 
 func newFalse() *bool {

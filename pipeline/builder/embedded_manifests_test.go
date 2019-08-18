@@ -252,7 +252,74 @@ func (em *EmbeddedManifestTest) TestMonikerAnnotationsAreIncluded() {
 	em.Require().True(dok)
 }
 
+func (em *EmbeddedManifestTest) TestDeployEmbeddedManifestDefaultProperties() {
+	boolt := true
+	boolf := false
+
+	em.AppendStage(config.Stage{
+		Name: "deploy nginx",
+		DeployEmbeddedManifests: &config.DeployEmbeddedManifests{
+			Files: []config.ManifestFile{
+				{
+					File: "testdata/nginx-deployment.yml",
+				},
+			},
+		},
+	})
+
+	pipeline, err := em.Builder().Pipeline()
+	em.Require().NoError(err, "error building pipeline config")
+
+	stg, ok := pipeline.Stages[0].(*types.ManifestStage)
+	em.Require().True(ok)
+	em.Equal("deploy nginx", stg.Name)
+
+	em.Require().Len(stg.Manifests, 1)
+
+	deploy, ok := stg.Manifests[0].(*unstructured.Unstructured)
+	em.Require().True(ok)
+	em.Equal("nginx-deployment", deploy.GetName())
+	em.Equal("Deployment", deploy.GetKind())
+
+	em.Equal(&boolf, stg.CompleteOtherBranchesThenFail)
+	em.Equal(&boolf, stg.ContinuePipeline)
+	em.Equal(&boolt, stg.FailPipeline)
+	em.Equal(&boolf, stg.MarkUnstableAsSuccessful)
+	em.Equal(&boolt, stg.WaitForCompletion)
+}
+
 func (em *EmbeddedManifestTest) TestDeleteEmbeddedManifest() {
+	boolt := true
+	boolf := false
+	em.AppendStage(config.Stage{
+		Name: "delete nginx",
+		DeleteEmbeddedManifest: &config.DeleteEmbeddedManifest{
+			File:                          "testdata/nginx-deployment.yml",
+			CompleteOtherBranchesThenFail: &boolt,
+			ContinuePipeline:              &boolt,
+			FailPipeline:                  &boolf,
+			MarkUnstableAsSuccessful:      &boolt,
+			WaitForCompletion:             &boolf,
+		},
+	})
+
+	pipeline, err := em.Builder().Pipeline()
+	em.Require().NoError(err, "error building pipeline config")
+
+	stg, ok := pipeline.Stages[0].(*types.DeleteManifestStage)
+	em.Require().True(ok, "was not a delete manifest stage")
+	em.Equal("delete nginx", stg.Name)
+	em.Equal("Deployment nginx-deployment", stg.ManifestName)
+
+	em.Equal(&boolt, stg.CompleteOtherBranchesThenFail)
+	em.Equal(&boolt, stg.ContinuePipeline)
+	em.Equal(&boolf, stg.FailPipeline)
+	em.Equal(&boolt, stg.MarkUnstableAsSuccessful)
+	em.Equal(&boolf, stg.WaitForCompletion)
+}
+func (em *EmbeddedManifestTest) TestDeleteEmbeddedManifestDefaultProperties() {
+	boolt := true
+	boolf := false
 	em.AppendStage(config.Stage{
 		Name: "delete nginx",
 		DeleteEmbeddedManifest: &config.DeleteEmbeddedManifest{
@@ -267,6 +334,12 @@ func (em *EmbeddedManifestTest) TestDeleteEmbeddedManifest() {
 	em.Require().True(ok, "was not a delete manifest stage")
 	em.Equal("delete nginx", stg.Name)
 	em.Equal("Deployment nginx-deployment", stg.ManifestName)
+
+	em.Equal(&boolf, stg.CompleteOtherBranchesThenFail)
+	em.Equal(&boolf, stg.ContinuePipeline)
+	em.Equal(&boolt, stg.FailPipeline)
+	em.Equal(&boolf, stg.MarkUnstableAsSuccessful)
+	em.Equal(&boolt, stg.WaitForCompletion)
 }
 
 func TestEmbeddedManifests(t *testing.T) {
