@@ -1,3 +1,5 @@
+// Package builder/types implements the JSON configuration used in k8s-pipeliner output
+
 package types
 
 import (
@@ -247,17 +249,17 @@ type RunSpinnakerPipelineStage struct {
 	// Not exposed in pipeline.yml file
 	Type string `json:"type,omitempty"`
 
-	Application string `yaml:"application"`
-	Pipeline    string `yaml:"pipeline"`
+	Application string `json:"application"`
+	Pipeline    string `json:"pipeline"`
 
 	// string:string map of parameters to pass into the build
-	PipelineParameters map[string]string `yaml:"pipelineParameters,omitempty"`
+	PipelineParameters map[string]string `json:"pipelineParameters,omitempty"`
 
-	CompleteOtherBranchesThenFail *bool `yaml:"completeOtherBranchesThenFail,omitempty"`
-	ContinuePipeline              *bool `yaml:"continuePipeline,omitempty"`
-	FailPipeline                  *bool `yaml:"failPipeline,omitempty"`
-	MarkUnstableAsSuccessful      *bool `yaml:"markUnstableAsSuccessful,omitempty"`
-	WaitForCompletion             *bool `yaml:"waitForCompletion,omitempty"`
+	CompleteOtherBranchesThenFail *bool `json:"completeOtherBranchesThenFail,omitempty"`
+	ContinuePipeline              *bool `json:"continuePipeline,omitempty"`
+	FailPipeline                  *bool `json:"failPipeline,omitempty"`
+	MarkUnstableAsSuccessful      *bool `json:"markUnstableAsSuccessful,omitempty"`
+	WaitForCompletion             *bool `json:"waitForCompletion,omitempty"`
 }
 
 func (sps RunSpinnakerPipelineStage) spinnakerStage() {}

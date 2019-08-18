@@ -1,3 +1,5 @@
+// Package builder implements functions used to build the JSON output
+
 package builder
 
 import (
@@ -584,7 +586,7 @@ func (b *Builder) buildJenkinsStage(index int, s config.Stage) (*types.JenkinsSt
 
 	stage := &types.JenkinsStage{
 		StageMetadata:                 buildStageMetadata(s, "jenkins", index, b.isLinear),
-		Type:                          JenkinsTrigger,
+		Type:                          "jenkins",
 		Job:                           s.Jenkins.Job,
 		Parameters:                    make(map[string]string),
 		Master:                        master,
@@ -613,7 +615,7 @@ func (b *Builder) buildRunSpinnakerPipelineStage(index int, s config.Stage) (*ty
 
 	stage := &types.RunSpinnakerPipelineStage{
 		StageMetadata:                 buildStageMetadata(s, "pipeline", index, b.isLinear),
-		Type:                          JenkinsTrigger,
+		Type:                          "pipeline",
 		Application:                   s.RunSpinnakerPipeline.Application,
 		Pipeline:                      s.RunSpinnakerPipeline.Pipeline,
 		PipelineParameters:            make(map[string]string),

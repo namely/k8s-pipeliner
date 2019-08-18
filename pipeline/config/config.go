@@ -1,3 +1,5 @@
+// Package config implements YAML configuration for the k8s-pipeliner input files
+
 package config
 
 import (

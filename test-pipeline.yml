@@ -63,6 +63,24 @@ stages:
     # master: "namely-jenkins"              # Optional, defaults to "namely-jenkins"
     # completeOtherBranchesThenFail: false  # Optional, defaults to false
     # continuePipeline: true                # Optional, defaults to true
-    # markUnstableAsSuccessful: false       # Optional, defaults to false
     # failPipeline: false                   # Optional, defaults to false
+    # markUnstableAsSuccessful: false       # Optional, defaults to false
+    # waitForCompletion: true               # Optional, defaults to true
+- name: "Trigger Spinnaker Pipeline"
+  spinnaker:
+    application: "badges"
+    pipeline: "2c4a14d9-2f25-4a2a-b2d6-c31e596bce19"
+    parameters:                           # Optional, if excluded Jenkins will use default parameter values
+      - key: badges_docker_image
+        value: "img:1234"
+      - key: file_data
+        value: "data=has,date=now"
+      - key: file_path
+        value: rel/ative/path
+      - key: service_name
+        value: coolName
+    # completeOtherBranchesThenFail: false  # Optional, defaults to false
+    # continuePipeline: false                # Optional, defaults to false
+    # failPipeline: true                   # Optional, defaults to true
+    # markUnstableAsSuccessful: false       # Optional, defaults to false
     # waitForCompletion: true               # Optional, defaults to true
