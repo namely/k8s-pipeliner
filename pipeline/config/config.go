@@ -109,7 +109,7 @@ type RunSpinnakerPipelineStage struct {
 	Pipeline    string `yaml:"pipeline"`
 
 	// string:string map of parameters to pass into the build
-	PipelineParameters []PassthroughParameter `yaml:"pipelineParameters,omitempty"`
+	PipelineParameters []PassthroughParameter `yaml:"parameters,omitempty"`
 
 	CompleteOtherBranchesThenFail *bool `yaml:"completeOtherBranchesThenFail,omitempty"`
 	ContinuePipeline              *bool `yaml:"continuePipeline,omitempty"`
