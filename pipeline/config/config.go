@@ -1,3 +1,5 @@
+// Package config implements YAML configuration for the k8s-pipeliner input files
+
 package config
 
 import (
@@ -80,25 +82,40 @@ type JenkinsStage struct {
 
 	Job string `yaml:"job"`
 	// string:string map of parameters to pass into the build
-	Parameters []JenkinsParameter `yaml:"parameters,omitempty"`
+	Parameters []PassthroughParameter `yaml:"parameters,omitempty"`
 
 	Master string `yaml:"master"`
-	// Should other branches of the job continue if this stage fails?
+
 	CompleteOtherBranchesThenFail *bool `yaml:"completeOtherBranchesThenFail,omitempty"`
-	// Should the pipeline continue if this stage fails?
-	ContinuePipeline *bool `yaml:"continuePipeline,omitempty"`
-	// Should the pipeline fail if this stage fails?
-	FailPipeline *bool `yaml:"failPipeline,omitempty"`
-	// Should jobs with 'Unstable' result be marked as successful?
-	MarkUnstableAsSuccessful *bool `yaml:"markUnstableAsSuccessful,omitempty"`
-	// Should we wait for the job to complete before continuing the pipeline (default: true)?
-	WaitForCompletion *bool `yaml:"waitForCompletion,omitempty"`
+	ContinuePipeline              *bool `yaml:"continuePipeline,omitempty"`
+	FailPipeline                  *bool `yaml:"failPipeline,omitempty"`
+	MarkUnstableAsSuccessful      *bool `yaml:"markUnstableAsSuccessful,omitempty"`
+	WaitForCompletion             *bool `yaml:"waitForCompletion,omitempty"`
 }
 
-// JenkinsParameter represent a parameter that is passed to the Jenkins build
-type JenkinsParameter struct {
+// PassthroughParameter represents a key value pair passed to a child process
+type PassthroughParameter struct {
 	Key   string `yaml:"key"`
 	Value string `yaml:"value"`
+}
+
+// RunSpinnakerPipelineStage represents a stage where another pipeline is executed
+type RunSpinnakerPipelineStage struct {
+	Type string `yaml:"type,omitempty"`
+
+	Job string `yaml:"job"`
+
+	Application string `yaml:"application"`
+	Pipeline    string `yaml:"pipeline"`
+
+	// string:string map of parameters to pass into the build
+	PipelineParameters []PassthroughParameter `yaml:"parameters,omitempty"`
+
+	CompleteOtherBranchesThenFail *bool `yaml:"completeOtherBranchesThenFail,omitempty"`
+	ContinuePipeline              *bool `yaml:"continuePipeline,omitempty"`
+	FailPipeline                  *bool `yaml:"failPipeline,omitempty"`
+	MarkUnstableAsSuccessful      *bool `yaml:"markUnstableAsSuccessful,omitempty"`
+	WaitForCompletion             *bool `yaml:"waitForCompletion,omitempty"`
 }
 
 // WebhookTrigger defines how a webhook can trigger a pipeline execution
@@ -128,14 +145,15 @@ type Stage struct {
 	Condition     string         `yaml:"condition,omitempty"`
 
 	// All of the different supported stages, only one may be set
-	RunJob                  *RunJobStage             `yaml:"runJob,omitempty"`
-	Deploy                  *DeployStage             `yaml:"deploy,omitempty"`
-	ManualJudgement         *ManualJudgementStage    `yaml:"manualJudgement,omitempty"`
-	DeployEmbeddedManifests *DeployEmbeddedManifests `yaml:"deployEmbeddedManifests,omitempty"`
-	DeleteEmbeddedManifest  *DeleteEmbeddedManifest  `yaml:"deleteEmbeddedManifest,omitempty"`
-	ScaleManifest           *ScaleManifest           `yaml:"scaleManifest,omitempty"`
-	WebHook                 *WebHookStage            `yaml:"webHook,omitempty"`
-	Jenkins                 *JenkinsStage            `yaml:"jenkins,omitempty"`
+	RunJob                  *RunJobStage               `yaml:"runJob,omitempty"`
+	Deploy                  *DeployStage               `yaml:"deploy,omitempty"`
+	ManualJudgement         *ManualJudgementStage      `yaml:"manualJudgement,omitempty"`
+	DeployEmbeddedManifests *DeployEmbeddedManifests   `yaml:"deployEmbeddedManifests,omitempty"`
+	DeleteEmbeddedManifest  *DeleteEmbeddedManifest    `yaml:"deleteEmbeddedManifest,omitempty"`
+	ScaleManifest           *ScaleManifest             `yaml:"scaleManifest,omitempty"`
+	WebHook                 *WebHookStage              `yaml:"webHook,omitempty"`
+	Jenkins                 *JenkinsStage              `yaml:"jenkins,omitempty"`
+	RunSpinnakerPipeline    *RunSpinnakerPipelineStage `yaml:"spinnaker,omitempty"`
 }
 
 // Notification config from pipeline configuration on a stage or pipeline
@@ -226,6 +244,12 @@ type DeployEmbeddedManifests struct {
 	DefaultMoniker    *Moniker       `yaml:"defaultMoniker,omitempty"`
 	ConfiguratorFiles []ManifestFile `yaml:"configuratorFiles,omitempty"`
 	Files             []ManifestFile `yaml:"files"`
+
+	CompleteOtherBranchesThenFail *bool `yaml:"completeOtherBranchesThenFail,omitempty"`
+	ContinuePipeline              *bool `yaml:"continuePipeline,omitempty"`
+	FailPipeline                  *bool `yaml:"failPipeline,omitempty"`
+	MarkUnstableAsSuccessful      *bool `yaml:"markUnstableAsSuccessful,omitempty"`
+	WaitForCompletion             *bool `yaml:"waitForCompletion,omitempty"`
 }
 
 // DeleteEmbeddedManifest represents a single resource to be deleted
@@ -234,6 +258,12 @@ type DeployEmbeddedManifests struct {
 // name and type. The namespace is populated from the manifest metadata.
 type DeleteEmbeddedManifest struct {
 	File string `yaml:"file"`
+
+	CompleteOtherBranchesThenFail *bool `yaml:"completeOtherBranchesThenFail,omitempty"`
+	ContinuePipeline              *bool `yaml:"continuePipeline,omitempty"`
+	FailPipeline                  *bool `yaml:"failPipeline,omitempty"`
+	MarkUnstableAsSuccessful      *bool `yaml:"markUnstableAsSuccessful,omitempty"`
+	WaitForCompletion             *bool `yaml:"waitForCompletion,omitempty"`
 }
 
 // Moniker describes a name set for a Spinnaker resource
@@ -251,6 +281,12 @@ type ScaleManifest struct {
 	Name      string `yaml:"name"`
 	Namespace string `yaml:"namespace"`
 	Replicas  int    `yaml:"replicas"`
+
+	CompleteOtherBranchesThenFail *bool `yaml:"completeOtherBranchesThenFail,omitempty"`
+	ContinuePipeline              *bool `yaml:"continuePipeline,omitempty"`
+	FailPipeline                  *bool `yaml:"failPipeline,omitempty"`
+	MarkUnstableAsSuccessful      *bool `yaml:"markUnstableAsSuccessful,omitempty"`
+	WaitForCompletion             *bool `yaml:"waitForCompletion,omitempty"`
 }
 
 // ContainerOverrides are used to override a containers values for simple

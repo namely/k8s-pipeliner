@@ -425,7 +425,50 @@ func TestBuilderPipelineStages(t *testing.T) {
 	})
 
 	t.Run("ScaleManifest stage is parsed correctly", func(t *testing.T) {
-		t.Run("Name is assigned", func(t *testing.T) {
+		t.Run("Properties are assigned", func(t *testing.T) {
+
+			boolt := true
+			boolf := false
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						Name: "Test ScaleManifest Stage",
+						ScaleManifest: &config.ScaleManifest{
+							Kind:                          "deployment",
+							Name:                          "mydeployname",
+							Namespace:                     "mynamespace",
+							Replicas:                      5,
+							CompleteOtherBranchesThenFail: &boolt,
+							ContinuePipeline:              &boolt,
+							FailPipeline:                  &boolf,
+							MarkUnstableAsSuccessful:      &boolt,
+							WaitForCompletion:             &boolf,
+						},
+					},
+				},
+			}
+
+			builder := builder.New(pipeline)
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			stg := spinnaker.Stages[0].(*types.ScaleManifestStage)
+			assert.Equal(t, "Test ScaleManifest Stage", stg.Name)
+			assert.Equal(t, "deployment", stg.Kind)
+			assert.Equal(t, "deployment mydeployname", stg.ManifestName)
+			assert.Equal(t, "mynamespace", stg.Location)
+			assert.Equal(t, 5, stg.Replicas)
+			assert.Equal(t, &boolt, stg.CompleteOtherBranchesThenFail)
+			assert.Equal(t, &boolt, stg.ContinuePipeline)
+			assert.Equal(t, &boolf, stg.FailPipeline)
+			assert.Equal(t, &boolt, stg.MarkUnstableAsSuccessful)
+			assert.Equal(t, &boolf, stg.WaitForCompletion)
+		})
+
+		t.Run("Default properties are assigned", func(t *testing.T) {
+
+			boolt := true
+			boolf := false
 			pipeline := &config.Pipeline{
 				Stages: []config.Stage{
 					{
@@ -444,11 +487,17 @@ func TestBuilderPipelineStages(t *testing.T) {
 			spinnaker, err := builder.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
 
-			assert.Equal(t, "Test ScaleManifest Stage", spinnaker.Stages[0].(*types.ScaleManifestStage).Name)
-			assert.Equal(t, "deployment", spinnaker.Stages[0].(*types.ScaleManifestStage).Kind)
-			assert.Equal(t, "deployment mydeployname", spinnaker.Stages[0].(*types.ScaleManifestStage).ManifestName)
-			assert.Equal(t, "mynamespace", spinnaker.Stages[0].(*types.ScaleManifestStage).Location)
-			assert.Equal(t, 5, spinnaker.Stages[0].(*types.ScaleManifestStage).Replicas)
+			stg := spinnaker.Stages[0].(*types.ScaleManifestStage)
+			assert.Equal(t, "Test ScaleManifest Stage", stg.Name)
+			assert.Equal(t, "deployment", stg.Kind)
+			assert.Equal(t, "deployment mydeployname", stg.ManifestName)
+			assert.Equal(t, "mynamespace", stg.Location)
+			assert.Equal(t, 5, stg.Replicas)
+			assert.Equal(t, &boolf, stg.CompleteOtherBranchesThenFail)
+			assert.Equal(t, &boolf, stg.ContinuePipeline)
+			assert.Equal(t, &boolt, stg.FailPipeline)
+			assert.Equal(t, &boolf, stg.MarkUnstableAsSuccessful)
+			assert.Equal(t, &boolt, stg.WaitForCompletion)
 		})
 
 		t.Run("RequisiteStageRefIds defaults to an empty slice", func(t *testing.T) {
@@ -497,30 +546,30 @@ func TestBuilderPipelineStages(t *testing.T) {
 						Jenkins: &config.JenkinsStage{
 							Type: "jenkins",
 							Job:  "QA/job/stage/job/UI/job/SLI",
-							Parameters: []config.JenkinsParameter{
-								config.JenkinsParameter{
+							Parameters: []config.PassthroughParameter{
+								config.PassthroughParameter{
 									Key:   "BROWSER",
 									Value: "chrome",
 								},
-								config.JenkinsParameter{
+								config.PassthroughParameter{
 									Key:   "Environment",
 									Value: "stage",
 								},
-								config.JenkinsParameter{
+								config.PassthroughParameter{
 									Key:   "NPMSCRIPT",
 									Value: "test:sli",
 								},
-								config.JenkinsParameter{
+								config.PassthroughParameter{
 									Key:   "timeout",
 									Value: "10",
 								},
 							},
 							Master:                        "namely-jenkins",
 							CompleteOtherBranchesThenFail: &boolf,
-							ContinuePipeline:              &boolt,
-							FailPipeline:                  &boolf,
-							MarkUnstableAsSuccessful:      &boolf,
-							WaitForCompletion:             &boolt,
+							ContinuePipeline:              &boolf,
+							FailPipeline:                  &boolt,
+							MarkUnstableAsSuccessful:      &boolt,
+							WaitForCompletion:             &boolf,
 						},
 					},
 				},
@@ -530,19 +579,79 @@ func TestBuilderPipelineStages(t *testing.T) {
 			spinnaker, err := builder.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
 
-			assert.Equal(t, "Test Jenkins Stage", spinnaker.Stages[0].(*types.JenkinsStage).Name)
-			assert.Equal(t, "jenkins", spinnaker.Stages[0].(*types.JenkinsStage).Type)
-			assert.Equal(t, "QA/job/stage/job/UI/job/SLI", spinnaker.Stages[0].(*types.JenkinsStage).Job)
-			assert.Equal(t, "chrome", spinnaker.Stages[0].(*types.JenkinsStage).Parameters["BROWSER"])
-			assert.Equal(t, "stage", spinnaker.Stages[0].(*types.JenkinsStage).Parameters["Environment"])
-			assert.Equal(t, "test:sli", spinnaker.Stages[0].(*types.JenkinsStage).Parameters["NPMSCRIPT"])
-			assert.Equal(t, "10", spinnaker.Stages[0].(*types.JenkinsStage).Parameters["timeout"])
-			assert.Equal(t, "namely-jenkins", spinnaker.Stages[0].(*types.JenkinsStage).Master)
-			assert.Equal(t, &boolf, spinnaker.Stages[0].(*types.JenkinsStage).CompleteOtherBranchesThenFail)
-			assert.Equal(t, &boolt, spinnaker.Stages[0].(*types.JenkinsStage).ContinuePipeline)
-			assert.Equal(t, &boolf, spinnaker.Stages[0].(*types.JenkinsStage).FailPipeline)
-			assert.Equal(t, &boolf, spinnaker.Stages[0].(*types.JenkinsStage).MarkUnstableAsSuccessful)
-			assert.Equal(t, &boolt, spinnaker.Stages[0].(*types.JenkinsStage).WaitForCompletion)
+			stg := spinnaker.Stages[0].(*types.JenkinsStage)
+			assert.Equal(t, "Test Jenkins Stage", stg.Name)
+			assert.Equal(t, "jenkins", stg.Type)
+			assert.Equal(t, "QA/job/stage/job/UI/job/SLI", stg.Job)
+
+			params := stg.Parameters
+			assert.Equal(t, "chrome", params["BROWSER"])
+			assert.Equal(t, "stage", params["Environment"])
+			assert.Equal(t, "test:sli", params["NPMSCRIPT"])
+			assert.Equal(t, "10", params["timeout"])
+			assert.Equal(t, "namely-jenkins", stg.Master)
+			assert.Equal(t, &boolf, stg.CompleteOtherBranchesThenFail)
+			assert.Equal(t, &boolf, stg.ContinuePipeline)
+			assert.Equal(t, &boolt, stg.FailPipeline)
+			assert.Equal(t, &boolt, stg.MarkUnstableAsSuccessful)
+			assert.Equal(t, &boolf, stg.WaitForCompletion)
+		})
+
+		t.Run("Default properties are assigned", func(t *testing.T) {
+
+			boolt := true
+			boolf := false
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						Name: "Test Jenkins Stage",
+						Jenkins: &config.JenkinsStage{
+							Type: "jenkins",
+							Job:  "QA/job/stage/job/UI/job/SLI",
+							Parameters: []config.PassthroughParameter{
+								config.PassthroughParameter{
+									Key:   "BROWSER",
+									Value: "chrome",
+								},
+								config.PassthroughParameter{
+									Key:   "Environment",
+									Value: "stage",
+								},
+								config.PassthroughParameter{
+									Key:   "NPMSCRIPT",
+									Value: "test:sli",
+								},
+								config.PassthroughParameter{
+									Key:   "timeout",
+									Value: "10",
+								},
+							},
+							Master: "namely-jenkins",
+						},
+					},
+				},
+			}
+
+			builder := builder.New(pipeline)
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			stg := spinnaker.Stages[0].(*types.JenkinsStage)
+			assert.Equal(t, "Test Jenkins Stage", stg.Name)
+			assert.Equal(t, "jenkins", stg.Type)
+			assert.Equal(t, "QA/job/stage/job/UI/job/SLI", stg.Job)
+
+			params := stg.Parameters
+			assert.Equal(t, "chrome", params["BROWSER"])
+			assert.Equal(t, "stage", params["Environment"])
+			assert.Equal(t, "test:sli", params["NPMSCRIPT"])
+			assert.Equal(t, "10", params["timeout"])
+			assert.Equal(t, "namely-jenkins", stg.Master)
+			assert.Equal(t, &boolt, stg.CompleteOtherBranchesThenFail)
+			assert.Equal(t, &boolt, stg.ContinuePipeline)
+			assert.Equal(t, &boolf, stg.FailPipeline)
+			assert.Equal(t, &boolf, stg.MarkUnstableAsSuccessful)
+			assert.Equal(t, &boolt, stg.WaitForCompletion)
 		})
 
 		t.Run("RequisiteStageRefIds defaults to an empty slice", func(t *testing.T) {
@@ -579,6 +688,157 @@ func TestBuilderPipelineStages(t *testing.T) {
 		})
 	})
 
+	t.Run("RunSpinnakerPipeline stage is parsed correctly", func(t *testing.T) {
+		t.Run("Properties are assigned", func(t *testing.T) {
+
+			boolt := true
+			boolf := false
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						Name: "Test RunSpinnakerPipeline Stage",
+						RunSpinnakerPipeline: &config.RunSpinnakerPipelineStage{
+							Type:        "pipeline",
+							Application: "badges",
+							Pipeline:    "2c4a14d9-2f25-4a2a-b2d6-c31e596bce19",
+							PipelineParameters: []config.PassthroughParameter{
+								config.PassthroughParameter{
+									Key:   "badges_docker_image",
+									Value: "img",
+								},
+								config.PassthroughParameter{
+									Key:   "file_data",
+									Value: "data=has,date=now",
+								},
+								config.PassthroughParameter{
+									Key:   "file_path",
+									Value: "rel/ative/path",
+								},
+								config.PassthroughParameter{
+									Key:   "service_name",
+									Value: "k8s-pipeliner",
+								},
+							},
+							CompleteOtherBranchesThenFail: &boolt,
+							ContinuePipeline:              &boolt,
+							FailPipeline:                  &boolf,
+							MarkUnstableAsSuccessful:      &boolt,
+							WaitForCompletion:             &boolf,
+						},
+					},
+				},
+			}
+
+			builder := builder.New(pipeline)
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			stg := spinnaker.Stages[0].(*types.RunSpinnakerPipelineStage)
+
+			assert.Equal(t, "Test RunSpinnakerPipeline Stage", stg.Name)
+			assert.Equal(t, "pipeline", stg.Type)
+
+			params := stg.PipelineParameters
+			assert.Equal(t, "img", params["badges_docker_image"])
+			assert.Equal(t, "data=has,date=now", params["file_data"])
+			assert.Equal(t, "rel/ative/path", params["file_path"])
+			assert.Equal(t, "k8s-pipeliner", params["service_name"])
+			assert.Equal(t, &boolt, stg.CompleteOtherBranchesThenFail)
+			assert.Equal(t, &boolt, stg.ContinuePipeline)
+			assert.Equal(t, &boolf, stg.FailPipeline)
+			assert.Equal(t, &boolt, stg.MarkUnstableAsSuccessful)
+			assert.Equal(t, &boolf, stg.WaitForCompletion)
+		})
+
+		t.Run("Default properties are assigned", func(t *testing.T) {
+
+			boolt := true
+			boolf := false
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						Name: "Test RunSpinnakerPipeline Stage",
+						RunSpinnakerPipeline: &config.RunSpinnakerPipelineStage{
+							Type:        "pipeline",
+							Application: "badges",
+							Pipeline:    "2c4a14d9-2f25-4a2a-b2d6-c31e596bce19",
+							PipelineParameters: []config.PassthroughParameter{
+								config.PassthroughParameter{
+									Key:   "badges_docker_image",
+									Value: "img",
+								},
+								config.PassthroughParameter{
+									Key:   "file_data",
+									Value: "data=has,date=now",
+								},
+								config.PassthroughParameter{
+									Key:   "file_path",
+									Value: "rel/ative/path",
+								},
+								config.PassthroughParameter{
+									Key:   "service_name",
+									Value: "k8s-pipeliner",
+								},
+							},
+						},
+					},
+				},
+			}
+
+			builder := builder.New(pipeline)
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			stg := spinnaker.Stages[0].(*types.RunSpinnakerPipelineStage)
+
+			assert.Equal(t, "Test RunSpinnakerPipeline Stage", stg.Name)
+			assert.Equal(t, "pipeline", stg.Type)
+
+			params := stg.PipelineParameters
+			assert.Equal(t, "img", params["badges_docker_image"])
+			assert.Equal(t, "data=has,date=now", params["file_data"])
+			assert.Equal(t, "rel/ative/path", params["file_path"])
+			assert.Equal(t, "k8s-pipeliner", params["service_name"])
+			assert.Equal(t, &boolf, stg.CompleteOtherBranchesThenFail)
+			assert.Equal(t, &boolf, stg.ContinuePipeline)
+			assert.Equal(t, &boolt, stg.FailPipeline)
+			assert.Equal(t, &boolf, stg.MarkUnstableAsSuccessful)
+			assert.Equal(t, &boolt, stg.WaitForCompletion)
+		})
+
+		t.Run("RequisiteStageRefIds defaults to an empty slice", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						RunSpinnakerPipeline: &config.RunSpinnakerPipelineStage{},
+					},
+				},
+			}
+
+			builder := builder.New(pipeline)
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			assert.Equal(t, []string{}, spinnaker.Stages[0].(*types.RunSpinnakerPipelineStage).StageMetadata.RequisiteStageRefIds)
+		})
+
+		t.Run("RequisiteStageRefIds is assigned when ReliesOn is provided", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						ReliesOn:             []string{"2"},
+						RunSpinnakerPipeline: &config.RunSpinnakerPipelineStage{},
+					},
+				},
+			}
+
+			builder := builder.New(pipeline)
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			assert.Equal(t, []string{"2"}, spinnaker.Stages[0].(*types.RunSpinnakerPipelineStage).StageMetadata.RequisiteStageRefIds)
+		})
+	})
 }
 
 func newFalse() *bool {

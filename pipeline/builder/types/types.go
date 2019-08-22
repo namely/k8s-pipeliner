@@ -1,3 +1,5 @@
+// Package builder/types implements the JSON configuration used in k8s-pipeliner output
+
 package types
 
 import (
@@ -67,6 +69,12 @@ type ManifestStage struct {
 	Moniker                 Moniker          `json:"moniker"`
 	Relationships           Relationships    `json:"relationships"`
 	Source                  string           `json:"source"`
+
+	CompleteOtherBranchesThenFail *bool `json:"completeOtherBranchesThenFail,omitempty"`
+	ContinuePipeline              *bool `json:"continuePipeline,omitempty"`
+	FailPipeline                  *bool `json:"failPipeline,omitempty"`
+	MarkUnstableAsSuccessful      *bool `json:"markUnstableAsSuccessful,omitempty"`
+	WaitForCompletion             *bool `json:"waitForCompletion,omitempty"`
 }
 
 func (ms ManifestStage) spinnakerStage() {}
@@ -91,6 +99,12 @@ type DeleteManifestStage struct {
 	// Location means kubernetes namespace
 	Location string  `json:"location"`
 	Options  Options `json:"options"`
+
+	CompleteOtherBranchesThenFail *bool `json:"completeOtherBranchesThenFail,omitempty"`
+	ContinuePipeline              *bool `json:"continuePipeline,omitempty"`
+	FailPipeline                  *bool `json:"failPipeline,omitempty"`
+	MarkUnstableAsSuccessful      *bool `json:"markUnstableAsSuccessful,omitempty"`
+	WaitForCompletion             *bool `json:"waitForCompletion,omitempty"`
 }
 
 func (ms DeleteManifestStage) spinnakerStage() {}
@@ -111,8 +125,13 @@ type ScaleManifestStage struct {
 	// Name is used when deleting a manifest by kind / name. The format for this
 	// needs to be "kind manifestName", For example: "deployment application-deploy"
 	ManifestName string `json:"manifestName,omitempty"`
+	Replicas     int    `json:"replicas"`
 
-	Replicas int `json:"replicas"`
+	CompleteOtherBranchesThenFail *bool `json:"completeOtherBranchesThenFail,omitempty"`
+	ContinuePipeline              *bool `json:"continuePipeline,omitempty"`
+	FailPipeline                  *bool `json:"failPipeline,omitempty"`
+	MarkUnstableAsSuccessful      *bool `json:"markUnstableAsSuccessful,omitempty"`
+	WaitForCompletion             *bool `json:"waitForCompletion,omitempty"`
 }
 
 func (ms ScaleManifestStage) spinnakerStage() {}
@@ -219,15 +238,39 @@ type JenkinsStage struct {
 	WaitForCompletion             *bool             `json:"waitForCompletion,omitempty"`
 }
 
-// JenkinsParameter represent a parameter that is passed to the Jenkins build
-type JenkinsParameter struct {
-	Key   string `yaml:"key"`
-	Value string `yaml:"value"`
-}
-
 func (js JenkinsStage) spinnakerStage() {}
 
 var _ Stage = JenkinsStage{}
+
+// RunSpinnakerPipelineStage represents a stage where another pipeline is executed
+type RunSpinnakerPipelineStage struct {
+	StageMetadata
+
+	// Not exposed in pipeline.yml file
+	Type string `json:"type,omitempty"`
+
+	Application string `json:"application"`
+	Pipeline    string `json:"pipeline"`
+
+	// string:string map of parameters to pass into the build
+	PipelineParameters map[string]string `json:"pipelineParameters,omitempty"`
+
+	CompleteOtherBranchesThenFail *bool `json:"completeOtherBranchesThenFail,omitempty"`
+	ContinuePipeline              *bool `json:"continuePipeline,omitempty"`
+	FailPipeline                  *bool `json:"failPipeline,omitempty"`
+	MarkUnstableAsSuccessful      *bool `json:"markUnstableAsSuccessful,omitempty"`
+	WaitForCompletion             *bool `json:"waitForCompletion,omitempty"`
+}
+
+func (sps RunSpinnakerPipelineStage) spinnakerStage() {}
+
+var _ Stage = RunSpinnakerPipelineStage{}
+
+// PassthroughParameter represents a key value pair passed to a child process
+type PassthroughParameter struct {
+	Key   string `yaml:"key"`
+	Value string `yaml:"value"`
+}
 
 // Cluster defines a server group to be deployed within a Deploy stage of a
 // pipeline
