@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"time"
 
 	cnfgrtr "github.com/namely/k8s-configurator"
 	"github.com/namely/k8s-pipeliner/pipeline/builder/types"
@@ -48,6 +49,17 @@ var (
 		"production-k8s": "production",
 		"ops":            "ops",
 		"ops-k8s":        "ops",
+	}
+
+	VaultAddress = map[string]string{
+		"int":            "vault.i.namely.company",
+		"int-k8s":        "vault.i.namely.company",
+		"staging":        "vault.s.namely.company",
+		"staging-k8s":    "vault.s.namely.company",
+		"production":     "vault.namely.company",
+		"production-k8s": "vault.namely.company",
+		"ops":            "vault.o.namely.company",
+		"ops-k8s":        "vault.o.namely.company",
 	}
 )
 
@@ -272,6 +284,106 @@ func (b *Builder) buildRunJobStage(index int, s config.Stage) (*types.RunJobStag
 	return rjs, nil
 }
 
+func (b *Builder) NewVaultConfigmap(vaultConfig string, originConfig string, suffix string) (error) {
+	dat, err := ioutil.ReadFile(originConfig)
+	if err != nil {
+		return errors.Wrapf(err, "could not read manifest file: %s", originConfig)
+	}
+
+	s := string(dat)
+	s = strings.Replace(s,"\n","\n    ",-1)
+
+	var manifest string = `apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vault_`+suffix+`
+  namespace: vault
+data:
+  vault-auth.sh: |
+    #!/bin/sh
+    KUBE_TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+    wget -O /work-dir/login.json --post-data '{"jwt": "'"$KUBE_TOKEN"'", "role": "vault-sync"}' $VAULT_ADDR/v1/auth/kubernetes/login
+    cat /work-dir/login.json | sed -n 's/.*"client_token":"\([^"]*\).*/\1/p' > /work-dir/token
+  vault-input.sh: |
+    #!/bin/sh
+    export VAULT_TOKEN=$(cat /work-dir/token);
+    vaultool import --input-type file --source-type config /scripts/vault-cm.yml jobs/config/vault/vault-sync
+  vault-cm.yml: |
+    `+s
+
+	d1 := []byte(manifest)
+	err = ioutil.WriteFile(vaultConfig, d1, 0644)
+	if err != nil {
+		return errors.Wrapf(err, "could not write manifest file: %s", vaultConfig)
+	}
+
+	return nil
+}
+
+func (b *Builder) NewVaultJob(vaultJob string, vaultAddress string, suffix string) (error) {
+	var manifest string = `apiVersion: batch/v1
+kind: Job
+metadata:
+  annotations:
+    sidecar.istio.io/inject: "false"
+  name: vault_`+suffix+`
+  namespace: vault
+spec:
+  template:
+    spec:
+      containers:
+        - name: vault-import
+          image: registry.namely.land/namely/vaultool:latest
+          env:
+            - name: VAULT_ADDR
+              value: https://`+vaultAddress+`
+            - name: ANSIBLE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: vault-sync
+                  key: ansible-key
+          command: ["/bin/sh", "-c"]
+          args:
+            - export VAULT_TOKEN=$(cat /work-dir/token);
+              /scripts/vault-input.sh
+          volumeMounts:
+            - name: vault-auth
+              mountPath: /scripts
+            - name: work-dir
+              mountPath: /work-dir
+      initContainers:
+        - name: init
+          image: busybox
+          env:
+            - name: VAULT_ADDR
+              value: https://`+vaultAddress+`
+          command: ["/scripts/vault-auth.sh"]
+          volumeMounts:
+            - name: vault-auth
+              mountPath: /scripts
+            - name: work-dir
+              mountPath: /work-dir
+      volumes:
+        - name: vault-auth
+          configMap:
+            name: vault_`+suffix+`
+            defaultMode: 0744
+        - name: work-dir
+          emptyDir: {}
+      restartPolicy: OnFailure
+      serviceAccountName: vault-sync
+      imagePullSecrets:
+        - name: registry
+`
+	d1 := []byte(manifest)
+	err := ioutil.WriteFile(vaultJob, d1, 0644)
+	if err != nil {
+		return errors.Wrapf(err, "could not write manifest file: %s", vaultJob)
+	}
+
+	return nil
+}
+
 func (b *Builder) buildDeployEmbeddedManifestStage(index int, s config.Stage) (*types.ManifestStage, error) {
 
 	ds := b.defaultManifestStage(index, s)
@@ -293,12 +405,46 @@ func (b *Builder) buildDeployEmbeddedManifestStage(index int, s config.Stage) (*
 
 	parser := NewManfifestParser(b.pipeline, b.basePath)
 	for _, file := range maniStage.Files {
-		objs, err := parser.ManifestsFromFile(file.File)
-		if err != nil {
-			return nil, errors.Wrapf(err, "could not parse manifest file: %s", file.File)
-		}
+		filename := file.File
+		fp := strings.Split(filename, "_")
+		if strings.HasPrefix(fp[len(fp)-1],"vault.y",) {
+			now := time.Now()
+			suffix := fmt.Sprint(b.pipeline.Name, "_", now.Unix())
 
-		ds.Manifests = append(ds.Manifests, objs...)
+			prepath := strings.Join(fp[:len(fp)-1], "_")
+			cmname := prepath+"_vaultcm.yml"
+			err1 := b.NewVaultConfigmap(cmname, file.File, suffix)
+			if err1 != nil {
+				return nil, errors.Wrapf(err1, "could not create manifest file: %s", cmname)
+			}
+
+			objs, err := parser.ManifestsFromFile(cmname)
+			if err != nil {
+				return nil, errors.Wrapf(err, "could not parse manifest file: %s", cmname)
+			}
+
+			ds.Manifests = append(ds.Manifests, objs...)
+
+			jobname := prepath+"_vaultjob.yml"
+			err1 = b.NewVaultJob(jobname, VaultAddress[s.Account], suffix)
+			if err1 != nil {
+				return nil, errors.Wrapf(err1, "could not create manifest file: %s", jobname)
+			}
+
+			objs, err = parser.ManifestsFromFile(jobname)
+			if err != nil {
+				return nil, errors.Wrapf(err, "could not parse manifest file: %s", jobname)
+			}
+
+			ds.Manifests = append(ds.Manifests, objs...)
+		} else {
+			objs, err := parser.ManifestsFromFile(filename)
+			if err != nil {
+				return nil, errors.Wrapf(err, "could not parse manifest file: %s", filename)
+			}
+
+			ds.Manifests = append(ds.Manifests, objs...)
+		}
 	}
 
 	// Generate the configurator config map
@@ -328,14 +474,48 @@ func (b *Builder) buildDeployEmbeddedManifestStage(index int, s config.Stage) (*
 			return nil, errors.Wrapf(err, "k8s-configurator could not generate manifest file: %s for env: %s", configuratorFile.File, env)
 		}
 
-		objs, err := parser.ManifestsFromFile(destFileName)
-		os.Remove(destFilePath)
-		if err != nil {
-			return nil, errors.Wrapf(err, "could not parse manifest file: %s", configuratorFile.File)
+		filename := configuratorFile.File
+		fp := strings.Split(filename, "_")
+		if strings.HasPrefix(fp[len(fp)-1],"vault.y",) {
+			now := time.Now()
+			suffix := fmt.Sprint(b.pipeline.Name, "_", now.Unix())
+
+			prepath := strings.Join(fp[:len(fp)-1], "_")
+			cmname := prepath+"_vaultcm.yml"
+			err1 := b.NewVaultConfigmap(cmname, destFileName, suffix)
+			if err1 != nil {
+				return nil, errors.Wrapf(err1, "could not create manifest file: %s", cmname)
+			}
+
+			objs, err := parser.ManifestsFromFile(cmname)
+			os.Remove(destFilePath)
+			if err != nil {
+				return nil, errors.Wrapf(err, "could not parse manifest file: %s", cmname)
+			}
+
+			ds.Manifests = append(ds.Manifests, objs...)
+
+			jobname := prepath+"_vaultjob.yml"
+			err1 = b.NewVaultJob(jobname, VaultAddress[s.Account], suffix)
+			if err1 != nil {
+				return nil, errors.Wrapf(err1, "could not create manifest file: %s", jobname)
+			}
+
+			objs, err = parser.ManifestsFromFile(jobname)
+			if err != nil {
+				return nil, errors.Wrapf(err, "could not parse manifest file: %s", jobname)
+			}
+	
+			ds.Manifests = append(ds.Manifests, objs...)
+		} else {
+			objs, err := parser.ManifestsFromFile(destFileName)
+			os.Remove(destFilePath)
+			if err != nil {
+				return nil, errors.Wrapf(err, "could not parse manifest file: %s", configuratorFile.File)
+			}
+
+			ds.Manifests = append(ds.Manifests, objs...)
 		}
-
-		ds.Manifests = append(ds.Manifests, objs...)
-
 	}
 
 	return ds, nil
