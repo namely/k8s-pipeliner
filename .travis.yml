@@ -4,9 +4,9 @@ go:
   - 1.12.5
 
 install:
-  - make deps
+  - GO111MODULE=auto make deps
 script:
-  - make coveralls
+  - GO111MODULE=auto make coveralls
 notifications:
   email: false
 after_success:
