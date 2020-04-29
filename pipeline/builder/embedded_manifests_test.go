@@ -3,8 +3,8 @@ package builder_test
 import (
 	"testing"
 
-	"github.com/kubernetes/apimachinery/pkg/apis/meta/v1/unstructured"
 	"github.com/stretchr/testify/suite"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/namely/k8s-pipeliner/pipeline/builder"
 	"github.com/namely/k8s-pipeliner/pipeline/builder/types"

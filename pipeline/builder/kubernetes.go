@@ -12,10 +12,10 @@ import (
 	"github.com/namely/k8s-pipeliner/pipeline/config"
 	"github.com/pkg/errors"
 
-	"github.com/kubernetes/apimachinery/pkg/apis/meta/v1/unstructured"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1beta1 "k8s.io/api/extensions/v1beta1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes/scheme"
