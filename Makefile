@@ -2,16 +2,15 @@
 VERSION = $(shell go run cmd/k8s-pipeliner/main.go --version | awk '{print $$3}')
 
 install:
-	go install ./...
+	go install -mod=vendor ./...
 
 test:
-	go test ./...
-	go list ./... | grep -v /vendor/ | xargs -L1 golint -set_exit_status
+	GO111MODULE=on go test ./...
+	GO111MODULE=on go list ./... | grep -v /vendor/ | xargs -L1 golint -set_exit_status
 
 .PHONY: deps
 deps:
-	go get -u github.com/kardianos/govendor
-	govendor sync
+	GO111MODULE=on go mod vendor
 	go get github.com/mattn/goveralls
 	go get github.com/go-playground/overalls
 
