@@ -320,9 +320,9 @@ stages:
       detail: detail
       stack: stack
     files:
-      - manifests/deployment.yml
-      - manifests/service.yml
-      - manifests/migrate-job.yml
+      - file: manifests/deployment.yml
+      - file: manifests/service.yml
+      - file: manifests/migrate-job.yml
     configuratorFiles:
       - file: test-configurator.yml
         env: superOps
