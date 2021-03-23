@@ -172,6 +172,56 @@ func TestBuilderPipelineStages(t *testing.T) {
 		assert.Equal(t, "default value", param.Default)
 	})
 
+	t.Run("DeployEmbeddedManifests is parsed correctly", func(t *testing.T) {
+		t.Run("Picks up files to deploy", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						Name: "Test DeployEmbeddedManifests Stage",
+						DeployEmbeddedManifests: &config.DeployEmbeddedManifests{
+
+							Files: []config.ManifestFile{
+								{
+									File: file,
+								},
+							},
+						},
+					},
+				},
+			}
+			builder := builder.New(pipeline)
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			assert.Equal(t, "Test DeployEmbeddedManifests Stage", spinnaker.Stages[0].(*types.ManifestStage).Name)
+			assert.NotNil(t, spinnaker.Stages[0].(*types.ManifestStage).Manifests[0])
+		})
+
+		t.Run("Overrides default timeout", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						Name: "Test DeployEmbeddedManifests Stage",
+						DeployEmbeddedManifests: &config.DeployEmbeddedManifests{
+							StageTimeoutMS: 360000,
+							Files: []config.ManifestFile{
+								{
+									File: file,
+								},
+							},
+						},
+					},
+				},
+			}
+			builder := builder.New(pipeline)
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			assert.Equal(t, int64(360000), spinnaker.Stages[0].(*types.ManifestStage).StageTimeoutMS)
+			assert.Equal(t, true, spinnaker.Stages[0].(*types.ManifestStage).OverrideTimeout)
+		})
+	})
+
 	t.Run("Deploy stage is parsed correctly", func(t *testing.T) {
 		t.Run("Clusters are assigned", func(t *testing.T) {
 			pipeline := &config.Pipeline{
@@ -296,6 +346,27 @@ func TestBuilderPipelineStages(t *testing.T) {
 	})
 
 	t.Run("ManualJudgement stage is parsed correctly", func(t *testing.T) {
+		t.Run("Override timeout is assigned", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						Name: "Test ManualJudgementStage Timeout",
+						ManualJudgement: &config.ManualJudgementStage{
+							Timeout: 1,
+						},
+					},
+				},
+			}
+
+			builder := builder.New(pipeline)
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			assert.Equal(t, "Test ManualJudgementStage Timeout", spinnaker.Stages[0].(*types.ManualJudgementStage).Name)
+			assert.True(t, spinnaker.Stages[0].(*types.ManualJudgementStage).OverrideTimeout)
+			assert.Equal(t, int64(3600000), spinnaker.Stages[0].(*types.ManualJudgementStage).StageTimeoutMS)
+		})
+
 		t.Run("Name is assigned", func(t *testing.T) {
 			pipeline := &config.Pipeline{
 				Stages: []config.Stage{

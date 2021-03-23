@@ -250,6 +250,7 @@ type DeployEmbeddedManifests struct {
 	FailPipeline                  *bool `yaml:"failPipeline,omitempty"`
 	MarkUnstableAsSuccessful      *bool `yaml:"markUnstableAsSuccessful,omitempty"`
 	WaitForCompletion             *bool `yaml:"waitForCompletion,omitempty"`
+	StageTimeoutMS                int64 `yaml:"stageTimeoutMs,omitempty"`
 }
 
 // DeleteEmbeddedManifest represents a single resource to be deleted

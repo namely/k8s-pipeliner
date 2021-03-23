@@ -442,7 +442,7 @@ func (b *Builder) defaultManifestStage(index int, s config.Stage) *types.Manifes
 	markUnstableAsSuccessful := setDefaultIfNil(s.DeployEmbeddedManifests.MarkUnstableAsSuccessful, false)
 	waitForCompletion := setDefaultIfNil(s.DeployEmbeddedManifests.WaitForCompletion, true)
 
-	return &types.ManifestStage{
+	stage := &types.ManifestStage{
 		StageMetadata:           buildStageMetadata(s, "deployManifest", index, b.isLinear),
 		Account:                 s.Account,
 		CloudProvider:           "kubernetes",
@@ -460,6 +460,13 @@ func (b *Builder) defaultManifestStage(index int, s config.Stage) *types.Manifes
 		MarkUnstableAsSuccessful:      &markUnstableAsSuccessful,
 		WaitForCompletion:             &waitForCompletion,
 	}
+
+	if s.DeployEmbeddedManifests.StageTimeoutMS > 0 {
+		stage.OverrideTimeout = true
+		stage.StageTimeoutMS = s.DeployEmbeddedManifests.StageTimeoutMS
+	}
+
+	return stage
 }
 
 func (b *Builder) buildV2RunJobStage(index int, s config.Stage) (*types.ManifestStage, error) {
