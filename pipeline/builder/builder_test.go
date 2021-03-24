@@ -180,7 +180,6 @@ func TestBuilderPipelineStages(t *testing.T) {
 						Name:        "param1",
 						Description: "parameter description",
 						Required:    true,
-						HasOptions:  true,
 						Options: []config.Option{
 							{
 								Value: "opt1",
@@ -208,13 +207,48 @@ func TestBuilderPipelineStages(t *testing.T) {
 			assert.Equal(t, "opt2", param.Options[1].Value)
 		})
 
+		t.Run("With options and a default value", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Parameters: []config.Parameter{
+					{
+						Name:        "param1",
+						Description: "parameter description",
+						Default:     "opt1",
+						Required:    true,
+						Options: []config.Option{
+							{
+								Value: "opt1",
+							},
+							{
+								Value: "opt2",
+							},
+						},
+					},
+				},
+			}
+
+			b := builder.New(pipeline)
+			spinnaker, err := b.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			require.Len(t, spinnaker.Parameters, 1)
+
+			param := spinnaker.Parameters[0]
+			assert.Equal(t, true, param.Required)
+			assert.Equal(t, "parameter description", param.Description)
+			assert.Equal(t, "param1", param.Name)
+			assert.Equal(t, "opt1", param.Default)
+			assert.True(t, param.HasOptions)
+			assert.Equal(t, "opt1", param.Options[0].Value)
+			assert.Equal(t, "opt2", param.Options[1].Value)
+		})
+
 		t.Run("With error handling for mismatched option and default values", func(t *testing.T) {
 			pipeline := &config.Pipeline{
 				Parameters: []config.Parameter{
 					{
-						Name:       "param1",
-						Default:    "optN",
-						HasOptions: true,
+						Name:    "param1",
+						Default: "optN",
 						Options: []config.Option{
 							{
 								Value: "opt1",

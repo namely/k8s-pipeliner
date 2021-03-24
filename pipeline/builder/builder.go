@@ -129,7 +129,7 @@ func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
 			Required:    param.Required,
 		}
 
-		if param.HasOptions && len(param.Options) > 0 {
+		if len(param.Options) > 0 {
 			sp.Parameters[i].HasOptions = true
 			foundDefaultValue := param.Default == ""
 			for _, val := range param.Options {

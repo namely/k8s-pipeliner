@@ -47,7 +47,6 @@ type Parameter struct {
 	Description string   `yaml:"description"`
 	Default     string   `yaml:"default"`
 	Required    bool     `yaml:"required"`
-	HasOptions  bool     `yaml:"hasOptions"`
 	Options     []Option `yaml:"options"`
 }
 
