@@ -148,28 +148,89 @@ func TestBuilderPipelineStages(t *testing.T) {
 	})
 
 	t.Run("Parameter configuration is parsed correctly", func(t *testing.T) {
-		pipeline := &config.Pipeline{
-			Parameters: []config.Parameter{
-				{
-					Name:        "param1",
-					Description: "parameter description",
-					Default:     "default value",
-					Required:    true,
+		t.Run("Without Options", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Parameters: []config.Parameter{
+					{
+						Name:        "param1",
+						Description: "parameter description",
+						Default:     "default value",
+						Required:    true,
+					},
 				},
-			},
-		}
+			}
 
-		b := builder.New(pipeline)
-		spinnaker, err := b.Pipeline()
-		require.NoError(t, err, "error generating pipeline json")
+			b := builder.New(pipeline)
+			spinnaker, err := b.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
 
-		require.Len(t, spinnaker.Parameters, 1)
+			require.Len(t, spinnaker.Parameters, 1)
 
-		param := spinnaker.Parameters[0]
-		assert.Equal(t, true, param.Required)
-		assert.Equal(t, "parameter description", param.Description)
-		assert.Equal(t, "param1", param.Name)
-		assert.Equal(t, "default value", param.Default)
+			param := spinnaker.Parameters[0]
+			assert.Equal(t, true, param.Required)
+			assert.Equal(t, "parameter description", param.Description)
+			assert.Equal(t, "param1", param.Name)
+			assert.Equal(t, "default value", param.Default)
+		})
+
+		t.Run("With options", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Parameters: []config.Parameter{
+					{
+						Name:        "param1",
+						Description: "parameter description",
+						Required:    true,
+						HasOptions:  true,
+						Options: []config.Option{
+							{
+								Value: "opt1",
+							},
+							{
+								Value: "opt2",
+							},
+						},
+					},
+				},
+			}
+
+			b := builder.New(pipeline)
+			spinnaker, err := b.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			require.Len(t, spinnaker.Parameters, 1)
+
+			param := spinnaker.Parameters[0]
+			assert.Equal(t, true, param.Required)
+			assert.Equal(t, "parameter description", param.Description)
+			assert.Equal(t, "param1", param.Name)
+			assert.True(t, param.HasOptions)
+			assert.Equal(t, "opt1", param.Options[0].Value)
+			assert.Equal(t, "opt2", param.Options[1].Value)
+		})
+
+		t.Run("With error handling for mismatched option and default values", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Parameters: []config.Parameter{
+					{
+						Name:       "param1",
+						Default:    "optN",
+						HasOptions: true,
+						Options: []config.Option{
+							{
+								Value: "opt1",
+							},
+							{
+								Value: "opt2",
+							},
+						},
+					},
+				},
+			}
+
+			b := builder.New(pipeline)
+			_, err := b.Pipeline()
+			require.Error(t, err, "builder: the specified default value is not one of the options")
+		})
 	})
 
 	t.Run("DeployEmbeddedManifests is parsed correctly", func(t *testing.T) {

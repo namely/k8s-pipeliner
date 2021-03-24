@@ -128,6 +128,20 @@ func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
 			Default:     param.Default,
 			Required:    param.Required,
 		}
+
+		if param.HasOptions && len(param.Options) > 0 {
+			sp.Parameters[i].HasOptions = true
+			foundDefaultValue := param.Default == ""
+			for _, val := range param.Options {
+				foundDefaultValue = foundDefaultValue || param.Default == val.Value
+				sp.Parameters[i].Options = append(sp.Parameters[i].Options, types.Option{
+					Value: val.Value,
+				})
+			}
+			if !foundDefaultValue {
+				return sp, errors.New("builder: the specified default value is not one of the options")
+			}
+		}
 	}
 
 	var stageIndex = 0

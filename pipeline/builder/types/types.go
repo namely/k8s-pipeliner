@@ -44,9 +44,13 @@ type Parameter struct {
 	Default     string `json:"default"`
 	Required    bool   `json:"required"`
 
-	// TODO(bobbytables): Allow configuring parameter options
-	HasOptions bool          `json:"hasOptions"`
-	Options    []interface{} `json:"options"`
+	HasOptions bool     `json:"hasOptions,omitempty"`
+	Options    []Option `json:"options,omitempty"`
+}
+
+// Option contains the value of the option in a given pipeline parameter
+type Option struct {
+	Value string `json:"value,omitempty"`
 }
 
 // Stage is an interface to represent a Stage struct such as RunJob or Deploy
