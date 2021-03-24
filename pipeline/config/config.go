@@ -43,10 +43,16 @@ type Pipeline struct {
 
 // Parameter defines a single parameter in a pipeline config
 type Parameter struct {
-	Name        string `yaml:"name"`
-	Description string `yaml:"description"`
-	Default     string `yaml:"default"`
-	Required    bool   `yaml:"required"`
+	Name        string   `yaml:"name"`
+	Description string   `yaml:"description"`
+	Default     string   `yaml:"default"`
+	Required    bool     `yaml:"required"`
+	Options     []Option `yaml:"options"`
+}
+
+// Option contains the option value of a single parameter in a pipeline config
+type Option struct {
+	Value string `yaml:"value"`
 }
 
 // ImageDescription contains the description of an image that can be referenced
@@ -250,6 +256,7 @@ type DeployEmbeddedManifests struct {
 	FailPipeline                  *bool `yaml:"failPipeline,omitempty"`
 	MarkUnstableAsSuccessful      *bool `yaml:"markUnstableAsSuccessful,omitempty"`
 	WaitForCompletion             *bool `yaml:"waitForCompletion,omitempty"`
+	StageTimeoutMS                int64 `yaml:"stageTimeoutMs,omitempty"`
 }
 
 // DeleteEmbeddedManifest represents a single resource to be deleted

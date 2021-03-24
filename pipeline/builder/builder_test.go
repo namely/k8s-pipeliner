@@ -148,28 +148,173 @@ func TestBuilderPipelineStages(t *testing.T) {
 	})
 
 	t.Run("Parameter configuration is parsed correctly", func(t *testing.T) {
-		pipeline := &config.Pipeline{
-			Parameters: []config.Parameter{
-				{
-					Name:        "param1",
-					Description: "parameter description",
-					Default:     "default value",
-					Required:    true,
+		t.Run("Without Options", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Parameters: []config.Parameter{
+					{
+						Name:        "param1",
+						Description: "parameter description",
+						Default:     "default value",
+						Required:    true,
+					},
 				},
-			},
-		}
+			}
 
-		b := builder.New(pipeline)
-		spinnaker, err := b.Pipeline()
-		require.NoError(t, err, "error generating pipeline json")
+			b := builder.New(pipeline)
+			spinnaker, err := b.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
 
-		require.Len(t, spinnaker.Parameters, 1)
+			require.Len(t, spinnaker.Parameters, 1)
 
-		param := spinnaker.Parameters[0]
-		assert.Equal(t, true, param.Required)
-		assert.Equal(t, "parameter description", param.Description)
-		assert.Equal(t, "param1", param.Name)
-		assert.Equal(t, "default value", param.Default)
+			param := spinnaker.Parameters[0]
+			assert.Equal(t, true, param.Required)
+			assert.Equal(t, "parameter description", param.Description)
+			assert.Equal(t, "param1", param.Name)
+			assert.Equal(t, "default value", param.Default)
+		})
+
+		t.Run("With options", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Parameters: []config.Parameter{
+					{
+						Name:        "param1",
+						Description: "parameter description",
+						Required:    true,
+						Options: []config.Option{
+							{
+								Value: "opt1",
+							},
+							{
+								Value: "opt2",
+							},
+						},
+					},
+				},
+			}
+
+			b := builder.New(pipeline)
+			spinnaker, err := b.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			require.Len(t, spinnaker.Parameters, 1)
+
+			param := spinnaker.Parameters[0]
+			assert.Equal(t, true, param.Required)
+			assert.Equal(t, "parameter description", param.Description)
+			assert.Equal(t, "param1", param.Name)
+			assert.True(t, param.HasOptions)
+			assert.Equal(t, "opt1", param.Options[0].Value)
+			assert.Equal(t, "opt2", param.Options[1].Value)
+		})
+
+		t.Run("With options and a default value", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Parameters: []config.Parameter{
+					{
+						Name:        "param1",
+						Description: "parameter description",
+						Default:     "opt1",
+						Required:    true,
+						Options: []config.Option{
+							{
+								Value: "opt1",
+							},
+							{
+								Value: "opt2",
+							},
+						},
+					},
+				},
+			}
+
+			b := builder.New(pipeline)
+			spinnaker, err := b.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			require.Len(t, spinnaker.Parameters, 1)
+
+			param := spinnaker.Parameters[0]
+			assert.Equal(t, true, param.Required)
+			assert.Equal(t, "parameter description", param.Description)
+			assert.Equal(t, "param1", param.Name)
+			assert.Equal(t, "opt1", param.Default)
+			assert.True(t, param.HasOptions)
+			assert.Equal(t, "opt1", param.Options[0].Value)
+			assert.Equal(t, "opt2", param.Options[1].Value)
+		})
+
+		t.Run("With error handling for mismatched option and default values", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Parameters: []config.Parameter{
+					{
+						Name:    "param1",
+						Default: "optN",
+						Options: []config.Option{
+							{
+								Value: "opt1",
+							},
+							{
+								Value: "opt2",
+							},
+						},
+					},
+				},
+			}
+
+			b := builder.New(pipeline)
+			_, err := b.Pipeline()
+			require.Error(t, err, "builder: the specified default value is not one of the options")
+		})
+	})
+
+	t.Run("DeployEmbeddedManifests is parsed correctly", func(t *testing.T) {
+		t.Run("Picks up files to deploy", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						Name: "Test DeployEmbeddedManifests Stage",
+						DeployEmbeddedManifests: &config.DeployEmbeddedManifests{
+
+							Files: []config.ManifestFile{
+								{
+									File: file,
+								},
+							},
+						},
+					},
+				},
+			}
+			builder := builder.New(pipeline)
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			assert.Equal(t, "Test DeployEmbeddedManifests Stage", spinnaker.Stages[0].(*types.ManifestStage).Name)
+			assert.NotNil(t, spinnaker.Stages[0].(*types.ManifestStage).Manifests[0])
+		})
+
+		t.Run("Overrides default timeout", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						Name: "Test DeployEmbeddedManifests Stage",
+						DeployEmbeddedManifests: &config.DeployEmbeddedManifests{
+							StageTimeoutMS: 360000,
+							Files: []config.ManifestFile{
+								{
+									File: file,
+								},
+							},
+						},
+					},
+				},
+			}
+			builder := builder.New(pipeline)
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			assert.Equal(t, int64(360000), spinnaker.Stages[0].(*types.ManifestStage).StageTimeoutMS)
+			assert.Equal(t, true, spinnaker.Stages[0].(*types.ManifestStage).OverrideTimeout)
+		})
 	})
 
 	t.Run("Deploy stage is parsed correctly", func(t *testing.T) {
@@ -296,6 +441,27 @@ func TestBuilderPipelineStages(t *testing.T) {
 	})
 
 	t.Run("ManualJudgement stage is parsed correctly", func(t *testing.T) {
+		t.Run("Override timeout is assigned", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						Name: "Test ManualJudgementStage Timeout",
+						ManualJudgement: &config.ManualJudgementStage{
+							Timeout: 1,
+						},
+					},
+				},
+			}
+
+			builder := builder.New(pipeline)
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			assert.Equal(t, "Test ManualJudgementStage Timeout", spinnaker.Stages[0].(*types.ManualJudgementStage).Name)
+			assert.True(t, spinnaker.Stages[0].(*types.ManualJudgementStage).OverrideTimeout)
+			assert.Equal(t, int64(3600000), spinnaker.Stages[0].(*types.ManualJudgementStage).StageTimeoutMS)
+		})
+
 		t.Run("Name is assigned", func(t *testing.T) {
 			pipeline := &config.Pipeline{
 				Stages: []config.Stage{
