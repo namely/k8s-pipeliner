@@ -16,6 +16,7 @@ import (
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 )
@@ -37,6 +38,10 @@ var (
 	ErrNoNamespace = errors.New("builder: manifest does not have a namespace defined")
 	// ErrNoKubernetesMetadata is returned when a manifest does not have kubernetes metadata
 	ErrNoKubernetesMetadata = errors.New("builder: manifest does not have kubernetes metadata attached")
+	// ErrParsingMemory is returned when fails to parse override memory
+	ErrParsingMemory = errors.New("builder: failed to parse memory")
+	// ErrParsingCpu is returned when fails to parse override cpu
+	ErrParsingCpu = errors.New("builder: failed to parse cpu")
 
 	// Stages helps to translate from spinnaker account to configurator stages
 	Stages = map[string]string{
@@ -281,6 +286,8 @@ func (b *Builder) buildRunJobStage(index int, s config.Stage) (*types.RunJobStag
 	if s.RunJob.Container != nil {
 		rjs.Container.Args = s.RunJob.Container.Args
 		rjs.Container.Command = s.RunJob.Container.Command
+		rjs.Container.Requests.CPU = s.RunJob.Container.Resources.CPU
+		rjs.Container.Requests.Memory = s.RunJob.Container.Resources.Memory
 	}
 
 	return rjs, nil
@@ -723,6 +730,13 @@ func (b *Builder) buildDeployStage(index int, s config.Stage) (*types.DeployStag
 			if overrides.Command != nil {
 				container.Command = overrides.Command
 			}
+
+			if overrides.Requests.Memory != "" {
+				container.Requests.Memory = overrides.Requests.Memory
+			}
+			if overrides.Requests.CPU != "" {
+				container.Requests.CPU = overrides.Requests.CPU
+			}
 		}
 
 		if po := group.PodOverrides; po != nil {
@@ -855,6 +869,20 @@ func buildDeployment(deploy *appsv1.Deployment, group config.Group) (*appsv1.Dep
 		}
 		if overrides.Command != nil {
 			deploy.Spec.Template.Spec.Containers[0].Command = overrides.Command
+		}
+		if overrides.Requests.Memory != "" {
+			memory, err := resource.ParseQuantity(overrides.Requests.Memory)
+			if err != nil{
+				return nil, ErrParsingMemory
+			}
+			deploy.Spec.Template.Spec.Containers[0].Resources.Requests[corev1.ResourceMemory] = memory
+		}
+		if overrides.Requests.CPU != "" {
+			cpu, err := resource.ParseQuantity(overrides.Requests.CPU)
+			if err != nil{
+				return nil, ErrParsingMemory
+			}
+			deploy.Spec.Template.Spec.Containers[0].Resources.Requests[corev1.ResourceCPU] = cpu
 		}
 	}
 

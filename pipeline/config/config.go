@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 
+	"github.com/namely/k8s-pipeliner/pipeline/builder/types"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -176,6 +177,7 @@ type Notification struct {
 type Container struct {
 	Command []string `yaml:"command"`
 	Args    []string `yaml:"args"`
+	Resources types.Resources `yaml:resources`
 }
 
 // RunJobStage is the configuration for a one off job in a spinnaker pipeline
@@ -297,10 +299,11 @@ type ScaleManifest struct {
 }
 
 // ContainerOverrides are used to override a containers values for simple
-// values like the command and arguments
+// values like the command, arguments and resources requests
 type ContainerOverrides struct {
 	Args    []string `yaml:"args,omitempty"`
 	Command []string `yaml:"command,omitempty"`
+	Requests  types.Resources `yaml:"requests,omitempty"`
 }
 
 // PodOverrides are used to override certain attributes about a pod spec
