@@ -1,6 +1,7 @@
 package builder_test
 
 import (
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -55,6 +56,12 @@ func TestBuilderAssignsPipelineConfiguration(t *testing.T) {
 func TestBuilderPipelineStages(t *testing.T) {
 	wd, _ := os.Getwd()
 	file := filepath.Join(wd, "testdata", "deployment.full.yml")
+	content, err := ioutil.ReadFile("kubecost_response_example_test.text")
+	require.NoError(t, err)
+	kubecostData := map[string][]byte{
+		"development": content,
+		"production": content,
+	}
 
 	t.Run("Triggers", func(t *testing.T) {
 		t.Run("Defaults to an empty slice", func(t *testing.T) {
@@ -270,9 +277,11 @@ func TestBuilderPipelineStages(t *testing.T) {
 	t.Run("DeployEmbeddedManifests is parsed correctly", func(t *testing.T) {
 		t.Run("Picks up files to deploy", func(t *testing.T) {
 			pipeline := &config.Pipeline{
+				Application: "hcm-api-public",
 				Stages: []config.Stage{
 					{
-						Name: "Test DeployEmbeddedManifests Stage",
+						Account: "int-k8s",
+						Name: "test deployembeddedmanifests",
 						DeployEmbeddedManifests: &config.DeployEmbeddedManifests{
 
 							Files: []config.ManifestFile{
@@ -284,7 +293,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 					},
 				},
 			}
-			builder := builder.New(pipeline)
+			builder := builder.New(pipeline, builder.WithKubecostData(kubecostData))
 			spinnaker, err := builder.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
 
@@ -317,7 +326,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 		})
 	})
 
-	t.Run("Deploy stage is parsed correctly", func(t *testing.T) {
+	t.Run("Deploy profile is parsed correctly", func(t *testing.T) {
 		t.Run("Clusters are assigned", func(t *testing.T) {
 			pipeline := &config.Pipeline{
 				Stages: []config.Stage{
@@ -382,7 +391,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 		})
 	})
 
-	t.Run("RunJob stage is parsed correctly", func(t *testing.T) {
+	t.Run("RunJob profile is parsed correctly", func(t *testing.T) {
 		t.Run("Name is assigned", func(t *testing.T) {
 			pipeline := &config.Pipeline{
 				Stages: []config.Stage{
@@ -440,7 +449,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 		})
 	})
 
-	t.Run("ManualJudgement stage is parsed correctly", func(t *testing.T) {
+	t.Run("ManualJudgement profile is parsed correctly", func(t *testing.T) {
 		t.Run("Override timeout is assigned", func(t *testing.T) {
 			pipeline := &config.Pipeline{
 				Stages: []config.Stage{
@@ -590,7 +599,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 		})
 	})
 
-	t.Run("ScaleManifest stage is parsed correctly", func(t *testing.T) {
+	t.Run("ScaleManifest profile is parsed correctly", func(t *testing.T) {
 		t.Run("Properties are assigned", func(t *testing.T) {
 
 			boolt := true
@@ -700,7 +709,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 		})
 	})
 
-	t.Run("Jenkins stage is parsed correctly", func(t *testing.T) {
+	t.Run("Jenkins profile is parsed correctly", func(t *testing.T) {
 		t.Run("Properties are assigned", func(t *testing.T) {
 
 			boolt := true
@@ -711,7 +720,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 						Name: "Test Jenkins Stage",
 						Jenkins: &config.JenkinsStage{
 							Type: "jenkins",
-							Job:  "QA/job/stage/job/UI/job/SLI",
+							Job:  "QA/job/profile/job/UI/job/SLI",
 							Parameters: []config.PassthroughParameter{
 								config.PassthroughParameter{
 									Key:   "BROWSER",
@@ -719,7 +728,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 								},
 								config.PassthroughParameter{
 									Key:   "Environment",
-									Value: "stage",
+									Value: "profile",
 								},
 								config.PassthroughParameter{
 									Key:   "NPMSCRIPT",
@@ -748,11 +757,11 @@ func TestBuilderPipelineStages(t *testing.T) {
 			stg := spinnaker.Stages[0].(*types.JenkinsStage)
 			assert.Equal(t, "Test Jenkins Stage", stg.Name)
 			assert.Equal(t, "jenkins", stg.Type)
-			assert.Equal(t, "QA/job/stage/job/UI/job/SLI", stg.Job)
+			assert.Equal(t, "QA/job/profile/job/UI/job/SLI", stg.Job)
 
 			params := stg.Parameters
 			assert.Equal(t, "chrome", params["BROWSER"])
-			assert.Equal(t, "stage", params["Environment"])
+			assert.Equal(t, "profile", params["Environment"])
 			assert.Equal(t, "test:sli", params["NPMSCRIPT"])
 			assert.Equal(t, "10", params["timeout"])
 			assert.Equal(t, "namely-jenkins", stg.Master)
@@ -773,7 +782,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 						Name: "Test Jenkins Stage",
 						Jenkins: &config.JenkinsStage{
 							Type: "jenkins",
-							Job:  "QA/job/stage/job/UI/job/SLI",
+							Job:  "QA/job/profile/job/UI/job/SLI",
 							Parameters: []config.PassthroughParameter{
 								config.PassthroughParameter{
 									Key:   "BROWSER",
@@ -781,7 +790,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 								},
 								config.PassthroughParameter{
 									Key:   "Environment",
-									Value: "stage",
+									Value: "profile",
 								},
 								config.PassthroughParameter{
 									Key:   "NPMSCRIPT",
@@ -805,11 +814,11 @@ func TestBuilderPipelineStages(t *testing.T) {
 			stg := spinnaker.Stages[0].(*types.JenkinsStage)
 			assert.Equal(t, "Test Jenkins Stage", stg.Name)
 			assert.Equal(t, "jenkins", stg.Type)
-			assert.Equal(t, "QA/job/stage/job/UI/job/SLI", stg.Job)
+			assert.Equal(t, "QA/job/profile/job/UI/job/SLI", stg.Job)
 
 			params := stg.Parameters
 			assert.Equal(t, "chrome", params["BROWSER"])
-			assert.Equal(t, "stage", params["Environment"])
+			assert.Equal(t, "profile", params["Environment"])
 			assert.Equal(t, "test:sli", params["NPMSCRIPT"])
 			assert.Equal(t, "10", params["timeout"])
 			assert.Equal(t, "namely-jenkins", stg.Master)
@@ -854,7 +863,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 		})
 	})
 
-	t.Run("RunSpinnakerPipeline stage is parsed correctly", func(t *testing.T) {
+	t.Run("RunSpinnakerPipeline profile is parsed correctly", func(t *testing.T) {
 		t.Run("Properties are assigned", func(t *testing.T) {
 
 			boolt := true

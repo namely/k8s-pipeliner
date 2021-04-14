@@ -53,7 +53,7 @@ func TestContainersFromManifests(t *testing.T) {
 			imageDescriptionRefs: []config.ImageDescriptionRef{
 				{
 					Name:          "test-ref",
-					ContainerName: "test-container",
+					ContainerName: "test-resources",
 				},
 			},
 		})
@@ -118,11 +118,11 @@ func TestContainersFromManifests(t *testing.T) {
 			imageDescriptionRefs: []config.ImageDescriptionRef{
 				{
 					Name:          "test-ref",
-					ContainerName: "test-container",
+					ContainerName: "test-resources",
 				},
 				{
 					Name:          "init-v2",
-					ContainerName: "init-container",
+					ContainerName: "init-resources",
 				},
 			},
 			TargetSize: 5,
@@ -306,7 +306,7 @@ func TestContainersFromManifests(t *testing.T) {
 			imageDescriptionRefs: []config.ImageDescriptionRef{
 				{
 					Name:          "test-ref",
-					ContainerName: "init-container",
+					ContainerName: "init-resources",
 				},
 			},
 		})
@@ -314,7 +314,7 @@ func TestContainersFromManifests(t *testing.T) {
 
 		initContainer := group.InitContainers[0]
 
-		assert.Equal(t, "init-container", initContainer.Name)
+		assert.Equal(t, "init-resources", initContainer.Name)
 
 		require.NotNil(t, initContainer.LivenessProbe)
 		require.NotNil(t, initContainer.ReadinessProbe)

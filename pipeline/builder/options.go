@@ -4,7 +4,7 @@ package builder
 type OptFunc func(b *Builder)
 
 // WithLinear makes the builder assign references automatically for every
-// stage within a pipeline config
+// profile within a pipeline config
 func WithLinear(l bool) OptFunc {
 	return func(b *Builder) {
 		b.isLinear = l
@@ -19,7 +19,7 @@ func WithBasePath(basePath string) OptFunc {
 	}
 }
 
-// WithTimeoutOverride overrides every stage's default 72 hour timeout
+// WithTimeoutOverride overrides every profile's default 72 hour timeout
 func WithTimeoutOverride(hours int) OptFunc {
 	return func(b *Builder) {
 		b.timeoutHours = hours
@@ -30,5 +30,11 @@ func WithTimeoutOverride(hours int) OptFunc {
 func WithAccountOverride(accounts map[string]string) OptFunc {
 	return func(b *Builder) {
 		b.overrideAccounts = accounts
+	}
+}
+// WithKubecostData
+func WithKubecostData(data map[string][]byte) OptFunc{
+	return func(b *Builder){
+		b.kubecostData = data
 	}
 }

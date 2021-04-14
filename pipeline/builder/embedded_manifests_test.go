@@ -43,6 +43,7 @@ func (em *EmbeddedManifestTest) TestFilesAreBuilt() {
 				{
 					File: "testdata/nginx-deployment.yml",
 				},
+
 			},
 		},
 	})
@@ -307,7 +308,7 @@ func (em *EmbeddedManifestTest) TestDeleteEmbeddedManifest() {
 	em.Require().NoError(err, "error building pipeline config")
 
 	stg, ok := pipeline.Stages[0].(*types.DeleteManifestStage)
-	em.Require().True(ok, "was not a delete manifest stage")
+	em.Require().True(ok, "was not a delete manifest profile")
 	em.Equal("delete nginx", stg.Name)
 	em.Equal("Deployment nginx-deployment", stg.ManifestName)
 
@@ -331,7 +332,7 @@ func (em *EmbeddedManifestTest) TestDeleteEmbeddedManifestDefaultProperties() {
 	em.Require().NoError(err, "error building pipeline config")
 
 	stg, ok := pipeline.Stages[0].(*types.DeleteManifestStage)
-	em.Require().True(ok, "was not a delete manifest stage")
+	em.Require().True(ok, "was not a delete manifest profile")
 	em.Equal("delete nginx", stg.Name)
 	em.Equal("Deployment nginx-deployment", stg.ManifestName)
 

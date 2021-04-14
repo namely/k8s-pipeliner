@@ -24,13 +24,14 @@ func TestNewConfig(t *testing.T) {
 	require.Len(t, cfg.Triggers, 1)
 	require.Equal(t, "nginx/job/master", cfg.Triggers[0].Jenkins.Job)
 
-	require.Len(t, cfg.Stages, 4)
+	require.Len(t, cfg.Stages, 5)
 
 	stage := cfg.Stages[0]
 	require.NotNil(t, stage.DeployEmbeddedManifests)
 	assert.Equal(t, stage.DeployEmbeddedManifests.Files[0].File, "manifests/nginx-deployment.yml")
 	assert.Equal(t, stage.Name, "Deploy nginx")
 	assert.Equal(t, stage.Account, "int-k8s")
+	assert.Equal(t, stage.DeployEmbeddedManifests.Kubecost.Profile, "development")
 	stage2 := cfg.Stages[1]
 	require.NotNil(t, stage2.ManualJudgement)
 	assert.Equal(t, stage2.ManualJudgement.Timeout, 100)
@@ -54,6 +55,9 @@ func TestNewConfig(t *testing.T) {
     }
 }`, webHookStage.WebHook.Payload)
 	assert.Equal(t, "Post build info to Bugsnag", webHookStage.WebHook.Description)
+
+	deployStage := cfg.Stages[4]
+	assert.Equal(t, deployStage.Deploy.Groups[0].Kubecost.Profile, "production")
 
 	expectedHeaders := map[string][]string{"Content-Type": {"application/json"}}
 	assert.True(t, reflect.DeepEqual(expectedHeaders, webHookStage.WebHook.CustomHeaders))

@@ -174,10 +174,10 @@ type Notification struct {
 
 // Container is used to provide overrides to the container defined in a k8s
 // manifest file
-type Container struct {
+type 	Container struct {
 	Command []string `yaml:"command"`
 	Args    []string `yaml:"args"`
-	Resources types.Resources `yaml:resources`
+	Requests types.Resources `yaml:requests`
 }
 
 // RunJobStage is the configuration for a one off job in a spinnaker pipeline
@@ -229,6 +229,9 @@ type Group struct {
 	// PodOverrides allows you to add things like annotations to the pod
 	// spec that is generated from this configuration
 	PodOverrides *PodOverrides `yaml:"podOverrides,omitempty"`
+
+	// Kubecost allows to set profile and window to calculate right sizing
+	Kubecost Kubecost `yaml:kubecost,omitempty`
 }
 
 // ManualJudgementStage is the configuration for pausing a pipeline awaiting
@@ -252,6 +255,8 @@ type DeployEmbeddedManifests struct {
 	DefaultMoniker    *Moniker       `yaml:"defaultMoniker,omitempty"`
 	ConfiguratorFiles []ManifestFile `yaml:"configuratorFiles,omitempty"`
 	Files             []ManifestFile `yaml:"files"`
+	Kubecost Kubecost `yaml:"kubecost"`
+
 
 	CompleteOtherBranchesThenFail *bool `yaml:"completeOtherBranchesThenFail,omitempty"`
 	ContinuePipeline              *bool `yaml:"continuePipeline,omitempty"`
@@ -318,6 +323,11 @@ type ContainerScaffold interface {
 	GetTargetSize() int
 	Manifest() string
 	ImageDescriptionRef(containerName string) *ImageDescriptionRef
+}
+
+// Kubecost holds the config to call kubecost
+type Kubecost struct{
+	Profile string `yaml:"profile,omitempty"`
 }
 
 var _ ContainerScaffold = Group{}

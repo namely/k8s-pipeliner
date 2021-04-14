@@ -11,6 +11,8 @@ stages:
     deployEmbeddedManifests:
       files:
         - file: manifests/nginx-deployment.yml
+      kubecost:
+        profile: "development"
   - account: int-k8s
     name: Deploy to staging-k8s?
     manualJudgement:
@@ -43,3 +45,11 @@ stages:
             "revision": "some_revision"
             }
         }
+  - account: int-k8s
+    name: "Deploy example"
+    deploy:
+      groups:
+        - manifestFile: test-deployment.yml
+          containerOverrides:
+          kubecost:
+            profile: "production"

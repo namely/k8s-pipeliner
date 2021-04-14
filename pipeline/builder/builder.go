@@ -8,17 +8,17 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
-	"strings"
 
 	cnfgrtr "github.com/namely/k8s-configurator"
 	"github.com/namely/k8s-pipeliner/pipeline/builder/types"
 	"github.com/namely/k8s-pipeliner/pipeline/config"
 	"github.com/pkg/errors"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 var (
@@ -71,6 +71,7 @@ const (
 type Builder struct {
 	pipeline *config.Pipeline
 
+	kubecostData     map[string][]byte
 	isLinear         bool
 	basePath         string
 	timeoutHours     int
@@ -83,18 +84,25 @@ func New(p *config.Pipeline, opts ...OptFunc) *Builder {
 	for _, opt := range opts {
 		opt(b)
 	}
-
 	return b
 }
 
 // Pipeline returns a filled out spinnaker pipeline from the given
 // config
-func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
-	sp := &types.SpinnakerPipeline{
+func (b *Builder) Pipeline() (sp *types.SpinnakerPipeline, err error) {
+	sp = &types.SpinnakerPipeline{
 		LimitConcurrent:      b.pipeline.DisableConcurrentExecutions,
 		KeepWaitingPipelines: b.pipeline.KeepQueuedPipelines,
 		Description:          b.pipeline.Description,
 		AppConfig:            map[string]interface{}{},
+	}
+
+	// FIXME CACHE in estuary
+	// FIXME add option to get or not
+	if b.kubecostData == nil {
+		if b.kubecostData, err = GetKubecostData(); err != nil {
+			return sp, err
+		}
 	}
 
 	sp.Notifications = buildNotifications(b.pipeline.Notifications)
@@ -209,7 +217,7 @@ func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
 		if stage.WebHook != nil {
 			s, err = b.buildWebHookStage(stageIndex, stage)
 			if err != nil {
-				return sp, fmt.Errorf("Failed to webhook stage with error: %v", err)
+				return sp, fmt.Errorf("Failed to webhook profile with error: %v", err)
 			}
 			stageIndex = stageIndex + 1
 		}
@@ -217,7 +225,7 @@ func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
 		if stage.Jenkins != nil {
 			s, err = b.buildJenkinsStage(stageIndex, stage)
 			if err != nil {
-				return sp, fmt.Errorf("Failed to build jenkins stage with error: %v", err)
+				return sp, fmt.Errorf("Failed to build jenkins profile with error: %v", err)
 			}
 			stageIndex = stageIndex + 1
 		}
@@ -225,7 +233,7 @@ func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
 		if stage.RunSpinnakerPipeline != nil {
 			s, err = b.buildRunSpinnakerPipelineStage(stageIndex, stage)
 			if err != nil {
-				return sp, fmt.Errorf("Failed to build spinnaker pipeline stage with error: %v", err)
+				return sp, fmt.Errorf("Failed to build spinnaker pipeline profile with error: %v", err)
 			}
 			stageIndex = stageIndex + 1
 		}
@@ -286,8 +294,8 @@ func (b *Builder) buildRunJobStage(index int, s config.Stage) (*types.RunJobStag
 	if s.RunJob.Container != nil {
 		rjs.Container.Args = s.RunJob.Container.Args
 		rjs.Container.Command = s.RunJob.Container.Command
-		rjs.Container.Requests.CPU = s.RunJob.Container.Resources.CPU
-		rjs.Container.Requests.Memory = s.RunJob.Container.Resources.Memory
+		rjs.Container.Requests.CPU = s.RunJob.Container.Requests.CPU
+		rjs.Container.Requests.Memory = s.RunJob.Container.Requests.Memory
 	}
 
 	return rjs, nil
@@ -315,8 +323,49 @@ func (b *Builder) buildDeployEmbeddedManifestStage(index int, s config.Stage) (*
 	parser := NewManfifestParser(b.pipeline, b.basePath)
 	for _, file := range maniStage.Files {
 		objs, err := parser.ManifestsFromFile(file.File)
+
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not parse manifest file: %s", file.File)
+		}
+		for _, obj := range objs {
+			u, ok := obj.(*unstructured.Unstructured)
+			if !ok {
+				return nil, errors.New("manifest parser returned an unexpected object type")
+			}
+			if u.GetKind() != "Deployment" {
+				continue
+			}
+
+			var d v1beta1.Deployment
+			err := runtime.DefaultUnstructuredConverter.FromUnstructured(u.UnstructuredContent(), &d)
+			if err != nil {
+				return nil, errors.Wrapf(err, "could not parse Deployment: %s", u.GetName())
+			}
+
+			profile := defaultProfilePerAccount[s.Account]
+			if maniStage.Kubecost.Profile != "" {
+				profile = maniStage.Kubecost.Profile
+			}
+
+			recommendations := getRecommendedCPUAndRam(b.kubecostData[profile])
+			for i, c := range d.Spec.Template.Spec.Containers {
+				if !c.Resources.Requests.Memory().IsZero() && !c.Resources.Requests.Cpu().IsZero() {
+					continue
+				}
+				memory, err := resource.ParseQuantity(fmt.Sprint(recommendations[b.pipeline.Application][c.Name].requestsRAM))
+				if err != nil {
+					return nil, errors.Wrapf(err, "could not parse Memory")
+				}
+				cpu, err := resource.ParseQuantity(fmt.Sprint(recommendations[b.pipeline.Application][c.Name].requestsCPU))
+				if err != nil {
+					return nil, errors.Wrapf(err, "could not parse cpu")
+				}
+				d.Spec.Template.Spec.Containers[i].Resources.Requests = map[v1.ResourceName]resource.Quantity{
+					v1.ResourceMemory: memory,
+					v1.ResourceCPU:    cpu,
+				}
+			}
+			obj = d.DeepCopyObject()
 		}
 
 		ds.Manifests = append(ds.Manifests, objs...)
@@ -358,7 +407,6 @@ func (b *Builder) buildDeployEmbeddedManifestStage(index int, s config.Stage) (*
 		ds.Manifests = append(ds.Manifests, objs...)
 
 	}
-
 	return ds, nil
 }
 
@@ -372,11 +420,11 @@ func (b *Builder) buildDeleteEmbeddedManifestStage(index int, s config.Stage) (*
 	}
 
 	if len(objs) > 1 {
-		return nil, fmt.Errorf("the manifest file %s declared more than one resource which cant be used in a delete embedded manifest stage", file)
+		return nil, fmt.Errorf("the manifest file %s declared more than one resource which cant be used in a delete embedded manifest profile", file)
 	}
 
 	if len(objs) == 0 {
-		return nil, fmt.Errorf("the manifest file %s doesnt define a resource which cant be used in a delete embedded manifest stage", file)
+		return nil, fmt.Errorf("the manifest file %s doesnt define a resource which cant be used in a delete embedded manifest profile", file)
 	}
 
 	obj := objs[0]
@@ -412,6 +460,7 @@ func (b *Builder) buildDeleteEmbeddedManifestStage(index int, s config.Stage) (*
 	return stage, nil
 }
 
+/*
 func (b *Builder) buildV2ManifestStageFromDeploy(index int, s config.Stage) (*types.ManifestStage, error) {
 	ds := b.defaultManifestStage(index, s)
 
@@ -453,7 +502,7 @@ func (b *Builder) buildV2ManifestStageFromDeploy(index int, s config.Stage) (*ty
 	}
 
 	return ds, nil
-}
+}*/
 
 func (b *Builder) defaultManifestStage(index int, s config.Stage) *types.ManifestStage {
 	// Set default values
@@ -490,6 +539,7 @@ func (b *Builder) defaultManifestStage(index int, s config.Stage) *types.Manifes
 	return stage
 }
 
+/*
 func (b *Builder) buildV2RunJobStage(index int, s config.Stage) (*types.ManifestStage, error) {
 	ds := &types.ManifestStage{
 		StageMetadata:           buildStageMetadata(s, "deployManifest", index, b.isLinear),
@@ -530,6 +580,7 @@ func (b *Builder) buildV2RunJobStage(index int, s config.Stage) (*types.Manifest
 	return ds, nil
 
 }
+
 
 func (b *Builder) buildV2DeleteManifestStage(index int, s config.Stage) (*types.DeleteManifestStage, error) {
 	// Set default values
@@ -583,7 +634,7 @@ func (b *Builder) buildV2DeleteManifestStage(index int, s config.Stage) (*types.
 
 	return dms, nil
 }
-
+*/
 func (b *Builder) buildWebHookStage(index int, s config.Stage) (*types.Webhook, error) {
 	stage := &types.Webhook{
 		StageMetadata: buildStageMetadata(s, "webhook", index, b.isLinear),
@@ -713,6 +764,17 @@ func (b *Builder) buildDeployStage(index int, s config.Stage) (*types.DeployStag
 		}
 		if len(mg.Containers) == 0 {
 			return nil, ErrNoContainers
+		}
+
+		// set kubecost default values if not set
+		kubecostProfile := defaultProfilePerAccount[s.Account]
+		if group.Kubecost.Profile != "" {
+			kubecostProfile = group.Kubecost.Profile
+		}
+		recommendations := getRecommendedCPUAndRam(b.kubecostData[kubecostProfile])
+		for _, c := range mg.Containers {
+			c.Requests.Memory = fmt.Sprint(recommendations[b.pipeline.Application][c.Name].requestsRAM)
+			c.Requests.CPU = fmt.Sprint(recommendations[b.pipeline.Application][c.Name].requestsCPU)
 		}
 
 		// check for overrides defined on the group so we can replace the containers
@@ -854,6 +916,7 @@ func buildNotifications(notifications []config.Notification) []types.Notificatio
 	return nots
 }
 
+/*
 func buildDeployment(deploy *appsv1.Deployment, group config.Group) (*appsv1.Deployment, error) {
 
 	if len(deploy.Spec.Template.Spec.Containers) == 0 {
@@ -925,6 +988,7 @@ func buildDeployment(deploy *appsv1.Deployment, group config.Group) (*appsv1.Dep
 	}
 	return deploy, nil
 }
+*/
 
 func newDefaultTrue(original *bool) bool {
 	if original == nil {

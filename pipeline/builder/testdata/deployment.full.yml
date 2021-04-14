@@ -31,7 +31,7 @@ spec:
             mountPath: "/thisisthemount"
             readOnly: true
       containers:
-      - name: test-container
+      - name: hcm
         command:
         - echo
         - hello
