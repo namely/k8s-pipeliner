@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
+	"time"
 
 	"github.com/tidwall/gjson"
 )
@@ -14,6 +15,7 @@ const (
 	kubecostURL           = "https://kubecost.namely.land"
 	kubecostDefaultWindow = "7d"
 	errKubecostAPI        = "failed to request sizing from kubecost with status code: %s"
+	kubecostTimeoutInSeconds = 90
 )
 
 var (
@@ -64,20 +66,22 @@ func getKubecostSizing(profile string, window string) ([]byte, error) {
 	q.Set("targetRAMUtilization", fmt.Sprintf("%f", profiles[profile].targetRAMUtilization))
 	url.RawQuery = q.Encode()
 	s := url.String()
-	resp, err := http.Get(s)
+	return httpGetWithTimeoutAndRetry(s, kubecostTimeoutInSeconds * time.Second)
+}
+func httpGetWithTimeoutAndRetry(url string, timeout time.Duration) ([]byte, error){
+	httpClient := http.Client{
+		Timeout: timeout,
+	}
+	resp, err := httpClient.Get(url)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf(errKubecostAPI, resp.Status)
-	}
-	//We Read the response body on the line below.
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	return body, nil
+		defer resp.Body.Close()
+		if resp.StatusCode != 200 {
+			return nil, fmt.Errorf(errKubecostAPI, resp.Status)
+		}
+		//We Read the response body on the line below.
+		return ioutil.ReadAll(resp.Body)
 }
 
 // requests saves the name and recommended CPU and RAM for each requests
