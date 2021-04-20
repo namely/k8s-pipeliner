@@ -1,5 +1,4 @@
 // Package config implements YAML configuration for the k8s-pipeliner input files
-
 package config
 
 import (
@@ -173,7 +172,7 @@ type Notification struct {
 
 // Container is used to provide overrides to the container defined in a k8s
 // manifest file
-type 	Container struct {
+type Container struct {
 	Command []string `yaml:"command"`
 	Args    []string `yaml:"args"`
 }
@@ -249,12 +248,11 @@ type ManifestFile struct {
 // DeployEmbeddedManifests is a Kubernetes V2 provider stage configuration
 // for deploying YAML manifest files
 type DeployEmbeddedManifests struct {
-	DefaultMoniker    *Moniker       `yaml:"defaultMoniker,omitempty"`
-	ConfiguratorFiles []ManifestFile `yaml:"configuratorFiles,omitempty"`
-	Files             []ManifestFile `yaml:"files"`
+	DefaultMoniker     *Moniker             `yaml:"defaultMoniker,omitempty"`
+	ConfiguratorFiles  []ManifestFile       `yaml:"configuratorFiles,omitempty"`
+	Files              []ManifestFile       `yaml:"files"`
 	ContainerOverrides []ContainerOverrides `yaml:"containerOverrides,omitempty"`
-	Kubecost *Kubecost `yaml:"kubecost,omitempty"`
-
+	Kubecost           *Kubecost            `yaml:"kubecost,omitempty"`
 
 	CompleteOtherBranchesThenFail *bool `yaml:"completeOtherBranchesThenFail,omitempty"`
 	ContinuePipeline              *bool `yaml:"continuePipeline,omitempty"`
@@ -267,12 +265,12 @@ type DeployEmbeddedManifests struct {
 // Resources represents a set of resources to use for each container
 type Resources struct {
 	Requests *Resource `yaml:"requests,omitempty"`
-	Limits *Resource `yaml:"limits,omitempty"`
+	Limits   *Resource `yaml:"limits,omitempty"`
 }
 
 type Resource struct {
 	Memory string `yaml:"memory,omitempty"`
-	Cpu string `yaml:"cpu,omitempty"`
+	Cpu    string `yaml:"cpu,omitempty"`
 }
 
 // DeleteEmbeddedManifest represents a single resource to be deleted
@@ -315,9 +313,9 @@ type ScaleManifest struct {
 // ContainerOverrides are used to override a containers values for simple
 // values like the command and arguments
 type ContainerOverrides struct {
-	Name string `yaml:"command"`
-	Args    []string `yaml:"args,omitempty"`
-	Command []string `yaml:"command,omitempty"`
+	Name      string     `yaml:"command"`
+	Args      []string   `yaml:"args,omitempty"`
+	Command   []string   `yaml:"command,omitempty"`
 	Resources *Resources `yaml:"resources"`
 }
 
@@ -336,7 +334,7 @@ type ContainerScaffold interface {
 }
 
 // Kubecost holds the config to call kubecost
-type Kubecost struct{
+type Kubecost struct {
 	Profile string `yaml:"profile,omitempty"`
 }
 

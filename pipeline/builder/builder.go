@@ -1,5 +1,4 @@
 // Package builder implements functions used to build the JSON output
-
 package builder
 
 import (
@@ -21,8 +20,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-const(
-	errKubecostProfileNotFound = "could not find profile: %s in kubecost data"
+const (
+	errKubecostProfileNotFound                  = "could not find profile: %s in kubecost data"
 	errDefaultKubecostProfileNotFoundForAccount = "could not find a kubecost profile for account: %s"
 )
 
@@ -45,8 +44,8 @@ var (
 	ErrNoKubernetesMetadata = errors.New("builder: manifest does not have kubernetes metadata attached")
 	// ErrParsingMemory is returned when fails to parse override memory
 	ErrParsingMemory = errors.New("builder: failed to parse memory")
-	// ErrParsingCpu is returned when fails to parse override cpu
-	ErrParsingCpu = errors.New("builder: failed to parse cpu")
+	// ErrParsingCPU is returned when fails to parse override cpu
+	ErrParsingCPU = errors.New("builder: failed to parse cpu")
 
 	// Stages helps to translate from spinnaker account to configurator stages
 	Stages = map[string]string{
@@ -355,13 +354,12 @@ func (b *Builder) buildDeployEmbeddedManifestStage(index int, s config.Stage) (*
 			if !ok {
 				return nil, fmt.Errorf(errKubecostProfileNotFound, profile)
 			}
-			recommendations := getRecommendedCPUAndRam(kubecostData)
-
+			recommendations := getRecommendedCPUAndRAM(kubecostData)
 
 			for i, specContainer := range d.Spec.Template.Spec.Containers {
 				// set overrides
 				for i, overrideContainer := range maniStage.ContainerOverrides {
-					if specContainer.Name == overrideContainer.Name{
+					if specContainer.Name == overrideContainer.Name {
 						resourceList, err := parseResourceList(overrideContainer.Resources.Requests.Memory, overrideContainer.Resources.Requests.Cpu)
 						if err != nil {
 							return nil, err
@@ -374,7 +372,7 @@ func (b *Builder) buildDeployEmbeddedManifestStage(index int, s config.Stage) (*
 					continue
 				}
 				resourceList, err := parseResourceList(fmt.Sprint(recommendations[b.pipeline.Application][specContainer.Name].requestsRAM), fmt.Sprint(recommendations[b.pipeline.Application][specContainer.Name].requestsCPU))
-				if err != nil{
+				if err != nil {
 					return nil, err
 				}
 				d.Spec.Template.Spec.Containers[i].Resources.Requests = resourceList
@@ -406,6 +404,9 @@ func (b *Builder) buildDeployEmbeddedManifestStage(index int, s config.Stage) (*
 		destFileName := configuratorFile.File + "." + env
 		destFilePath := path.Join(b.basePath, destFileName)
 		configuredConfigMap, err := os.Create(destFilePath)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to create destination file path: %s", destFilePath)
+		}
 
 		err = cnfgrtr.Generate(file, env, configuredConfigMap)
 		if err != nil {
@@ -426,7 +427,7 @@ func (b *Builder) buildDeployEmbeddedManifestStage(index int, s config.Stage) (*
 }
 
 // parseResourceList converts memory and cpu string to a resourceList
-func parseResourceList (memory string, cpu string)(v1.ResourceList, error){
+func parseResourceList(memory string, cpu string) (v1.ResourceList, error) {
 	memoryQty, err := resource.ParseQuantity(memory)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not parse Memory")
@@ -806,7 +807,7 @@ func (b *Builder) buildDeployStage(index int, s config.Stage) (*types.DeployStag
 		if !ok {
 			return nil, fmt.Errorf(errKubecostProfileNotFound, kubecostProfile)
 		}
-		recommendations := getRecommendedCPUAndRam(kubecostData)
+		recommendations := getRecommendedCPUAndRAM(kubecostData)
 		for _, c := range mg.Containers {
 			c.Requests.Memory = fmt.Sprint(recommendations[b.pipeline.Application][c.Name].requestsRAM)
 			c.Requests.CPU = fmt.Sprint(recommendations[b.pipeline.Application][c.Name].requestsCPU)

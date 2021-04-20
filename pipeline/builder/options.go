@@ -32,9 +32,10 @@ func WithAccountOverride(accounts map[string]string) OptFunc {
 		b.overrideAccounts = accounts
 	}
 }
+
 // WithKubecostData
-func WithKubecostData(data map[string][]byte) OptFunc{
-	return func(b *Builder){
+func WithKubecostData(data map[string][]byte) OptFunc {
+	return func(b *Builder) {
 		b.kubecostData = data
 	}
 }

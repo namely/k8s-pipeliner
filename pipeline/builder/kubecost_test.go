@@ -52,7 +52,7 @@ func (s *KubecostTestSuite) Test_getRecommendedCPUAndRam() {
 			name: "hcm-web-public",
 			want: map[string]map[string]requests{
 				"hcm-web-public": {
-					"hcm":{
+					"hcm": {
 						requestsCPU: 1.5,
 						requestsRAM: 3,
 					},
@@ -66,20 +66,19 @@ func (s *KubecostTestSuite) Test_getRecommendedCPUAndRam() {
 	}
 	for name, t := range tests {
 		s.Run(name, func() {
-			got := getRecommendedCPUAndRam(content)
+			got := getRecommendedCPUAndRAM(content)
 			s.Assert().True(!reflect.DeepEqual(got[t.name], t.want))
 		})
 	}
 }
 
 func (s *KubecostTestSuite) Test_GetKubecostData() {
-	tests := map[string]struct{
+	tests := map[string]struct {
 		expectedError error
 	}{
-		"happy path":{
-		},
+		"happy path": {},
 	}
-	for name, _ := range tests {
+	for name := range tests {
 		s.Run(name, func() {
 			data, err := GetKubecostData()
 			s.Assert().NoError(err)

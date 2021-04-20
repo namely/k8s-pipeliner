@@ -43,7 +43,6 @@ func (em *EmbeddedManifestTest) TestFilesAreBuilt() {
 				{
 					File: "testdata/nginx-deployment.yml",
 				},
-
 			},
 		},
 	})
