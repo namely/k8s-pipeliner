@@ -1,5 +1,5 @@
 name: Example Deployment
-application: example
+application: frontend-nginx-benefits-enrollment
 
 disableConcurrentExecutions: true
 keepQueuedPipelines: true
@@ -28,7 +28,10 @@ triggers:
     source: "random-string"
     enabled: true
 stages:
-- account: ops-k8s
+- account: int-k8s
+  name: apply deploy & svc
+
+- account: int-k8s
   name: "Deploy Manifests"
   deployEmbeddedManifests:
     files:
@@ -39,6 +42,19 @@ stages:
       - file: test-configurator2.yml
         env: superOps
       - file: test-configurator.yml
+    containerOverrides:
+      - name: hcm
+        resources:
+          requests:
+            cpu: "80"
+            memory: "100"
+
+- account: ops-k8s
+  name: "Deploy"
+  deploy:
+    groups:
+      - manifestFile: test-deployment.yml
+
 - account: ops-k8s
   name: "Scale Up"
   scaleManifest:
@@ -50,6 +66,15 @@ stages:
   name: "Delete INT"
   deleteEmbeddedManifest:
     file: test-deployment.yml
+
+- name: "Run Job"
+  runJob:
+    manifestFile: test-deployment.yml
+    container:
+      resources:
+        cpu: "100"
+        memory: "100"
+
 - name: "Trigger Jenkins Job"
   jenkins:
     job: "QA/job/stage/job/UI/job/SLI"

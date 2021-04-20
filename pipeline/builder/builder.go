@@ -97,8 +97,6 @@ func (b *Builder) Pipeline() (sp *types.SpinnakerPipeline, err error) {
 		AppConfig:            map[string]interface{}{},
 	}
 
-	// FIXME CACHE in estuary
-	// FIXME add option to get or not
 	if b.kubecostData == nil {
 		if b.kubecostData, err = GetKubecostData(); err != nil {
 			return sp, err
@@ -294,8 +292,6 @@ func (b *Builder) buildRunJobStage(index int, s config.Stage) (*types.RunJobStag
 	if s.RunJob.Container != nil {
 		rjs.Container.Args = s.RunJob.Container.Args
 		rjs.Container.Command = s.RunJob.Container.Command
-		rjs.Container.Requests.CPU = s.RunJob.Container.Requests.CPU
-		rjs.Container.Requests.Memory = s.RunJob.Container.Requests.Memory
 	}
 
 	return rjs, nil
@@ -327,7 +323,7 @@ func (b *Builder) buildDeployEmbeddedManifestStage(index int, s config.Stage) (*
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not parse manifest file: %s", file.File)
 		}
-		for _, obj := range objs {
+		for i, obj := range objs {
 			u, ok := obj.(*unstructured.Unstructured)
 			if !ok {
 				return nil, errors.New("manifest parser returned an unexpected object type")
@@ -342,30 +338,37 @@ func (b *Builder) buildDeployEmbeddedManifestStage(index int, s config.Stage) (*
 				return nil, errors.Wrapf(err, "could not parse Deployment: %s", u.GetName())
 			}
 
+			// set kubecosts requests resources
 			profile := defaultProfilePerAccount[s.Account]
-			if maniStage.Kubecost.Profile != "" {
+			if maniStage.Kubecost != nil && maniStage.Kubecost.Profile != "" {
 				profile = maniStage.Kubecost.Profile
 			}
-
 			recommendations := getRecommendedCPUAndRam(b.kubecostData[profile])
-			for i, c := range d.Spec.Template.Spec.Containers {
-				if !c.Resources.Requests.Memory().IsZero() && !c.Resources.Requests.Cpu().IsZero() {
+
+
+			for i, specContainer := range d.Spec.Template.Spec.Containers {
+				// set overrides
+				for i, overrideContainer := range maniStage.ContainerOverrides {
+					if specContainer.Name == overrideContainer.Name{
+						resourceList, err := parseResourceList(overrideContainer.Resources.Requests.Memory, overrideContainer.Resources.Requests.Cpu)
+						if err != nil {
+							return nil, err
+						}
+						d.Spec.Template.Spec.Containers[i].Resources.Requests = resourceList
+					}
+				}
+				// if missing values set from kubecost
+				if !d.Spec.Template.Spec.Containers[i].Resources.Requests.Memory().IsZero() && !d.Spec.Template.Spec.Containers[i].Resources.Requests.Cpu().IsZero() {
 					continue
 				}
-				memory, err := resource.ParseQuantity(fmt.Sprint(recommendations[b.pipeline.Application][c.Name].requestsRAM))
-				if err != nil {
-					return nil, errors.Wrapf(err, "could not parse Memory")
+				resourceList, err := parseResourceList(fmt.Sprint(recommendations[b.pipeline.Application][specContainer.Name].requestsRAM), fmt.Sprint(recommendations[b.pipeline.Application][specContainer.Name].requestsCPU))
+				if err != nil{
+					return nil, err
 				}
-				cpu, err := resource.ParseQuantity(fmt.Sprint(recommendations[b.pipeline.Application][c.Name].requestsCPU))
-				if err != nil {
-					return nil, errors.Wrapf(err, "could not parse cpu")
-				}
-				d.Spec.Template.Spec.Containers[i].Resources.Requests = map[v1.ResourceName]resource.Quantity{
-					v1.ResourceMemory: memory,
-					v1.ResourceCPU:    cpu,
-				}
+				d.Spec.Template.Spec.Containers[i].Resources.Requests = resourceList
 			}
-			obj = d.DeepCopyObject()
+
+			objs[i] = d.DeepCopyObject()
 		}
 
 		ds.Manifests = append(ds.Manifests, objs...)
@@ -408,6 +411,22 @@ func (b *Builder) buildDeployEmbeddedManifestStage(index int, s config.Stage) (*
 
 	}
 	return ds, nil
+}
+
+func parseResourceList (memory string, cpu string)(v1.ResourceList, error){
+	memoryQty, err := resource.ParseQuantity(memory)
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not parse Memory")
+	}
+	cpuQty, err := resource.ParseQuantity(cpu)
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not parse cpu")
+	}
+	return map[v1.ResourceName]resource.Quantity{
+		v1.ResourceMemory: memoryQty,
+		v1.ResourceCPU:    cpuQty,
+	}, nil
+
 }
 
 func (b *Builder) buildDeleteEmbeddedManifestStage(index int, s config.Stage) (*types.DeleteManifestStage, error) {
@@ -793,11 +812,11 @@ func (b *Builder) buildDeployStage(index int, s config.Stage) (*types.DeployStag
 				container.Command = overrides.Command
 			}
 
-			if overrides.Requests.Memory != "" {
-				container.Requests.Memory = overrides.Requests.Memory
+			if overrides.Resources.Requests.Memory != "" {
+				container.Requests.Memory = overrides.Resources.Requests.Memory
 			}
-			if overrides.Requests.CPU != "" {
-				container.Requests.CPU = overrides.Requests.CPU
+			if overrides.Resources.Requests.Cpu != "" {
+				container.Requests.CPU = overrides.Resources.Requests.Cpu
 			}
 		}
 

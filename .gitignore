@@ -4,3 +4,4 @@ vendor/**
 out
 dist/
 *.coverprofile
+.idea/

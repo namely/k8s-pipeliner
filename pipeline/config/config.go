@@ -6,7 +6,6 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/namely/k8s-pipeliner/pipeline/builder/types"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -177,7 +176,6 @@ type Notification struct {
 type 	Container struct {
 	Command []string `yaml:"command"`
 	Args    []string `yaml:"args"`
-	Requests types.Resources `yaml:requests`
 }
 
 // RunJobStage is the configuration for a one off job in a spinnaker pipeline
@@ -230,8 +228,7 @@ type Group struct {
 	// spec that is generated from this configuration
 	PodOverrides *PodOverrides `yaml:"podOverrides,omitempty"`
 
-	// Kubecost allows to set profile and window to calculate right sizing
-	Kubecost Kubecost `yaml:kubecost,omitempty`
+	Kubecost *Kubecost `yaml:"kubecost,omitempty"`
 }
 
 // ManualJudgementStage is the configuration for pausing a pipeline awaiting
@@ -255,7 +252,8 @@ type DeployEmbeddedManifests struct {
 	DefaultMoniker    *Moniker       `yaml:"defaultMoniker,omitempty"`
 	ConfiguratorFiles []ManifestFile `yaml:"configuratorFiles,omitempty"`
 	Files             []ManifestFile `yaml:"files"`
-	Kubecost Kubecost `yaml:"kubecost"`
+	ContainerOverrides []ContainerOverrides `yaml:"containerOverrides,omitempty"`
+	Kubecost *Kubecost `yaml:"kubecost,omitempty"`
 
 
 	CompleteOtherBranchesThenFail *bool `yaml:"completeOtherBranchesThenFail,omitempty"`
@@ -264,6 +262,17 @@ type DeployEmbeddedManifests struct {
 	MarkUnstableAsSuccessful      *bool `yaml:"markUnstableAsSuccessful,omitempty"`
 	WaitForCompletion             *bool `yaml:"waitForCompletion,omitempty"`
 	StageTimeoutMS                int64 `yaml:"stageTimeoutMs,omitempty"`
+}
+
+// Resources represents a set of resources to use for each container
+type Resources struct {
+	Requests *Resource `yaml:"requests,omitempty"`
+	Limits *Resource `yaml:"limits,omitempty"`
+}
+
+type Resource struct {
+	Memory string `yaml:"memory,omitempty"`
+	Cpu string `yaml:"cpu,omitempty"`
 }
 
 // DeleteEmbeddedManifest represents a single resource to be deleted
@@ -304,11 +313,12 @@ type ScaleManifest struct {
 }
 
 // ContainerOverrides are used to override a containers values for simple
-// values like the command, arguments and resources requests
+// values like the command and arguments
 type ContainerOverrides struct {
+	Name string `yaml:"command"`
 	Args    []string `yaml:"args,omitempty"`
 	Command []string `yaml:"command,omitempty"`
-	Requests  types.Resources `yaml:"requests,omitempty"`
+	Resources *Resources `yaml:"resources"`
 }
 
 // PodOverrides are used to override certain attributes about a pod spec

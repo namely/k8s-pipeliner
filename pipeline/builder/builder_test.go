@@ -11,6 +11,7 @@ import (
 	"github.com/namely/k8s-pipeliner/pipeline/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	v1beta1e "k8s.io/api/extensions/v1beta1"
 )
 
 func TestBuilderAssignsNotifications(t *testing.T) {
@@ -275,15 +276,14 @@ func TestBuilderPipelineStages(t *testing.T) {
 	})
 
 	t.Run("DeployEmbeddedManifests is parsed correctly", func(t *testing.T) {
-		t.Run("Picks up files to deploy", func(t *testing.T) {
+		t.Run("Picks up files to deploy and kubecost values", func(t *testing.T) {
 			pipeline := &config.Pipeline{
 				Application: "hcm-api-public",
 				Stages: []config.Stage{
 					{
 						Account: "int-k8s",
-						Name: "test deployembeddedmanifests",
+						Name: "Test DeployEmbeddedManifests Stage",
 						DeployEmbeddedManifests: &config.DeployEmbeddedManifests{
-
 							Files: []config.ManifestFile{
 								{
 									File: file,
@@ -299,8 +299,51 @@ func TestBuilderPipelineStages(t *testing.T) {
 
 			assert.Equal(t, "Test DeployEmbeddedManifests Stage", spinnaker.Stages[0].(*types.ManifestStage).Name)
 			assert.NotNil(t, spinnaker.Stages[0].(*types.ManifestStage).Manifests[0])
+			manifest := spinnaker.Stages[0].(*types.ManifestStage).Manifests[0].(*v1beta1e.Deployment)
+			assert.Equal(t,"2500m", manifest.Spec.Template.Spec.Containers[0].Resources.Requests.Memory().String())
+			assert.Equal(t,"1500m", manifest.Spec.Template.Spec.Containers[0].Resources.Requests.Cpu().String())
 		})
+			t.Run("Picks up files to deploy", func(t *testing.T) {
+				pipeline := &config.Pipeline{
+					Application: "hcm-api-public",
+					Stages: []config.Stage{
+						{
+							Account: "int-k8s",
+							Name: "Test DeployEmbeddedManifests Stage",
+							DeployEmbeddedManifests: &config.DeployEmbeddedManifests{
+								Files: []config.ManifestFile{
+									{
+										File: file,
+									},
+								},
+								ContainerOverrides: []config.ContainerOverrides{
+									{
+										Name: "hcm",
+										Resources: &config.Resources{
+											Requests: &config.Resource{
+												Memory: "1000",
+												Cpu: "2000",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+				builder := builder.New(pipeline, builder.WithKubecostData(kubecostData))
+				spinnaker, err := builder.Pipeline()
+				require.NoError(t, err, "error generating pipeline json")
 
+				assert.Equal(t, "Test DeployEmbeddedManifests Stage", spinnaker.Stages[0].(*types.ManifestStage).Name)
+				assert.NotNil(t, spinnaker.Stages[0].(*types.ManifestStage).Manifests[0])
+				manifest := spinnaker.Stages[0].(*types.ManifestStage).Manifests[0].(*v1beta1e.Deployment)
+				assert.Equal(t,"1k", manifest.Spec.Template.Spec.Containers[0].Resources.Requests.Memory().String())
+				assert.Equal(t,"2k", manifest.Spec.Template.Spec.Containers[0].Resources.Requests.Cpu().String())
+				assert.Equal(t,"20m", manifest.Spec.Template.Spec.Containers[1].Resources.Requests.Memory().String())
+				assert.Equal(t,"10m", manifest.Spec.Template.Spec.Containers[1].Resources.Requests.Cpu().String())
+
+			})
 		t.Run("Overrides default timeout", func(t *testing.T) {
 			pipeline := &config.Pipeline{
 				Stages: []config.Stage{

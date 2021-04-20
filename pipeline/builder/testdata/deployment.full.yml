@@ -43,6 +43,11 @@ spec:
           - name: configmap-volume
             mountPath: "/thisisthemount"
             readOnly: true
+      - name: containerWithRequests
+        resources:
+          requests:
+            cpu: "10m"
+            memory: "20m"
       volumes:
         - name: configmap-volume
           configMap:

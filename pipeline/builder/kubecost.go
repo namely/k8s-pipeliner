@@ -122,10 +122,8 @@ func GetKubecostData()(map[string][]byte, error) {
 		wg.Add(1)
 		go func(profile string){
 			bytes, reqErr := getKubecostSizing(profile, kubecostDefaultWindow)
-			if reqErr == nil {
-				kubecostData[profile] = bytes
-			}
 			err <- reqErr
+			kubecostData[profile] = bytes
 			wg.Done()
 			return
 		}(profile)
