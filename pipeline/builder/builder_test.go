@@ -1,6 +1,7 @@
 package builder_test
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -15,6 +16,12 @@ import (
 )
 
 func TestBuilderAssignsNotifications(t *testing.T) {
+	kubecostResponse, err := ioutil.ReadFile("kubecost_response_example_test.text")
+	require.NoError(t, err)
+	kubecostData := map[string][]byte{
+		"development": kubecostResponse,
+		"production":  kubecostResponse,
+	}
 	pipeline := &config.Pipeline{
 		Notifications: []config.Notification{
 			{
@@ -27,7 +34,7 @@ func TestBuilderAssignsNotifications(t *testing.T) {
 		},
 	}
 
-	builder := builder.New(pipeline)
+	builder := builder.New(pipeline,  builder.WithKubecostData(kubecostData))
 	spinnaker, err := builder.Pipeline()
 	require.NoError(t, err, "error generating pipeline json")
 	require.Len(t, spinnaker.Notifications, 1)
@@ -39,13 +46,19 @@ func TestBuilderAssignsNotifications(t *testing.T) {
 }
 
 func TestBuilderAssignsPipelineConfiguration(t *testing.T) {
+	kubecostResponse, err := ioutil.ReadFile("kubecost_response_example_test.text")
+	require.NoError(t, err)
+	kubecostData := map[string][]byte{
+		"development": kubecostResponse,
+		"production":  kubecostResponse,
+	}
 	pipeline := &config.Pipeline{
 		DisableConcurrentExecutions: true,
 		KeepQueuedPipelines:         true,
 		Description:                 "fake description",
 	}
 
-	builder := builder.New(pipeline)
+	builder := builder.New(pipeline,  builder.WithKubecostData(kubecostData))
 	spinnaker, err := builder.Pipeline()
 	require.NoError(t, err, "error generating pipeline json")
 
@@ -57,18 +70,18 @@ func TestBuilderAssignsPipelineConfiguration(t *testing.T) {
 func TestBuilderPipelineStages(t *testing.T) {
 	wd, _ := os.Getwd()
 	file := filepath.Join(wd, "testdata", "deployment.full.yml")
-	content, err := ioutil.ReadFile("kubecost_response_example_test.text")
+	kubecostResponse, err := ioutil.ReadFile("kubecost_response_example_test.text")
 	require.NoError(t, err)
 	kubecostData := map[string][]byte{
-		"development": content,
-		"production": content,
+		"development": kubecostResponse,
+		"production":  kubecostResponse,
 	}
 
 	t.Run("Triggers", func(t *testing.T) {
 		t.Run("Defaults to an empty slice", func(t *testing.T) {
 			pipeline := &config.Pipeline{}
 
-			builder := builder.New(pipeline)
+			builder := builder.New(pipeline,  builder.WithKubecostData(kubecostData))
 			spinnaker, err := builder.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
 
@@ -88,7 +101,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 				},
 			}
 
-			builder := builder.New(pipeline)
+			builder := builder.New(pipeline,  builder.WithKubecostData(kubecostData))
 			spinnaker, err := builder.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
 
@@ -116,7 +129,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 				},
 			}
 
-			builder := builder.New(pipeline)
+			builder := builder.New(pipeline,  builder.WithKubecostData(kubecostData))
 			spinnaker, err := builder.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
 
@@ -142,7 +155,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 				},
 			}
 
-			b := builder.New(pipeline)
+			b := builder.New(pipeline, builder.WithKubecostData(kubecostData))
 			spinnaker, err := b.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
 
@@ -168,7 +181,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 				},
 			}
 
-			b := builder.New(pipeline)
+			b := builder.New(pipeline, builder.WithKubecostData(kubecostData))
 			spinnaker, err := b.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
 
@@ -200,7 +213,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 				},
 			}
 
-			b := builder.New(pipeline)
+			b := builder.New(pipeline, builder.WithKubecostData(kubecostData))
 			spinnaker, err := b.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
 
@@ -235,7 +248,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 				},
 			}
 
-			b := builder.New(pipeline)
+			b := builder.New(pipeline, builder.WithKubecostData(kubecostData))
 			spinnaker, err := b.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
 
@@ -269,7 +282,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 				},
 			}
 
-			b := builder.New(pipeline)
+			b := builder.New(pipeline, builder.WithKubecostData(kubecostData))
 			_, err := b.Pipeline()
 			require.Error(t, err, "builder: the specified default value is not one of the options")
 		})
@@ -349,6 +362,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 				Stages: []config.Stage{
 					{
 						Name: "Test DeployEmbeddedManifests Stage",
+						Account: "int-k8s",
 						DeployEmbeddedManifests: &config.DeployEmbeddedManifests{
 							StageTimeoutMS: 360000,
 							Files: []config.ManifestFile{
@@ -360,12 +374,59 @@ func TestBuilderPipelineStages(t *testing.T) {
 					},
 				},
 			}
-			builder := builder.New(pipeline)
+			builder := builder.New(pipeline, builder.WithKubecostData(kubecostData))
 			spinnaker, err := builder.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
 
 			assert.Equal(t, int64(360000), spinnaker.Stages[0].(*types.ManifestStage).StageTimeoutMS)
 			assert.Equal(t, true, spinnaker.Stages[0].(*types.ManifestStage).OverrideTimeout)
+		})
+		t.Run("Overrides default kubecost profile", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						Name: "Test DeployEmbeddedManifests Stage",
+						Account: "int-k8s",
+						DeployEmbeddedManifests: &config.DeployEmbeddedManifests{
+							StageTimeoutMS: 360000,
+							Files: []config.ManifestFile{
+								{
+									File: file,
+								},
+							},
+							Kubecost: &config.Kubecost{Profile: "production"},
+						},
+					},
+				},
+			}
+			builder := builder.New(pipeline, builder.WithKubecostData(kubecostData))
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			assert.Equal(t, int64(360000), spinnaker.Stages[0].(*types.ManifestStage).StageTimeoutMS)
+			assert.Equal(t, true, spinnaker.Stages[0].(*types.ManifestStage).OverrideTimeout)
+		})
+		t.Run("with override kubecost profile not found", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						Name: "Test DeployEmbeddedManifests Stage",
+						Account: "int-k8s",
+						DeployEmbeddedManifests: &config.DeployEmbeddedManifests{
+							StageTimeoutMS: 360000,
+							Files: []config.ManifestFile{
+								{
+									File: file,
+								},
+							},
+							Kubecost: &config.Kubecost{Profile: "unknown profile"},
+						},
+					},
+				},
+			}
+			builder := builder.New(pipeline, builder.WithKubecostData(kubecostData))
+			_, err := builder.Pipeline()
+			assert.Error(t, err, fmt.Errorf("could not find profile: %s in kubecost data", "unknown profile"))
 		})
 	})
 
@@ -375,6 +436,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 				Stages: []config.Stage{
 					{
 						Name: "Test Deploy Stage",
+						Account: "int-k8s",
 						Deploy: &config.DeployStage{
 							Groups: []config.Group{
 								{
@@ -389,7 +451,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 				},
 			}
 
-			builder := builder.New(pipeline)
+			builder := builder.New(pipeline, builder.WithKubecostData(kubecostData))
 			spinnaker, err := builder.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
 
@@ -404,12 +466,13 @@ func TestBuilderPipelineStages(t *testing.T) {
 			pipeline := &config.Pipeline{
 				Stages: []config.Stage{
 					{
+						Account: "int-k8s",
 						Deploy: &config.DeployStage{},
 					},
 				},
 			}
 
-			builder := builder.New(pipeline)
+			builder := builder.New(pipeline, builder.WithKubecostData(kubecostData))
 			spinnaker, err := builder.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
 
@@ -420,13 +483,14 @@ func TestBuilderPipelineStages(t *testing.T) {
 			pipeline := &config.Pipeline{
 				Stages: []config.Stage{
 					{
+						Account: "int-k8s",
 						ReliesOn: []string{"2"},
 						Deploy:   &config.DeployStage{},
 					},
 				},
 			}
 
-			builder := builder.New(pipeline)
+			builder := builder.New(pipeline, builder.WithKubecostData(kubecostData))
 			spinnaker, err := builder.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
 
@@ -447,7 +511,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 				},
 			}
 
-			builder := builder.New(pipeline)
+			builder := builder.New(pipeline, builder.WithKubecostData(kubecostData))
 			spinnaker, err := builder.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
 
@@ -465,7 +529,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 				},
 			}
 
-			builder := builder.New(pipeline)
+			builder := builder.New(pipeline, builder.WithKubecostData(kubecostData))
 			spinnaker, err := builder.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
 
@@ -484,7 +548,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 				},
 			}
 
-			builder := builder.New(pipeline)
+			builder := builder.New(pipeline, builder.WithKubecostData(kubecostData))
 			spinnaker, err := builder.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
 
@@ -505,7 +569,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 				},
 			}
 
-			builder := builder.New(pipeline)
+			builder := builder.New(pipeline, builder.WithKubecostData(kubecostData))
 			spinnaker, err := builder.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
 
@@ -524,7 +588,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 				},
 			}
 
-			builder := builder.New(pipeline)
+			builder := builder.New(pipeline, builder.WithKubecostData(kubecostData))
 			spinnaker, err := builder.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
 
@@ -540,7 +604,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 				},
 			}
 
-			builder := builder.New(pipeline)
+			builder := builder.New(pipeline, builder.WithKubecostData(kubecostData))
 			spinnaker, err := builder.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
 
@@ -557,7 +621,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 				},
 			}
 
-			builder := builder.New(pipeline)
+			builder := builder.New(pipeline, builder.WithKubecostData(kubecostData))
 			spinnaker, err := builder.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
 
@@ -579,7 +643,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 				},
 			}
 
-			builder := builder.New(pipeline)
+			builder := builder.New(pipeline, builder.WithKubecostData(kubecostData))
 			spinnaker, err := builder.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
 
@@ -592,6 +656,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 				Stages: []config.Stage{
 					{
 						Name: "Test Deploy Stage",
+						Account: "int-k8s",
 						Deploy: &config.DeployStage{
 							Groups: []config.Group{
 								{
@@ -616,7 +681,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 					},
 				},
 			}
-			builder := builder.New(pipeline)
+			builder := builder.New(pipeline, builder.WithKubecostData(kubecostData))
 			_, err := builder.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
 		})
@@ -634,7 +699,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 				},
 			}
 
-			builder := builder.New(pipeline)
+			builder := builder.New(pipeline, builder.WithKubecostData(kubecostData))
 			spinnaker, err := builder.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
 
@@ -666,7 +731,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 				},
 			}
 
-			builder := builder.New(pipeline)
+			builder := builder.New(pipeline,  builder.WithKubecostData(kubecostData))
 			spinnaker, err := builder.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
 
@@ -701,7 +766,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 				},
 			}
 
-			builder := builder.New(pipeline)
+			builder := builder.New(pipeline,  builder.WithKubecostData(kubecostData))
 			spinnaker, err := builder.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
 
@@ -727,7 +792,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 				},
 			}
 
-			builder := builder.New(pipeline)
+			builder := builder.New(pipeline,  builder.WithKubecostData(kubecostData))
 			spinnaker, err := builder.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
 
@@ -744,7 +809,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 				},
 			}
 
-			builder := builder.New(pipeline)
+			builder := builder.New(pipeline,  builder.WithKubecostData(kubecostData))
 			spinnaker, err := builder.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
 
@@ -793,7 +858,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 				},
 			}
 
-			builder := builder.New(pipeline)
+			builder := builder.New(pipeline,  builder.WithKubecostData(kubecostData))
 			spinnaker, err := builder.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
 
@@ -850,7 +915,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 				},
 			}
 
-			builder := builder.New(pipeline)
+			builder := builder.New(pipeline,  builder.WithKubecostData(kubecostData))
 			spinnaker, err := builder.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
 
@@ -881,7 +946,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 				},
 			}
 
-			builder := builder.New(pipeline)
+			builder := builder.New(pipeline,  builder.WithKubecostData(kubecostData))
 			spinnaker, err := builder.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
 
@@ -898,7 +963,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 				},
 			}
 
-			builder := builder.New(pipeline)
+			builder := builder.New(pipeline,  builder.WithKubecostData(kubecostData))
 			spinnaker, err := builder.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
 
@@ -947,7 +1012,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 				},
 			}
 
-			builder := builder.New(pipeline)
+			builder := builder.New(pipeline,  builder.WithKubecostData(kubecostData))
 			spinnaker, err := builder.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
 
@@ -1003,7 +1068,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 				},
 			}
 
-			builder := builder.New(pipeline)
+			builder := builder.New(pipeline,  builder.WithKubecostData(kubecostData))
 			spinnaker, err := builder.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
 
@@ -1033,7 +1098,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 				},
 			}
 
-			builder := builder.New(pipeline)
+			builder := builder.New(pipeline,  builder.WithKubecostData(kubecostData))
 			spinnaker, err := builder.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
 
@@ -1050,7 +1115,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 				},
 			}
 
-			builder := builder.New(pipeline)
+			builder := builder.New(pipeline,  builder.WithKubecostData(kubecostData))
 			spinnaker, err := builder.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
 

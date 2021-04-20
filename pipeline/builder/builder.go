@@ -21,6 +21,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
+const(
+	errKubecostProfileNotFound = "could not find profile: %s in kubecost data"
+	errDefaultKubecostProfileNotFoundForAccount = "could not find a kubecost profile for account: %s"
+)
+
 var (
 	// ErrNoContainers is returned when a manifest has defined containers in it
 	ErrNoContainers = errors.New("builder: no containers were found in given manifest file")
@@ -215,7 +220,7 @@ func (b *Builder) Pipeline() (sp *types.SpinnakerPipeline, err error) {
 		if stage.WebHook != nil {
 			s, err = b.buildWebHookStage(stageIndex, stage)
 			if err != nil {
-				return sp, fmt.Errorf("Failed to webhook profile with error: %v", err)
+				return sp, fmt.Errorf("Failed to webhook stage with error: %v", err)
 			}
 			stageIndex = stageIndex + 1
 		}
@@ -223,7 +228,7 @@ func (b *Builder) Pipeline() (sp *types.SpinnakerPipeline, err error) {
 		if stage.Jenkins != nil {
 			s, err = b.buildJenkinsStage(stageIndex, stage)
 			if err != nil {
-				return sp, fmt.Errorf("Failed to build jenkins profile with error: %v", err)
+				return sp, fmt.Errorf("Failed to build jenkins stage with error: %v", err)
 			}
 			stageIndex = stageIndex + 1
 		}
@@ -231,7 +236,7 @@ func (b *Builder) Pipeline() (sp *types.SpinnakerPipeline, err error) {
 		if stage.RunSpinnakerPipeline != nil {
 			s, err = b.buildRunSpinnakerPipelineStage(stageIndex, stage)
 			if err != nil {
-				return sp, fmt.Errorf("Failed to build spinnaker pipeline profile with error: %v", err)
+				return sp, fmt.Errorf("Failed to build spinnaker pipeline stage with error: %v", err)
 			}
 			stageIndex = stageIndex + 1
 		}
@@ -339,11 +344,18 @@ func (b *Builder) buildDeployEmbeddedManifestStage(index int, s config.Stage) (*
 			}
 
 			// set kubecosts requests resources
-			profile := defaultProfilePerAccount[s.Account]
+			profile, ok := defaultProfilePerAccount[s.Account]
+			if !ok {
+				return nil, fmt.Errorf(errDefaultKubecostProfileNotFoundForAccount, s.Account)
+			}
 			if maniStage.Kubecost != nil && maniStage.Kubecost.Profile != "" {
 				profile = maniStage.Kubecost.Profile
 			}
-			recommendations := getRecommendedCPUAndRam(b.kubecostData[profile])
+			kubecostData, ok := b.kubecostData[profile]
+			if !ok {
+				return nil, fmt.Errorf(errKubecostProfileNotFound, profile)
+			}
+			recommendations := getRecommendedCPUAndRam(kubecostData)
 
 
 			for i, specContainer := range d.Spec.Template.Spec.Containers {
@@ -413,6 +425,7 @@ func (b *Builder) buildDeployEmbeddedManifestStage(index int, s config.Stage) (*
 	return ds, nil
 }
 
+// parseResourceList converts memory and cpu string to a resourceList
 func parseResourceList (memory string, cpu string)(v1.ResourceList, error){
 	memoryQty, err := resource.ParseQuantity(memory)
 	if err != nil {
@@ -426,7 +439,6 @@ func parseResourceList (memory string, cpu string)(v1.ResourceList, error){
 		v1.ResourceMemory: memoryQty,
 		v1.ResourceCPU:    cpuQty,
 	}, nil
-
 }
 
 func (b *Builder) buildDeleteEmbeddedManifestStage(index int, s config.Stage) (*types.DeleteManifestStage, error) {
@@ -787,10 +799,14 @@ func (b *Builder) buildDeployStage(index int, s config.Stage) (*types.DeployStag
 
 		// set kubecost default values if not set
 		kubecostProfile := defaultProfilePerAccount[s.Account]
-		if group.Kubecost.Profile != "" {
+		if group.Kubecost != nil && group.Kubecost.Profile != "" {
 			kubecostProfile = group.Kubecost.Profile
 		}
-		recommendations := getRecommendedCPUAndRam(b.kubecostData[kubecostProfile])
+		kubecostData, ok := b.kubecostData[kubecostProfile]
+		if !ok {
+			return nil, fmt.Errorf(errKubecostProfileNotFound, kubecostProfile)
+		}
+		recommendations := getRecommendedCPUAndRam(kubecostData)
 		for _, c := range mg.Containers {
 			c.Requests.Memory = fmt.Sprint(recommendations[b.pipeline.Application][c.Name].requestsRAM)
 			c.Requests.CPU = fmt.Sprint(recommendations[b.pipeline.Application][c.Name].requestsCPU)
