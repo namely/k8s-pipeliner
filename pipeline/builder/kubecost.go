@@ -12,9 +12,9 @@ import (
 )
 
 const (
-	kubecostURL           = "https://kubecost.namely.land"
-	kubecostDefaultWindow = "7d"
-	errKubecostAPI        = "failed to request sizing from kubecost with status code: %s"
+	kubecostURL              = "https://kubecost.namely.land"
+	kubecostDefaultWindow    = "7d"
+	errKubecostAPI           = "failed to request sizing from kubecost with status code: %s"
 	kubecostTimeoutInSeconds = 180
 )
 
@@ -66,22 +66,28 @@ func getKubecostSizing(profile string, window string) ([]byte, error) {
 	q.Set("targetRAMUtilization", fmt.Sprintf("%f", profiles[profile].targetRAMUtilization))
 	url.RawQuery = q.Encode()
 	s := url.String()
-	return httpGetWithTimeoutAndRetry(s, kubecostTimeoutInSeconds * time.Second)
+	return httpGetWithTimeoutAndRetry(s, kubecostTimeoutInSeconds*time.Second, 2)
 }
-func httpGetWithTimeoutAndRetry(url string, timeout time.Duration) ([]byte, error){
+func httpGetWithTimeoutAndRetry(url string, timeout time.Duration, retries int) ([]byte, error) {
 	httpClient := http.Client{
 		Timeout: timeout,
 	}
 	resp, err := httpClient.Get(url)
 	if err != nil {
+		if retries > 0 {
+			return httpGetWithTimeoutAndRetry(url, timeout, retries-1)
+		}
 		return nil, err
 	}
-		defer resp.Body.Close()
-		if resp.StatusCode != 200 {
-			return nil, fmt.Errorf(errKubecostAPI, resp.Status)
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		if retries > 0 {
+			return httpGetWithTimeoutAndRetry(url, timeout, retries-1)
 		}
-		//We Read the response body on the line below.
-		return ioutil.ReadAll(resp.Body)
+		return nil, fmt.Errorf(errKubecostAPI, resp.Status)
+	}
+	//We Read the response body on the line below.
+	return ioutil.ReadAll(resp.Body)
 }
 
 // requests saves the name and recommended CPU and RAM for each requests
