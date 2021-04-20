@@ -15,7 +15,7 @@ const (
 	kubecostURL           = "https://kubecost.namely.land"
 	kubecostDefaultWindow = "7d"
 	errKubecostAPI        = "failed to request sizing from kubecost with status code: %s"
-	kubecostTimeoutInSeconds = 90
+	kubecostTimeoutInSeconds = 180
 )
 
 var (
@@ -121,13 +121,16 @@ func getRecommendedCPUAndRAM(json []byte) map[string]map[string]requests {
 func GetKubecostData() (map[string][]byte, error) {
 	kubecostData := make(map[string][]byte)
 	wg := sync.WaitGroup{}
+	mutex := &sync.Mutex{}
 	err := make(chan error, len(profiles))
 	for profile := range profiles {
 		wg.Add(1)
 		go func(profile string) {
 			bytes, reqErr := getKubecostSizing(profile, kubecostDefaultWindow)
 			err <- reqErr
+			mutex.Lock()
 			kubecostData[profile] = bytes
+			mutex.Unlock()
 			wg.Done()
 		}(profile)
 	}
