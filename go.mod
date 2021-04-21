@@ -4,6 +4,7 @@ go 1.12
 
 require (
 	github.com/hashicorp/go-multierror v1.0.0
+	github.com/mattn/goveralls v0.0.8 // indirect
 	github.com/namely/k8s-configurator v0.0.4
 	github.com/pkg/errors v0.8.1
 	github.com/stretchr/testify v1.4.0

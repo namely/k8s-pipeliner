@@ -67,14 +67,6 @@ stages:
   deleteEmbeddedManifest:
     file: test-deployment.yml
 
-- name: "Run Job"
-  runJob:
-    manifestFile: test-deployment.yml
-    container:
-      resources:
-        cpu: "100"
-        memory: "100"
-
 - name: "Trigger Jenkins Job"
   jenkins:
     job: "QA/job/stage/job/UI/job/SLI"

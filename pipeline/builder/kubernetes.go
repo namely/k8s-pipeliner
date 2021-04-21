@@ -186,7 +186,7 @@ func (mp *ManifestParser) InjectPodOverrides(manifest *corev1.Pod, scaffold conf
 	return manifest, nil
 }
 
-// InjectContainerImageDescription takes a kubernetes resources and inserts the corresponding image description from a trigger
+// InjectContainerImageDescription takes a kubernetes container and inserts the corresponding image description from a trigger
 func (mp *ManifestParser) InjectContainerImageDescription(container corev1.Container, scaffold config.ContainerScaffold) corev1.Container {
 	if ref := scaffold.ImageDescriptionRef(container.Name); ref != nil {
 		for _, desc := range mp.config.ImageDescriptions {
@@ -339,7 +339,7 @@ func (mp *ManifestParser) deploymentInitContainers(podspec corev1.PodSpec, scaff
 func (mp *ManifestParser) parseContainer(container corev1.Container, scaffold config.ContainerScaffold) *types.Container {
 	spinContainer := &types.Container{}
 
-	// add the image description first off using the annotations on the resources
+	// add the image description first off using the annotations on the container
 	var imageDescription config.ImageDescription
 
 	if ref := scaffold.ImageDescriptionRef(container.Name); ref != nil {
