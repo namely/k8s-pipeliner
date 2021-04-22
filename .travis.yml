@@ -6,7 +6,7 @@ go:
 install:
   - make deps
 script:
-  - travis_wait make coveralls
+  - make coveralls
 notifications:
   email: false
 after_success:
