@@ -14,7 +14,7 @@ type KubecostTestSuite struct {
 }
 
 func TestKubecost(t *testing.T) {
-	if os.Getenv("CI") != "" {
+	if os.Getenv("CI") == "" {
 		suite.Run(t, new(KubecostTestSuite)) // Must run in VPN and can't run in travis
 	}
 }
