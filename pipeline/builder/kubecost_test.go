@@ -2,6 +2,7 @@ package builder
 
 import (
 	"io/ioutil"
+	"os"
 	"reflect"
 	"testing"
 
@@ -13,7 +14,9 @@ type KubecostTestSuite struct {
 }
 
 func TestKubecost(t *testing.T) {
-	//suite.Run(t, new(KubecostTestSuite)) // Must run in VPN and can't run in travis, uncomment to test locally
+	if os.Getenv("CI") != "" {
+		suite.Run(t, new(KubecostTestSuite)) // Must run in VPN and can't run in travis
+	}
 }
 func (s *KubecostTestSuite) Test_getKubecostSizing() {
 	tests := map[string]struct {
