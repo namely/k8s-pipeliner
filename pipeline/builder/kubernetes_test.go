@@ -53,14 +53,14 @@ func TestContainersFromManifests(t *testing.T) {
 			imageDescriptionRefs: []config.ImageDescriptionRef{
 				{
 					Name:          "test-ref",
-					ContainerName: "test-container",
+					ContainerName: "hcm",
 				},
 			},
 		})
 
 		require.NoError(t, err, "error on retrieving the deployment manifests")
 
-		assert.Len(t, group.Containers, 1)
+		assert.Len(t, group.Containers, 2)
 		assert.Len(t, group.InitContainers, 1)
 		assert.Len(t, group.Annotations, 2)
 		assert.Equal(t, "fake-namespace", group.Namespace)

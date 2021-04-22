@@ -360,7 +360,7 @@ func (b *Builder) buildDeployEmbeddedManifestStage(index int, s config.Stage) (*
 				// set overrides
 				for i, overrideContainer := range maniStage.ContainerOverrides {
 					if specContainer.Name == overrideContainer.Name {
-						resourceList, err := parseResourceList(overrideContainer.Resources.Requests.Memory, overrideContainer.Resources.Requests.Cpu)
+						resourceList, err := parseResourceList(overrideContainer.Resources.Requests.Memory, overrideContainer.Resources.Requests.CPU)
 						if err != nil {
 							return nil, err
 						}
@@ -452,11 +452,11 @@ func (b *Builder) buildDeleteEmbeddedManifestStage(index int, s config.Stage) (*
 	}
 
 	if len(objs) > 1 {
-		return nil, fmt.Errorf("the manifest file %s declared more than one resource which cant be used in a delete embedded manifest profile", file)
+		return nil, fmt.Errorf("the manifest file %s declared more than one resource which cant be used in a delete embedded manifest stage", file)
 	}
 
 	if len(objs) == 0 {
-		return nil, fmt.Errorf("the manifest file %s doesnt define a resource which cant be used in a delete embedded manifest profile", file)
+		return nil, fmt.Errorf("the manifest file %s doesnt define a resource which cant be used in a delete embedded manifest stage", file)
 	}
 
 	obj := objs[0]
@@ -658,21 +658,6 @@ func (b *Builder) buildDeployStage(index int, s config.Stage) (*types.DeployStag
 			return nil, ErrNoContainers
 		}
 
-		// set kubecost default values if not set
-		kubecostProfile := defaultProfilePerAccount[s.Account]
-		if group.Kubecost != nil && group.Kubecost.Profile != "" {
-			kubecostProfile = group.Kubecost.Profile
-		}
-		kubecostData, ok := b.kubecostData[kubecostProfile]
-		if !ok {
-			return nil, fmt.Errorf(errKubecostProfileNotFound, kubecostProfile)
-		}
-		recommendations := getRecommendedCPUAndRAM(kubecostData)
-		for _, c := range mg.Containers {
-			c.Requests.Memory = fmt.Sprint(recommendations[b.pipeline.Application][c.Name].requestsRAM)
-			c.Requests.CPU = fmt.Sprint(recommendations[b.pipeline.Application][c.Name].requestsCPU)
-		}
-
 		// check for overrides defined on the group so we can replace the containers
 		// values before rendering our spinnaker json.
 		if overrides := group.ContainerOverrides; overrides != nil {
@@ -687,13 +672,6 @@ func (b *Builder) buildDeployStage(index int, s config.Stage) (*types.DeployStag
 
 			if overrides.Command != nil {
 				container.Command = overrides.Command
-			}
-
-			if overrides.Resources.Requests.Memory != "" {
-				container.Requests.Memory = overrides.Resources.Requests.Memory
-			}
-			if overrides.Resources.Requests.Cpu != "" {
-				container.Requests.CPU = overrides.Resources.Requests.Cpu
 			}
 		}
 

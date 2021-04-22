@@ -270,7 +270,7 @@ type Resources struct {
 
 type Resource struct {
 	Memory string `yaml:"memory,omitempty"`
-	Cpu    string `yaml:"cpu,omitempty"`
+	CPU    string `yaml:"cpu,omitempty"`
 }
 
 // DeleteEmbeddedManifest represents a single resource to be deleted

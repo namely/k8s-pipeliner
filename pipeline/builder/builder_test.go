@@ -334,7 +334,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 									Resources: &config.Resources{
 										Requests: &config.Resource{
 											Memory: "1000",
-											Cpu:    "2000",
+											CPU:    "2000",
 										},
 									},
 								},

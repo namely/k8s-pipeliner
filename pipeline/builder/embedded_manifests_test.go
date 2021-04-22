@@ -1,9 +1,11 @@
 package builder_test
 
 import (
+	"io/ioutil"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
+	v1beta12 "k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/namely/k8s-pipeliner/pipeline/builder"
@@ -13,13 +15,18 @@ import (
 
 type EmbeddedManifestTest struct {
 	suite.Suite
-
-	pipeline *config.Pipeline
+	kubecostData map[string][]byte
+	pipeline     *config.Pipeline
 }
 
 func (em *EmbeddedManifestTest) BeforeTest(suiteName, testName string) {
 	em.pipeline = &config.Pipeline{
 		Stages: []config.Stage{},
+	}
+	kubecostResponse, _ := ioutil.ReadFile("kubecost_response_example_test.text")
+	em.kubecostData = map[string][]byte{
+		"development": kubecostResponse,
+		"production":  kubecostResponse,
 	}
 }
 
@@ -28,16 +35,17 @@ func (em *EmbeddedManifestTest) AppendStage(stage config.Stage) {
 }
 
 func (em *EmbeddedManifestTest) Builder() *builder.Builder {
-	return builder.New(em.pipeline)
+	return builder.New(em.pipeline, builder.WithKubecostData(em.kubecostData))
 }
 
 func (em *EmbeddedManifestTest) BuilderWithBasePath(basePath string) *builder.Builder {
-	return builder.New(em.pipeline, builder.WithBasePath(basePath))
+	return builder.New(em.pipeline, builder.WithBasePath(basePath), builder.WithKubecostData(em.kubecostData))
 }
 
 func (em *EmbeddedManifestTest) TestFilesAreBuilt() {
 	em.AppendStage(config.Stage{
-		Name: "deploy nginx",
+		Name:    "deploy nginx",
+		Account: "int-k8s",
 		DeployEmbeddedManifests: &config.DeployEmbeddedManifests{
 			Files: []config.ManifestFile{
 				{
@@ -56,15 +64,16 @@ func (em *EmbeddedManifestTest) TestFilesAreBuilt() {
 
 	em.Require().Len(stg.Manifests, 1)
 
-	deploy, ok := stg.Manifests[0].(*unstructured.Unstructured)
+	deploy, ok := stg.Manifests[0].(*v1beta12.Deployment)
 	em.Require().True(ok)
 	em.Equal("nginx-deployment", deploy.GetName())
-	em.Equal("Deployment", deploy.GetKind())
+	em.Equal("nginx:1.7.9", deploy.Spec.Template.Spec.Containers[0].Image)
 }
 
 func (em *EmbeddedManifestTest) TestConfiguratorFilesNoEnv() {
 	em.AppendStage(config.Stage{
-		Name: "deploy cm",
+		Name:    "deploy cm",
+		Account: "int-k8s",
 		DeployEmbeddedManifests: &config.DeployEmbeddedManifests{
 			ConfiguratorFiles: []config.ManifestFile{
 				{
@@ -91,7 +100,8 @@ func (em *EmbeddedManifestTest) TestConfiguratorFilesNoEnv() {
 
 func (em *EmbeddedManifestTest) TestConfiguratorFiles() {
 	em.AppendStage(config.Stage{
-		Name: "deploy cm",
+		Name:    "deploy cm",
+		Account: "int-k8s",
 		DeployEmbeddedManifests: &config.DeployEmbeddedManifests{
 			ConfiguratorFiles: []config.ManifestFile{
 				{
@@ -119,7 +129,8 @@ func (em *EmbeddedManifestTest) TestConfiguratorFiles() {
 
 func (em *EmbeddedManifestTest) TestConfiguratorFilesBasePath() {
 	em.AppendStage(config.Stage{
-		Name: "deploy cm",
+		Name:    "deploy cm",
+		Account: "int-k8s",
 		DeployEmbeddedManifests: &config.DeployEmbeddedManifests{
 			ConfiguratorFiles: []config.ManifestFile{
 				{
@@ -147,7 +158,8 @@ func (em *EmbeddedManifestTest) TestConfiguratorFilesBasePath() {
 
 func (em *EmbeddedManifestTest) TestBadConfiguratorFiles() {
 	em.AppendStage(config.Stage{
-		Name: "deploy cm",
+		Name:    "deploy cm",
+		Account: "int-k8s",
 		DeployEmbeddedManifests: &config.DeployEmbeddedManifests{
 			ConfiguratorFiles: []config.ManifestFile{
 				{
@@ -164,7 +176,8 @@ func (em *EmbeddedManifestTest) TestBadConfiguratorFiles() {
 
 func (em *EmbeddedManifestTest) TestBadMultipleDocumentsError() {
 	em.AppendStage(config.Stage{
-		Name: "deploy nginx",
+		Name:    "deploy nginx",
+		Account: "int-k8s",
 		DeployEmbeddedManifests: &config.DeployEmbeddedManifests{
 			DefaultMoniker: &config.Moniker{
 				App:     "fake-app",
@@ -186,7 +199,8 @@ func (em *EmbeddedManifestTest) TestBadMultipleDocumentsError() {
 
 func (em *EmbeddedManifestTest) TestMultipleDocumentsAreAdded() {
 	em.AppendStage(config.Stage{
-		Name: "deploy nginx",
+		Name:    "deploy nginx",
+		Account: "int-k8s",
 		DeployEmbeddedManifests: &config.DeployEmbeddedManifests{
 			DefaultMoniker: &config.Moniker{
 				App:     "fake-app",
@@ -219,7 +233,8 @@ func (em *EmbeddedManifestTest) TestMultipleDocumentsAreAdded() {
 
 func (em *EmbeddedManifestTest) TestMonikerAnnotationsAreIncluded() {
 	em.AppendStage(config.Stage{
-		Name: "deploy nginx",
+		Name:    "deploy nginx",
+		Account: "int-k8s",
 		DeployEmbeddedManifests: &config.DeployEmbeddedManifests{
 			DefaultMoniker: &config.Moniker{
 				App:     "fake-app",
@@ -248,7 +263,7 @@ func (em *EmbeddedManifestTest) TestMonikerAnnotationsAreIncluded() {
 	em.Equal("fake-detail", stg.Moniker.Detail)
 	em.Equal("fake-cluster", stg.Moniker.Cluster)
 
-	_, dok := stg.Manifests[0].(*unstructured.Unstructured)
+	_, dok := stg.Manifests[0].(*v1beta12.Deployment)
 	em.Require().True(dok)
 }
 
@@ -257,7 +272,8 @@ func (em *EmbeddedManifestTest) TestDeployEmbeddedManifestDefaultProperties() {
 	boolf := false
 
 	em.AppendStage(config.Stage{
-		Name: "deploy nginx",
+		Name:    "deploy nginx",
+		Account: "int-k8s",
 		DeployEmbeddedManifests: &config.DeployEmbeddedManifests{
 			Files: []config.ManifestFile{
 				{
@@ -276,10 +292,10 @@ func (em *EmbeddedManifestTest) TestDeployEmbeddedManifestDefaultProperties() {
 
 	em.Require().Len(stg.Manifests, 1)
 
-	deploy, ok := stg.Manifests[0].(*unstructured.Unstructured)
+	deploy, ok := stg.Manifests[0].(*v1beta12.Deployment)
 	em.Require().True(ok)
 	em.Equal("nginx-deployment", deploy.GetName())
-	em.Equal("Deployment", deploy.GetKind())
+	em.Equal("nginx:1.7.9", deploy.Spec.Template.Spec.Containers[0].Image)
 
 	em.Equal(&boolf, stg.CompleteOtherBranchesThenFail)
 	em.Equal(&boolf, stg.ContinuePipeline)
@@ -292,7 +308,8 @@ func (em *EmbeddedManifestTest) TestDeleteEmbeddedManifest() {
 	boolt := true
 	boolf := false
 	em.AppendStage(config.Stage{
-		Name: "delete nginx",
+		Name:    "delete nginx",
+		Account: "int-k8s",
 		DeleteEmbeddedManifest: &config.DeleteEmbeddedManifest{
 			File:                          "testdata/nginx-deployment.yml",
 			CompleteOtherBranchesThenFail: &boolt,
@@ -307,7 +324,7 @@ func (em *EmbeddedManifestTest) TestDeleteEmbeddedManifest() {
 	em.Require().NoError(err, "error building pipeline config")
 
 	stg, ok := pipeline.Stages[0].(*types.DeleteManifestStage)
-	em.Require().True(ok, "was not a delete manifest profile")
+	em.Require().True(ok, "was not a delete manifest stage")
 	em.Equal("delete nginx", stg.Name)
 	em.Equal("Deployment nginx-deployment", stg.ManifestName)
 
@@ -321,7 +338,8 @@ func (em *EmbeddedManifestTest) TestDeleteEmbeddedManifestDefaultProperties() {
 	boolt := true
 	boolf := false
 	em.AppendStage(config.Stage{
-		Name: "delete nginx",
+		Name:    "delete nginx",
+		Account: "int-k8s",
 		DeleteEmbeddedManifest: &config.DeleteEmbeddedManifest{
 			File: "testdata/nginx-deployment.yml",
 		},
@@ -331,7 +349,7 @@ func (em *EmbeddedManifestTest) TestDeleteEmbeddedManifestDefaultProperties() {
 	em.Require().NoError(err, "error building pipeline config")
 
 	stg, ok := pipeline.Stages[0].(*types.DeleteManifestStage)
-	em.Require().True(ok, "was not a delete manifest profile")
+	em.Require().True(ok, "was not a delete manifest stage")
 	em.Equal("delete nginx", stg.Name)
 	em.Equal("Deployment nginx-deployment", stg.ManifestName)
 
