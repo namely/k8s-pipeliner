@@ -13,7 +13,7 @@ type KubecostTestSuite struct {
 }
 
 func TestKubecost(t *testing.T) {
-	suite.Run(t, new(KubecostTestSuite))
+	//suite.Run(t, new(KubecostTestSuite)) // Must run in VPN and can't run in travis, uncomment to test locally
 }
 func (s *KubecostTestSuite) Test_getKubecostSizing() {
 	tests := map[string]struct {
