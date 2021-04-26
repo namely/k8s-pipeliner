@@ -43,6 +43,13 @@ spec:
           - name: configmap-volume
             mountPath: "/thisisthemount"
             readOnly: true
+        resources:
+          limits:
+            cpu: "1"
+            memory: "2"
+          requests:
+            cpu: "3"
+            memory: "4"
       volumes:
         - name: configmap-volume
           configMap:

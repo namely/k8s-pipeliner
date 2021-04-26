@@ -10,6 +10,7 @@ import (
 	"github.com/namely/k8s-pipeliner/pipeline/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"k8s.io/api/extensions/v1beta1"
 )
 
 func TestBuilderAssignsNotifications(t *testing.T) {
@@ -93,8 +94,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 			assert.Equal(t, "jenkins", spinnaker.Triggers[0].(*types.JenkinsTrigger).Type)
 		})
 		t.Run("JenkinsTrigger is disabled", func(t *testing.T) {
-			var enabled *bool
-			enabled = newFalse()
+			enabled := newFalse()
 			pipeline := &config.Pipeline{
 				Triggers: []config.Trigger{
 					{
@@ -290,6 +290,11 @@ func TestBuilderPipelineStages(t *testing.T) {
 
 			assert.Equal(t, "Test DeployEmbeddedManifests Stage", spinnaker.Stages[0].(*types.ManifestStage).Name)
 			assert.NotNil(t, spinnaker.Stages[0].(*types.ManifestStage).Manifests[0])
+			container := spinnaker.Stages[0].(*types.ManifestStage).Manifests[0].(*v1beta1.Deployment).Spec.Template.Spec.Containers[0]
+			assert.Equal(t, "2", container.Resources.Limits.Memory().String())
+			assert.Equal(t, "1", container.Resources.Limits.Cpu().String())
+			assert.Equal(t, "4", container.Resources.Requests.Memory().String())
+			assert.Equal(t, "3", container.Resources.Requests.Cpu().String())
 		})
 
 		t.Run("Overrides default timeout", func(t *testing.T) {
@@ -314,6 +319,39 @@ func TestBuilderPipelineStages(t *testing.T) {
 
 			assert.Equal(t, int64(360000), spinnaker.Stages[0].(*types.ManifestStage).StageTimeoutMS)
 			assert.Equal(t, true, spinnaker.Stages[0].(*types.ManifestStage).OverrideTimeout)
+		})
+		t.Run("Overrides container overrides", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						Name: "Test DeployEmbeddedManifests Stage",
+						DeployEmbeddedManifests: &config.DeployEmbeddedManifests{
+							Files: []config.ManifestFile{
+								{
+									File: file,
+								},
+							},
+							ContainerOverrides: []*config.ContainerOverrides{
+								{
+									Name: "test-container",
+									Resources: &config.Resources{
+										Requests: &config.Resource{Memory: "100", CPU: "200"},
+										Limits:   &config.Resource{Memory: "300", CPU: "400"},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+			builder := builder.New(pipeline)
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+			container := spinnaker.Stages[0].(*types.ManifestStage).Manifests[0].(*v1beta1.Deployment).Spec.Template.Spec.Containers[0]
+			assert.Equal(t, "300", container.Resources.Limits.Memory().String())
+			assert.Equal(t, "400", container.Resources.Limits.Cpu().String())
+			assert.Equal(t, "100", container.Resources.Requests.Memory().String())
+			assert.Equal(t, "200", container.Resources.Requests.Cpu().String())
 		})
 	})
 

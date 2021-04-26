@@ -1,5 +1,4 @@
 // Package config implements YAML configuration for the k8s-pipeliner input files
-
 package config
 
 import (
@@ -247,9 +246,10 @@ type ManifestFile struct {
 // DeployEmbeddedManifests is a Kubernetes V2 provider stage configuration
 // for deploying YAML manifest files
 type DeployEmbeddedManifests struct {
-	DefaultMoniker    *Moniker       `yaml:"defaultMoniker,omitempty"`
-	ConfiguratorFiles []ManifestFile `yaml:"configuratorFiles,omitempty"`
-	Files             []ManifestFile `yaml:"files"`
+	DefaultMoniker     *Moniker              `yaml:"defaultMoniker,omitempty"`
+	ConfiguratorFiles  []ManifestFile        `yaml:"configuratorFiles,omitempty"`
+	Files              []ManifestFile        `yaml:"files"`
+	ContainerOverrides []*ContainerOverrides `yaml:"containerOverrides,omitempty"`
 
 	CompleteOtherBranchesThenFail *bool `yaml:"completeOtherBranchesThenFail,omitempty"`
 	ContinuePipeline              *bool `yaml:"continuePipeline,omitempty"`
@@ -296,11 +296,25 @@ type ScaleManifest struct {
 	WaitForCompletion             *bool `yaml:"waitForCompletion,omitempty"`
 }
 
+// Resources represents a set of resources to use for each container
+type Resources struct {
+	Requests *Resource `yaml:"requests,omitempty"`
+	Limits   *Resource `yaml:"limits,omitempty"`
+}
+
+// Resource represent the cpu and memory of a resource
+type Resource struct {
+	Memory string `yaml:"memory,omitempty"`
+	CPU    string `yaml:"cpu,omitempty"`
+}
+
 // ContainerOverrides are used to override a containers values for simple
 // values like the command and arguments
 type ContainerOverrides struct {
-	Args    []string `yaml:"args,omitempty"`
-	Command []string `yaml:"command,omitempty"`
+	Name      string     `yaml:"name"`
+	Args      []string   `yaml:"args,omitempty"`
+	Command   []string   `yaml:"command,omitempty"`
+	Resources *Resources `yaml:"resources,omitempty"`
 }
 
 // PodOverrides are used to override certain attributes about a pod spec

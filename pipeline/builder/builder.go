@@ -1,5 +1,4 @@
 // Package builder implements functions used to build the JSON output
-
 package builder
 
 import (
@@ -8,16 +7,17 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
-	"strings"
 
 	cnfgrtr "github.com/namely/k8s-configurator"
 	"github.com/namely/k8s-pipeliner/pipeline/builder/types"
 	"github.com/namely/k8s-pipeliner/pipeline/config"
 	"github.com/pkg/errors"
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/api/extensions/v1beta1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 var (
@@ -312,6 +312,45 @@ func (b *Builder) buildDeployEmbeddedManifestStage(index int, s config.Stage) (*
 			return nil, errors.Wrapf(err, "could not parse manifest file: %s", file.File)
 		}
 
+		for i, obj := range objs {
+			u, ok := obj.(*unstructured.Unstructured)
+			if !ok {
+				return nil, errors.New("manifest parser returned an unexpected object type")
+			}
+			if u.GetKind() != "Deployment" {
+				continue
+			}
+
+			// if deployment set container overrides
+			var d v1beta1.Deployment
+			err := runtime.DefaultUnstructuredConverter.FromUnstructured(u.UnstructuredContent(), &d)
+			if err != nil {
+				return nil, errors.Wrapf(err, "could not parse Deployment: %s", u.GetName())
+			}
+			for ii, specContainer := range d.Spec.Template.Spec.Containers {
+				for _, overrideContainer := range maniStage.ContainerOverrides {
+					if specContainer.Name != overrideContainer.Name {
+						continue
+					}
+					if overrideContainer.Resources.Requests.Memory != "" || overrideContainer.Resources.Requests.CPU != "" {
+						requestsList, err := parseResourceList(overrideContainer.Resources.Requests.Memory, overrideContainer.Resources.Requests.CPU)
+						if err != nil {
+							return nil, err
+						}
+						d.Spec.Template.Spec.Containers[ii].Resources.Requests = requestsList
+					}
+					if overrideContainer.Resources.Limits.Memory != "" || overrideContainer.Resources.Limits.CPU != "" {
+						limitsList, err := parseResourceList(overrideContainer.Resources.Limits.Memory, overrideContainer.Resources.Limits.CPU)
+						if err != nil {
+							return nil, err
+						}
+						d.Spec.Template.Spec.Containers[ii].Resources.Limits = limitsList
+					}
+				}
+			}
+			objs[i] = d.DeepCopyObject()
+		}
+
 		ds.Manifests = append(ds.Manifests, objs...)
 	}
 
@@ -335,6 +374,9 @@ func (b *Builder) buildDeployEmbeddedManifestStage(index int, s config.Stage) (*
 		destFileName := configuratorFile.File + "." + env
 		destFilePath := path.Join(b.basePath, destFileName)
 		configuredConfigMap, err := os.Create(destFilePath)
+		if err != nil {
+			return nil, errors.Wrapf(err, "k8s-configurator could not create destination file path: %s", destFilePath)
+		}
 
 		err = cnfgrtr.Generate(file, env, configuredConfigMap)
 		if err != nil {
@@ -405,47 +447,20 @@ func (b *Builder) buildDeleteEmbeddedManifestStage(index int, s config.Stage) (*
 	return stage, nil
 }
 
-func (b *Builder) buildV2ManifestStageFromDeploy(index int, s config.Stage) (*types.ManifestStage, error) {
-	ds := b.defaultManifestStage(index, s)
-
-	if len(s.Deploy.Groups) == 0 {
-		return nil, ErrNoDeployGroups
+// parseResourceList converts memory and cpu string to a resourceList
+func parseResourceList(memory string, cpu string) (corev1.ResourceList, error) {
+	memoryQty, err := resource.ParseQuantity(memory)
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not parse Memory")
 	}
-
-	cluster := []string{s.Account, b.pipeline.Application, s.Deploy.Groups[0].Details, s.Deploy.Groups[0].Stack}
-
-	ds.Moniker.Cluster = strings.Join(cluster, "-")
-	ds.Moniker.Detail = s.Deploy.Groups[0].Details
-	ds.Moniker.Stack = s.Deploy.Groups[0].Stack
-
-	parser := NewManfifestParser(b.pipeline, b.basePath)
-
-	for _, group := range s.Deploy.Groups {
-		manifest, err := parser.ManifestFromScaffold(group)
-
-		if err != nil {
-			return nil, err
-		}
-
-		resource := &appsv1.Deployment{}
-		switch manifest.GetObjectKind().GroupVersionKind().Kind {
-		case "Deployment":
-			if err := scheme.Scheme.Convert(manifest, resource, nil); err != nil {
-				return nil, err
-			}
-		default:
-			return nil, ErrKubernetesAPI
-		}
-
-		_, err = buildDeployment(resource, group)
-		if err != nil {
-			return nil, err
-		}
-
-		ds.Manifests = append(ds.Manifests, manifest)
+	cpuQty, err := resource.ParseQuantity(cpu)
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not parse cpu")
 	}
-
-	return ds, nil
+	return map[corev1.ResourceName]resource.Quantity{
+		corev1.ResourceMemory: memoryQty,
+		corev1.ResourceCPU:    cpuQty,
+	}, nil
 }
 
 func (b *Builder) defaultManifestStage(index int, s config.Stage) *types.ManifestStage {
@@ -481,100 +496,6 @@ func (b *Builder) defaultManifestStage(index int, s config.Stage) *types.Manifes
 	}
 
 	return stage
-}
-
-func (b *Builder) buildV2RunJobStage(index int, s config.Stage) (*types.ManifestStage, error) {
-	ds := &types.ManifestStage{
-		StageMetadata:           buildStageMetadata(s, "deployManifest", index, b.isLinear),
-		Account:                 s.Account,
-		CloudProvider:           "kubernetes",
-		Location:                "",
-		ManifestArtifactAccount: "embedded-artifact",
-		ManifestName:            "",
-		Moniker: types.Moniker{
-			App:     b.pipeline.Application,
-			Cluster: fmt.Sprintf("%s-%s", b.pipeline.Application, s.Account),
-			Detail:  "",
-			Stack:   "",
-		},
-		Relationships: types.Relationships{LoadBalancers: []interface{}{}, SecurityGroups: []interface{}{}},
-		Source:        "text",
-	}
-
-	parser := NewManfifestParser(b.pipeline, b.basePath)
-	obj, err := parser.ManifestFromScaffold(s.RunJob)
-
-	if err != nil {
-		return nil, err
-	}
-
-	switch t := obj.(type) {
-	case *corev1.Pod:
-		if s.RunJob.Container != nil {
-			t.Spec.Containers[0].Command = s.RunJob.Container.Command
-			t.Spec.Containers[0].Args = s.RunJob.Container.Args
-		}
-	default:
-		return nil, ErrDeploymentJob
-	}
-
-	ds.Manifests = append(ds.Manifests, obj)
-
-	return ds, nil
-
-}
-
-func (b *Builder) buildV2DeleteManifestStage(index int, s config.Stage) (*types.DeleteManifestStage, error) {
-	// Set default values
-	completeOtherBranchesThenFail := setDefaultIfNil(s.DeleteEmbeddedManifest.CompleteOtherBranchesThenFail, false)
-	continuePipeline := setDefaultIfNil(s.DeleteEmbeddedManifest.ContinuePipeline, false)
-	failPipeline := setDefaultIfNil(s.DeleteEmbeddedManifest.FailPipeline, true)
-	markUnstableAsSuccessful := setDefaultIfNil(s.DeleteEmbeddedManifest.MarkUnstableAsSuccessful, false)
-	waitForCompletion := setDefaultIfNil(s.DeleteEmbeddedManifest.WaitForCompletion, true)
-
-	s.Name = "Delete " + s.Name
-	dms := &types.DeleteManifestStage{
-		StageMetadata: buildStageMetadata(s, "deleteManifest", index, b.isLinear),
-		Account:       s.Account,
-		CloudProvider: "kubernetes",
-		Kinds:         []string{"Job"},
-		Location:      "",
-		Options: types.Options{
-			Cascading: true,
-		},
-		CompleteOtherBranchesThenFail: &completeOtherBranchesThenFail,
-		ContinuePipeline:              &continuePipeline,
-		FailPipeline:                  &failPipeline,
-		MarkUnstableAsSuccessful:      &markUnstableAsSuccessful,
-		WaitForCompletion:             &waitForCompletion,
-	}
-
-	parser := NewManfifestParser(b.pipeline, b.basePath)
-	obj, err := parser.ManifestFromScaffold(s.RunJob)
-
-	if err != nil {
-		return nil, err
-	}
-
-	var labels map[string]string
-
-	switch t := obj.(type) {
-	case metav1.Object:
-		labels = t.GetLabels()
-		namespace := t.GetNamespace()
-		if namespace == "" {
-			return nil, ErrNoNamespace
-		}
-		dms.Location = namespace
-	default:
-		return nil, ErrNoKubernetesMetadata
-	}
-
-	for key, value := range labels {
-		dms.LabelSelectors.Selectors = append(dms.LabelSelectors.Selectors, types.Selector{Key: key, Values: []string{value}, Kind: "EQUALS"})
-	}
-
-	return dms, nil
 }
 
 func (b *Builder) buildWebHookStage(index int, s config.Stage) (*types.Webhook, error) {
@@ -838,64 +759,6 @@ func buildNotifications(notifications []config.Notification) []types.Notificatio
 	}
 
 	return nots
-}
-
-func buildDeployment(deploy *appsv1.Deployment, group config.Group) (*appsv1.Deployment, error) {
-
-	if len(deploy.Spec.Template.Spec.Containers) == 0 {
-		return nil, ErrNoContainers
-	}
-
-	if overrides := group.ContainerOverrides; overrides != nil {
-		if len(deploy.Spec.Template.Spec.Containers) > 1 {
-			return nil, ErrOverrideContention
-		}
-		if overrides.Args != nil {
-			deploy.Spec.Template.Spec.Containers[0].Args = overrides.Args
-		}
-		if overrides.Command != nil {
-			deploy.Spec.Template.Spec.Containers[0].Command = overrides.Command
-		}
-	}
-
-	if lb := group.LoadBalancers; lb != nil {
-		labels := make(map[string]string)
-
-		for _, l := range lb {
-			labels[fmt.Sprintf(LoadBalancerFormat, l)] = "true"
-		}
-
-		if deploy.Spec.Selector != nil {
-			for key, val := range labels {
-				deploy.Spec.Selector.MatchLabels[key] = val
-			}
-		} else {
-			deploy.Spec.Selector = &metav1.LabelSelector{
-				MatchLabels: labels,
-			}
-		}
-
-		l := deploy.ObjectMeta.GetLabels()
-
-		if l == nil {
-			l = make(map[string]string)
-		}
-
-		for key, val := range labels {
-			l[key] = val
-		}
-
-		deploy.ObjectMeta.SetLabels(l)
-
-		l = deploy.Spec.Template.GetLabels()
-
-		for key, val := range labels {
-			l[key] = val
-		}
-
-		deploy.Spec.Template.SetLabels(l)
-	}
-	return deploy, nil
 }
 
 func newDefaultTrue(original *bool) bool {
