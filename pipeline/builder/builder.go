@@ -455,7 +455,7 @@ func (b *Builder) buildDeleteEmbeddedManifestStage(index int, s config.Stage) (*
 func parseResourceList(memory string, cpu string) (corev1.ResourceList, error) {
 	memoryQty, err := resource.ParseQuantity(memory)
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not parse Memory")
+		return nil, errors.Wrapf(err, "could not parse memory")
 	}
 	cpuQty, err := resource.ParseQuantity(cpu)
 	if err != nil {
