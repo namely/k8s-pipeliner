@@ -12,12 +12,16 @@ import (
 	"github.com/namely/k8s-pipeliner/pipeline/builder/types"
 	"github.com/namely/k8s-pipeliner/pipeline/config"
 	"github.com/pkg/errors"
+	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+)
+
+const (
+	errParseResourceList = "unable to parse resource limits for container: %s"
 )
 
 var (
@@ -322,7 +326,7 @@ func (b *Builder) buildDeployEmbeddedManifestStage(index int, s config.Stage) (*
 			}
 
 			// if deployment set container overrides
-			var d v1beta1.Deployment
+			var d v1.Deployment
 			err := runtime.DefaultUnstructuredConverter.FromUnstructured(u.UnstructuredContent(), &d)
 			if err != nil {
 				return nil, errors.Wrapf(err, "could not parse Deployment: %s", u.GetName())
@@ -335,14 +339,14 @@ func (b *Builder) buildDeployEmbeddedManifestStage(index int, s config.Stage) (*
 					if overrideContainer.Resources.Requests.Memory != "" || overrideContainer.Resources.Requests.CPU != "" {
 						requestsList, err := parseResourceList(overrideContainer.Resources.Requests.Memory, overrideContainer.Resources.Requests.CPU)
 						if err != nil {
-							return nil, err
+							return nil, errors.Wrapf(err, fmt.Sprintf(errParseResourceList, overrideContainer.Name))
 						}
 						d.Spec.Template.Spec.Containers[ii].Resources.Requests = requestsList
 					}
 					if overrideContainer.Resources.Limits.Memory != "" || overrideContainer.Resources.Limits.CPU != "" {
 						limitsList, err := parseResourceList(overrideContainer.Resources.Limits.Memory, overrideContainer.Resources.Limits.CPU)
 						if err != nil {
-							return nil, err
+							return nil, errors.Wrapf(err, fmt.Sprintf(errParseResourceList, overrideContainer.Name))
 						}
 						d.Spec.Template.Spec.Containers[ii].Resources.Limits = limitsList
 					}

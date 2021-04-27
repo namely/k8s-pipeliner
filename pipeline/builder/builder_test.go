@@ -10,7 +10,7 @@ import (
 	"github.com/namely/k8s-pipeliner/pipeline/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"k8s.io/api/extensions/v1beta1"
+	v1 "k8s.io/api/apps/v1"
 )
 
 func TestBuilderAssignsNotifications(t *testing.T) {
@@ -290,7 +290,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 
 			assert.Equal(t, "Test DeployEmbeddedManifests Stage", spinnaker.Stages[0].(*types.ManifestStage).Name)
 			assert.NotNil(t, spinnaker.Stages[0].(*types.ManifestStage).Manifests[0])
-			container := spinnaker.Stages[0].(*types.ManifestStage).Manifests[0].(*v1beta1.Deployment).Spec.Template.Spec.Containers[0]
+			container := spinnaker.Stages[0].(*types.ManifestStage).Manifests[0].(*v1.Deployment).Spec.Template.Spec.Containers[0]
 			assert.Equal(t, "2", container.Resources.Limits.Memory().String())
 			assert.Equal(t, "1", container.Resources.Limits.Cpu().String())
 			assert.Equal(t, "4", container.Resources.Requests.Memory().String())
@@ -347,7 +347,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 			builder := builder.New(pipeline)
 			spinnaker, err := builder.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
-			container := spinnaker.Stages[0].(*types.ManifestStage).Manifests[0].(*v1beta1.Deployment).Spec.Template.Spec.Containers[0]
+			container := spinnaker.Stages[0].(*types.ManifestStage).Manifests[0].(*v1.Deployment).Spec.Template.Spec.Containers[0]
 			assert.Equal(t, "300", container.Resources.Limits.Memory().String())
 			assert.Equal(t, "400", container.Resources.Limits.Cpu().String())
 			assert.Equal(t, "100", container.Resources.Requests.Memory().String())
