@@ -11,6 +11,15 @@ stages:
     deployEmbeddedManifests:
       files:
         - file: manifests/nginx-deployment.yml
+      containerOverrides:
+        - name: nginx
+          resources:
+            requests:
+              cpu: "100"
+              memory: "200"
+            limits:
+              cpu: "300"
+              memory: "400"
   - account: int-k8s
     name: Deploy to staging-k8s?
     manualJudgement:

@@ -18,3 +18,8 @@ deps:
 coveralls:
 	overalls -project=github.com/namely/k8s-pipeliner -covermode=count
 	goveralls -coverprofile=overalls.coverprofile -service=travis-ci
+
+.PHONY: lint
+lint:
+	golangci-lint run --skip-dirs=vendor --skip-dirs=gen --skip-dirs=mocks --deadline=5m --tests=true -E golint \
+    -E gosec -E unconvert -E goconst -E gocyclo -E goimports

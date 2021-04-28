@@ -326,6 +326,13 @@ stages:
     configuratorFiles:
       - file: test-configurator.yml
         env: superOps
+    containerOverrides:
+      name: "container-name"
+      resources:
+        requests:
+          memory: "100"
+          cpu: "200"
+          
 ```
 
 All of these files will be composed into a single stage deployment into the given account. This means you can deploy services and deployments in tandem together.

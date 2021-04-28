@@ -31,6 +31,11 @@ func TestNewConfig(t *testing.T) {
 	assert.Equal(t, stage.DeployEmbeddedManifests.Files[0].File, "manifests/nginx-deployment.yml")
 	assert.Equal(t, stage.Name, "Deploy nginx")
 	assert.Equal(t, stage.Account, "int-k8s")
+	assert.Equal(t, stage.DeployEmbeddedManifests.ContainerOverrides[0].Name, "nginx")
+	assert.Equal(t, stage.DeployEmbeddedManifests.ContainerOverrides[0].Resources.Requests.CPU, "100")
+	assert.Equal(t, stage.DeployEmbeddedManifests.ContainerOverrides[0].Resources.Requests.Memory, "200")
+	assert.Equal(t, stage.DeployEmbeddedManifests.ContainerOverrides[0].Resources.Limits.CPU, "300")
+	assert.Equal(t, stage.DeployEmbeddedManifests.ContainerOverrides[0].Resources.Limits.Memory, "400")
 	stage2 := cfg.Stages[1]
 	require.NotNil(t, stage2.ManualJudgement)
 	assert.Equal(t, stage2.ManualJudgement.Timeout, 100)
