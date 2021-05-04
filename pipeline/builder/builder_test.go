@@ -320,7 +320,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 			assert.Equal(t, int64(360000), spinnaker.Stages[0].(*types.ManifestStage).StageTimeoutMS)
 			assert.Equal(t, true, spinnaker.Stages[0].(*types.ManifestStage).OverrideTimeout)
 		})
-		t.Run("Overrides container overrides", func(t *testing.T) {
+		t.Run("Overrides container overrides limits and requests", func(t *testing.T) {
 			pipeline := &config.Pipeline{
 				Stages: []config.Stage{
 					{
@@ -353,6 +353,180 @@ func TestBuilderPipelineStages(t *testing.T) {
 			assert.Equal(t, "100", container.Resources.Requests.Memory().String())
 			assert.Equal(t, "200", container.Resources.Requests.Cpu().String())
 		})
+		t.Run("Overrides container overrides only requests", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						Name: "Test DeployEmbeddedManifests Stage",
+						DeployEmbeddedManifests: &config.DeployEmbeddedManifests{
+							Files: []config.ManifestFile{
+								{
+									File: file,
+								},
+							},
+							ContainerOverrides: []*config.ContainerOverrides{
+								{
+									Name: "test-container",
+									Resources: &config.Resources{
+										Requests: &config.Resource{Memory: "100", CPU: "200"},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+			builder := builder.New(pipeline)
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+			container := spinnaker.Stages[0].(*types.ManifestStage).Manifests[0].(*v1.Deployment).Spec.Template.Spec.Containers[0]
+			assert.Equal(t, "100", container.Resources.Requests.Memory().String())
+			assert.Equal(t, "200", container.Resources.Requests.Cpu().String())
+		})
+	})
+	t.Run("Overrides container overrides only limits", func(t *testing.T) {
+		pipeline := &config.Pipeline{
+			Stages: []config.Stage{
+				{
+					Name: "Test DeployEmbeddedManifests Stage",
+					DeployEmbeddedManifests: &config.DeployEmbeddedManifests{
+						Files: []config.ManifestFile{
+							{
+								File: file,
+							},
+						},
+						ContainerOverrides: []*config.ContainerOverrides{
+							{
+								Name: "test-container",
+								Resources: &config.Resources{
+									Limits: &config.Resource{Memory: "300Mi", CPU: "400m"},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		builder := builder.New(pipeline)
+		spinnaker, err := builder.Pipeline()
+		require.NoError(t, err, "error generating pipeline json")
+		container := spinnaker.Stages[0].(*types.ManifestStage).Manifests[0].(*v1.Deployment).Spec.Template.Spec.Containers[0]
+		assert.Equal(t, "300Mi", container.Resources.Limits.Memory().String())
+		assert.Equal(t, "400m", container.Resources.Limits.Cpu().String())
+	})
+	t.Run("Overrides container overrides only cpu with resources set in deployment", func(t *testing.T) {
+		pipeline := &config.Pipeline{
+			Stages: []config.Stage{
+				{
+					Name: "Test DeployEmbeddedManifests Stage",
+					DeployEmbeddedManifests: &config.DeployEmbeddedManifests{
+						Files: []config.ManifestFile{
+							{
+								File: file,
+							},
+						},
+						ContainerOverrides: []*config.ContainerOverrides{
+							{
+								Name: "test-container",
+								Resources: &config.Resources{
+									Requests: &config.Resource{CPU: "400m"},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		builder := builder.New(pipeline)
+		spinnaker, err := builder.Pipeline()
+		require.NoError(t, err, "error generating pipeline json")
+		container := spinnaker.Stages[0].(*types.ManifestStage).Manifests[0].(*v1.Deployment).Spec.Template.Spec.Containers[0]
+		assert.Equal(t, "4", container.Resources.Requests.Memory().String())
+		assert.Equal(t, "400m", container.Resources.Requests.Cpu().String())
+	})
+	t.Run("Overrides container overrides only cpu with resources not set in deployment", func(t *testing.T) {
+		pipeline := &config.Pipeline{
+			Stages: []config.Stage{
+				{
+					Name: "Test DeployEmbeddedManifests Stage",
+					DeployEmbeddedManifests: &config.DeployEmbeddedManifests{
+						Files: []config.ManifestFile{
+							{
+								File: file,
+							},
+						},
+						ContainerOverrides: []*config.ContainerOverrides{
+							{
+								Name: "test-container-no-resources",
+								Resources: &config.Resources{
+									Requests: &config.Resource{CPU: "400m"},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		builder := builder.New(pipeline)
+		spinnaker, err := builder.Pipeline()
+		require.NoError(t, err, "error generating pipeline json")
+		container := spinnaker.Stages[0].(*types.ManifestStage).Manifests[0].(*v1.Deployment).Spec.Template.Spec.Containers[1]
+		assert.Equal(t, "0", container.Resources.Requests.Memory().String())
+		assert.Equal(t, "400m", container.Resources.Requests.Cpu().String())
+	})
+	t.Run("fails to override requests", func(t *testing.T) {
+		pipeline := &config.Pipeline{
+			Stages: []config.Stage{
+				{
+					Name: "Test DeployEmbeddedManifests Stage",
+					DeployEmbeddedManifests: &config.DeployEmbeddedManifests{
+						Files: []config.ManifestFile{
+							{
+								File: file,
+							},
+						},
+						ContainerOverrides: []*config.ContainerOverrides{
+							{
+								Name: "test-container",
+								Resources: &config.Resources{
+									Requests: &config.Resource{Memory: "bad-memory", CPU: "bad-cpu"},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		builder := builder.New(pipeline)
+		_, err := builder.Pipeline()
+		assert.Error(t, err, "Failed to buildDeployEmbeddedManifestStage with error: could not override requests for container: test-container: could not parse memory: quantities must match the regular expression '^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$'")
+	})
+	t.Run("fails to override limits", func(t *testing.T) {
+		pipeline := &config.Pipeline{
+			Stages: []config.Stage{
+				{
+					Name: "Test DeployEmbeddedManifests Stage",
+					DeployEmbeddedManifests: &config.DeployEmbeddedManifests{
+						Files: []config.ManifestFile{
+							{
+								File: file,
+							},
+						},
+						ContainerOverrides: []*config.ContainerOverrides{
+							{
+								Name: "test-container",
+								Resources: &config.Resources{
+									Limits: &config.Resource{Memory: "bad-memory", CPU: "bad-cpu"},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		builder := builder.New(pipeline)
+		_, err := builder.Pipeline()
+		assert.Error(t, err, "Failed to buildDeployEmbeddedManifestStage with error: could not override limits for container: test-container: could not parse memory: quantities must match the regular expression '^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$'")
 	})
 
 	t.Run("Deploy stage is parsed correctly", func(t *testing.T) {

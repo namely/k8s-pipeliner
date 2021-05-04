@@ -39,6 +39,11 @@ stages:
       - file: test-configurator2.yml
         env: superOps
       - file: test-configurator.yml
+    containerOverrides:
+      - name: nginx
+        resources:
+          requests:
+            memory: 512Mi
 - account: ops-k8s
   name: "Scale Up"
   scaleManifest:
