@@ -45,11 +45,14 @@ spec:
             readOnly: true
         resources:
           limits:
-            cpu: "1"
-            memory: "2"
+            cpu: 1
+            memory: 2
           requests:
             cpu: "3"
             memory: "4"
+      - name: test-container-no-resources
+        command:
+          - echo
       volumes:
         - name: configmap-volume
           configMap:

@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	errParseResourceList = "unable to parse resource limits for container: %s"
+	errOverrideResource = "could not override %s for container: %s"
 )
 
 var (
@@ -333,23 +333,19 @@ func (b *Builder) buildDeployEmbeddedManifestStage(index int, s config.Stage) (*
 			}
 			for ii, specContainer := range d.Spec.Template.Spec.Containers {
 				for _, overrideContainer := range maniStage.ContainerOverrides {
-					if specContainer.Name != overrideContainer.Name {
+					if specContainer.Name != overrideContainer.Name || overrideContainer.Resources == nil {
 						continue
 					}
-					if overrideContainer.Resources.Requests.Memory != "" || overrideContainer.Resources.Requests.CPU != "" {
-						requestsList, err := parseResourceList(overrideContainer.Resources.Requests.Memory, overrideContainer.Resources.Requests.CPU)
-						if err != nil {
-							return nil, errors.Wrapf(err, fmt.Sprintf(errParseResourceList, overrideContainer.Name))
-						}
-						d.Spec.Template.Spec.Containers[ii].Resources.Requests = requestsList
+					requests, err := overrideResource(specContainer.Resources.Requests, overrideContainer.Resources.Requests)
+					if err != nil {
+						return nil, errors.Wrapf(err, errOverrideResource, "requests", overrideContainer.Name)
 					}
-					if overrideContainer.Resources.Limits.Memory != "" || overrideContainer.Resources.Limits.CPU != "" {
-						limitsList, err := parseResourceList(overrideContainer.Resources.Limits.Memory, overrideContainer.Resources.Limits.CPU)
-						if err != nil {
-							return nil, errors.Wrapf(err, fmt.Sprintf(errParseResourceList, overrideContainer.Name))
-						}
-						d.Spec.Template.Spec.Containers[ii].Resources.Limits = limitsList
+					d.Spec.Template.Spec.Containers[ii].Resources.Requests = requests
+					limits, err := overrideResource(specContainer.Resources.Limits, overrideContainer.Resources.Limits)
+					if err != nil {
+						return nil, errors.Wrapf(err, errOverrideResource, "limits", overrideContainer.Name)
 					}
+					d.Spec.Template.Spec.Containers[ii].Resources.Limits = limits
 				}
 			}
 			objs[i] = d.DeepCopyObject()
@@ -451,20 +447,29 @@ func (b *Builder) buildDeleteEmbeddedManifestStage(index int, s config.Stage) (*
 	return stage, nil
 }
 
-// parseResourceList converts memory and cpu string to a resourceList
-func parseResourceList(memory string, cpu string) (corev1.ResourceList, error) {
-	memoryQty, err := resource.ParseQuantity(memory)
-	if err != nil {
-		return nil, errors.Wrapf(err, "could not parse memory")
+func overrideResource(resourceList corev1.ResourceList, override *config.Resource) (corev1.ResourceList, error) {
+	if override == nil {
+		return resourceList, nil
 	}
-	cpuQty, err := resource.ParseQuantity(cpu)
-	if err != nil {
-		return nil, errors.Wrapf(err, "could not parse cpu")
+	result := make(corev1.ResourceList)
+	if resourceList != nil {
+		result = resourceList
 	}
-	return map[corev1.ResourceName]resource.Quantity{
-		corev1.ResourceMemory: memoryQty,
-		corev1.ResourceCPU:    cpuQty,
-	}, nil
+	if override.Memory != "" {
+		memoryQty, err := resource.ParseQuantity(override.Memory)
+		if err != nil {
+			return nil, errors.Wrapf(err, "could not parse memory")
+		}
+		result[corev1.ResourceMemory] = memoryQty
+	}
+	if override.CPU != "" {
+		cpuQty, err := resource.ParseQuantity(override.CPU)
+		if err != nil {
+			return nil, errors.Wrapf(err, "could not parse memory")
+		}
+		result[corev1.ResourceCPU] = cpuQty
+	}
+	return result, nil
 }
 
 func (b *Builder) defaultManifestStage(index int, s config.Stage) *types.ManifestStage {
