@@ -361,6 +361,7 @@ func (b *Builder) buildDeployEmbeddedManifestStage(index int, s config.Stage) (*
 					if err := setNestedFieldNoCopy(c, limits, "resources", "limits"); err != nil {
 						return nil, errors.Wrapf(err, "failed to set resources requests for container: %s", overrideContainer.Name)
 					}
+					d.Spec.Template.Spec.Containers[ii].Resources.Limits = limits
 				}
 			}
 			objs[i] = u
