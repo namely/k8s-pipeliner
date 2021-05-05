@@ -12,12 +12,10 @@ import (
 	"github.com/namely/k8s-pipeliner/pipeline/builder/types"
 	"github.com/namely/k8s-pipeliner/pipeline/config"
 	"github.com/pkg/errors"
-	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 )
 
 const (
@@ -325,30 +323,47 @@ func (b *Builder) buildDeployEmbeddedManifestStage(index int, s config.Stage) (*
 				continue
 			}
 
-			// if deployment set container overrides
-			var d v1.Deployment
-			err := runtime.DefaultUnstructuredConverter.FromUnstructured(u.UnstructuredContent(), &d)
-			if err != nil {
-				return nil, errors.Wrapf(err, "could not parse Deployment: %s", u.GetName())
-			}
-			for ii, specContainer := range d.Spec.Template.Spec.Containers {
+			// if containers in deployment set container overrides
+			c, _, _ := unstructured.NestedFieldNoCopy(u.Object, "spec", "template", "spec", "containers")
+			containers := c.([]interface{})
+
+			for i, unstructuredContainer := range containers {
+				container := unstructuredContainer.(map[string]interface{})
 				for _, overrideContainer := range maniStage.ContainerOverrides {
-					if specContainer.Name != overrideContainer.Name || overrideContainer.Resources == nil {
+					if container["name"] != overrideContainer.Name || overrideContainer.Resources == nil {
 						continue
 					}
-					requests, err := overrideResource(specContainer.Resources.Requests, overrideContainer.Resources.Requests)
+					c := (containers[i]).(map[string]interface{})
+					// set resources requests
+					requests, _, _ := unstructured.NestedFieldNoCopy(c, "resources", "requests")
+					requestsTyped, err := toResourceList(requests)
+					if err != nil {
+						return nil, errors.Wrapf(err, "failed to convert resources requests to a resource list for container: %s", overrideContainer.Name)
+					}
+					requests, err = overrideResource(requestsTyped, overrideContainer.Resources.Requests)
 					if err != nil {
 						return nil, errors.Wrapf(err, errOverrideResource, "requests", overrideContainer.Name)
 					}
-					d.Spec.Template.Spec.Containers[ii].Resources.Requests = requests
-					limits, err := overrideResource(specContainer.Resources.Limits, overrideContainer.Resources.Limits)
+					if err := setNestedFieldNoCopy(c, requests, "resources", "requests"); err != nil {
+						return nil, errors.Wrapf(err, "failed to set resources requests for container: %s", overrideContainer.Name)
+					}
+
+					// set resources limits
+					limits, _, _ := unstructured.NestedFieldNoCopy(c, "resources", "limits")
+					limitsTyped, err := toResourceList(limits)
+					if err != nil {
+						return nil, errors.Wrapf(err, "failed to convert resources limits to a resource list for container: %s", overrideContainer.Name)
+					}
+					limits, err = overrideResource(limitsTyped, overrideContainer.Resources.Limits)
 					if err != nil {
 						return nil, errors.Wrapf(err, errOverrideResource, "limits", overrideContainer.Name)
 					}
-					d.Spec.Template.Spec.Containers[ii].Resources.Limits = limits
+					if err := setNestedFieldNoCopy(c, limits, "resources", "limits"); err != nil {
+						return nil, errors.Wrapf(err, "failed to set resources requests for container: %s", overrideContainer.Name)
+					}
 				}
 			}
-			objs[i] = d.DeepCopyObject()
+			objs[i] = u
 		}
 
 		ds.Manifests = append(ds.Manifests, objs...)
@@ -458,16 +473,42 @@ func overrideResource(resourceList corev1.ResourceList, override *config.Resourc
 	if override.Memory != "" {
 		memoryQty, err := resource.ParseQuantity(override.Memory)
 		if err != nil {
-			return nil, errors.Wrapf(err, "could not parse memory")
+			return result, errors.Wrapf(err, "could not parse memory")
 		}
 		result[corev1.ResourceMemory] = memoryQty
 	}
 	if override.CPU != "" {
 		cpuQty, err := resource.ParseQuantity(override.CPU)
 		if err != nil {
-			return nil, errors.Wrapf(err, "could not parse memory")
+			return result, errors.Wrapf(err, "could not parse memory")
 		}
 		result[corev1.ResourceCPU] = cpuQty
+	}
+	return result, nil
+}
+func toResourceList(i interface{}) (corev1.ResourceList, error) {
+	result := make(corev1.ResourceList)
+
+	if i == nil {
+		return result, nil
+	}
+	resourceList, ok := i.(map[string]interface{})
+	if !ok {
+		return result, nil
+	}
+	if cpu, found := resourceList[corev1.ResourceCPU.String()]; found {
+		cpuQty, err := resource.ParseQuantity(fmt.Sprint(cpu))
+		if err != nil {
+			return result, errors.Wrapf(err, "could not parse cpu")
+		}
+		result[corev1.ResourceCPU] = cpuQty
+	}
+	if memory, found := resourceList[corev1.ResourceMemory.String()]; found {
+		memoryQty, err := resource.ParseQuantity(fmt.Sprint(memory))
+		if err != nil {
+			return result, errors.Wrapf(err, "could not parse memory")
+		}
+		result[corev1.ResourceMemory] = memoryQty
 	}
 	return result, nil
 }
@@ -505,6 +546,25 @@ func (b *Builder) defaultManifestStage(index int, s config.Stage) *types.Manifes
 	}
 
 	return stage
+}
+func setNestedFieldNoCopy(obj map[string]interface{}, value interface{}, fields ...string) error {
+	m := obj
+
+	for i, field := range fields[:len(fields)-1] {
+		if val, ok := m[field]; ok {
+			if valMap, ok := val.(map[string]interface{}); ok {
+				m = valMap
+			} else {
+				return fmt.Errorf("value cannot be set because %v is not a map[string]interface{}", fields[:i+1])
+			}
+		} else {
+			newVal := make(map[string]interface{})
+			m[field] = newVal
+			m = newVal
+		}
+	}
+	m[fields[len(fields)-1]] = value
+	return nil
 }
 
 func (b *Builder) buildWebHookStage(index int, s config.Stage) (*types.Webhook, error) {

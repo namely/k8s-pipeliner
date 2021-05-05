@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 func TestBuilderAssignsNotifications(t *testing.T) {
@@ -289,8 +290,13 @@ func TestBuilderPipelineStages(t *testing.T) {
 			require.NoError(t, err, "error generating pipeline json")
 
 			assert.Equal(t, "Test DeployEmbeddedManifests Stage", spinnaker.Stages[0].(*types.ManifestStage).Name)
-			assert.NotNil(t, spinnaker.Stages[0].(*types.ManifestStage).Manifests[0])
-			container := spinnaker.Stages[0].(*types.ManifestStage).Manifests[0].(*v1.Deployment).Spec.Template.Spec.Containers[0]
+			manifest := spinnaker.Stages[0].(*types.ManifestStage).Manifests[0]
+			assert.NotNil(t, manifest)
+			var d v1.Deployment
+			u, _ := runtime.DefaultUnstructuredConverter.ToUnstructured(manifest)
+			err = runtime.DefaultUnstructuredConverter.FromUnstructured(u, &d)
+			assert.NoError(t, err)
+			container := d.Spec.Template.Spec.Containers[0]
 			assert.Equal(t, "2", container.Resources.Limits.Memory().String())
 			assert.Equal(t, "1", container.Resources.Limits.Cpu().String())
 			assert.Equal(t, "4", container.Resources.Requests.Memory().String())
@@ -347,7 +353,11 @@ func TestBuilderPipelineStages(t *testing.T) {
 			builder := builder.New(pipeline)
 			spinnaker, err := builder.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
-			container := spinnaker.Stages[0].(*types.ManifestStage).Manifests[0].(*v1.Deployment).Spec.Template.Spec.Containers[0]
+			var d v1.Deployment
+			u, _ := runtime.DefaultUnstructuredConverter.ToUnstructured(spinnaker.Stages[0].(*types.ManifestStage).Manifests[0])
+			err = runtime.DefaultUnstructuredConverter.FromUnstructured(u, &d)
+			require.NoError(t, err)
+			container := d.Spec.Template.Spec.Containers[0]
 			assert.Equal(t, "300", container.Resources.Limits.Memory().String())
 			assert.Equal(t, "400", container.Resources.Limits.Cpu().String())
 			assert.Equal(t, "100", container.Resources.Requests.Memory().String())
@@ -379,7 +389,11 @@ func TestBuilderPipelineStages(t *testing.T) {
 			builder := builder.New(pipeline)
 			spinnaker, err := builder.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
-			container := spinnaker.Stages[0].(*types.ManifestStage).Manifests[0].(*v1.Deployment).Spec.Template.Spec.Containers[0]
+			var d v1.Deployment
+			u, _ := runtime.DefaultUnstructuredConverter.ToUnstructured(spinnaker.Stages[0].(*types.ManifestStage).Manifests[0])
+			err = runtime.DefaultUnstructuredConverter.FromUnstructured(u, &d)
+			require.NoError(t, err)
+			container := d.Spec.Template.Spec.Containers[0]
 			assert.Equal(t, "100", container.Resources.Requests.Memory().String())
 			assert.Equal(t, "200", container.Resources.Requests.Cpu().String())
 		})
@@ -410,7 +424,11 @@ func TestBuilderPipelineStages(t *testing.T) {
 		builder := builder.New(pipeline)
 		spinnaker, err := builder.Pipeline()
 		require.NoError(t, err, "error generating pipeline json")
-		container := spinnaker.Stages[0].(*types.ManifestStage).Manifests[0].(*v1.Deployment).Spec.Template.Spec.Containers[0]
+		var d v1.Deployment
+		u, _ := runtime.DefaultUnstructuredConverter.ToUnstructured(spinnaker.Stages[0].(*types.ManifestStage).Manifests[0])
+		err = runtime.DefaultUnstructuredConverter.FromUnstructured(u, &d)
+		require.NoError(t, err)
+		container := d.Spec.Template.Spec.Containers[0]
 		assert.Equal(t, "300Mi", container.Resources.Limits.Memory().String())
 		assert.Equal(t, "400m", container.Resources.Limits.Cpu().String())
 	})
@@ -440,7 +458,11 @@ func TestBuilderPipelineStages(t *testing.T) {
 		builder := builder.New(pipeline)
 		spinnaker, err := builder.Pipeline()
 		require.NoError(t, err, "error generating pipeline json")
-		container := spinnaker.Stages[0].(*types.ManifestStage).Manifests[0].(*v1.Deployment).Spec.Template.Spec.Containers[0]
+		var d v1.Deployment
+		u, _ := runtime.DefaultUnstructuredConverter.ToUnstructured(spinnaker.Stages[0].(*types.ManifestStage).Manifests[0])
+		err = runtime.DefaultUnstructuredConverter.FromUnstructured(u, &d)
+		require.NoError(t, err)
+		container := d.Spec.Template.Spec.Containers[0]
 		assert.Equal(t, "4", container.Resources.Requests.Memory().String())
 		assert.Equal(t, "400m", container.Resources.Requests.Cpu().String())
 	})
@@ -470,7 +492,11 @@ func TestBuilderPipelineStages(t *testing.T) {
 		builder := builder.New(pipeline)
 		spinnaker, err := builder.Pipeline()
 		require.NoError(t, err, "error generating pipeline json")
-		container := spinnaker.Stages[0].(*types.ManifestStage).Manifests[0].(*v1.Deployment).Spec.Template.Spec.Containers[1]
+		var d v1.Deployment
+		u, _ := runtime.DefaultUnstructuredConverter.ToUnstructured(spinnaker.Stages[0].(*types.ManifestStage).Manifests[0])
+		err = runtime.DefaultUnstructuredConverter.FromUnstructured(u, &d)
+		require.NoError(t, err)
+		container := d.Spec.Template.Spec.Containers[1]
 		assert.Equal(t, "0", container.Resources.Requests.Memory().String())
 		assert.Equal(t, "400m", container.Resources.Requests.Cpu().String())
 	})
