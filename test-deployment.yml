@@ -6,7 +6,7 @@ metadata:
   labels:
     app: nginx
 spec:
-  replicas: 3
+  replicas: '${ #toInt(parameters.random) }'
   selector:
     matchLabels:
       app: nginx
