@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/suite"
-	v1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/namely/k8s-pipeliner/pipeline/builder"
@@ -57,7 +56,7 @@ func (em *EmbeddedManifestTest) TestFilesAreBuilt() {
 
 	em.Require().Len(stg.Manifests, 1)
 
-	deploy, ok := stg.Manifests[0].(*v1.Deployment)
+	deploy, ok := stg.Manifests[0].(*unstructured.Unstructured)
 	em.Require().True(ok)
 	em.Equal("nginx-deployment", deploy.GetName())
 }
@@ -248,7 +247,7 @@ func (em *EmbeddedManifestTest) TestMonikerAnnotationsAreIncluded() {
 	em.Equal("fake-detail", stg.Moniker.Detail)
 	em.Equal("fake-cluster", stg.Moniker.Cluster)
 
-	_, dok := stg.Manifests[0].(*v1.Deployment)
+	_, dok := stg.Manifests[0].(*unstructured.Unstructured)
 	em.Require().True(dok)
 }
 
@@ -276,7 +275,7 @@ func (em *EmbeddedManifestTest) TestDeployEmbeddedManifestDefaultProperties() {
 
 	em.Require().Len(stg.Manifests, 1)
 
-	deploy, ok := stg.Manifests[0].(*v1.Deployment)
+	deploy, ok := stg.Manifests[0].(*unstructured.Unstructured)
 	em.Require().True(ok)
 	em.Equal("nginx-deployment", deploy.GetName())
 
