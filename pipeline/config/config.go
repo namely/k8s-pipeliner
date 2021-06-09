@@ -121,6 +121,7 @@ type RunSpinnakerPipelineStage struct {
 	FailPipeline                  *bool `yaml:"failPipeline,omitempty"`
 	MarkUnstableAsSuccessful      *bool `yaml:"markUnstableAsSuccessful,omitempty"`
 	WaitForCompletion             *bool `yaml:"waitForCompletion,omitempty"`
+	StageTimeoutMS                int64 `yaml:"stageTimeoutMs,omitempty"`
 }
 
 // WebhookTrigger defines how a webhook can trigger a pipeline execution
