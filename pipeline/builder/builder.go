@@ -520,7 +520,7 @@ func (b *Builder) defaultManifestStage(index int, s config.Stage) *types.Manifes
 	failPipeline := setDefaultIfNil(s.DeployEmbeddedManifests.FailPipeline, true)
 	markUnstableAsSuccessful := setDefaultIfNil(s.DeployEmbeddedManifests.MarkUnstableAsSuccessful, false)
 	waitForCompletion := setDefaultIfNil(s.DeployEmbeddedManifests.WaitForCompletion, true)
-	timeoutMs := setDefaultIntIfNil(s.DeployEmbeddedManifests.StageTimeoutMS, 1800000) // defaults to 30 minutes
+	timeoutMs := setDefaultIntIfNil(s.DeployEmbeddedManifests.StageTimeoutMS, int64(1800000)) // defaults to 30 minutes
 
 	stage := &types.ManifestStage{
 		StageMetadata:           buildStageMetadata(s, "deployManifest", index, b.isLinear),
@@ -621,7 +621,7 @@ func (b *Builder) buildRunSpinnakerPipelineStage(index int, s config.Stage) (*ty
 	failPipeline := setDefaultIfNil(s.RunSpinnakerPipeline.FailPipeline, true)
 	markUnstableAsSuccessful := setDefaultIfNil(s.RunSpinnakerPipeline.MarkUnstableAsSuccessful, false)
 	waitForCompletion := setDefaultIfNil(s.RunSpinnakerPipeline.WaitForCompletion, true)
-	timeoutMs := setDefaultIntIfNil(s.RunSpinnakerPipeline.StageTimeoutMS, 3600000) // defaults to 1 hour
+	timeoutMs := setDefaultIntIfNil(s.RunSpinnakerPipeline.StageTimeoutMS, int64(3600000)) // defaults to 1 hour
 
 	stage := &types.RunSpinnakerPipelineStage{
 		StageMetadata:                 buildStageMetadata(s, "pipeline", index, b.isLinear),
