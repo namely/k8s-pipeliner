@@ -302,14 +302,12 @@ func TestBuilderPipelineStages(t *testing.T) {
 			assert.Equal(t, "4", container.Resources.Requests.Memory().String())
 			assert.Equal(t, "3", container.Resources.Requests.Cpu().String())
 		})
-
-		t.Run("Overrides default timeout", func(t *testing.T) {
+		t.Run("Sets default stage timeout of 30 minutes", func(t *testing.T) {
 			pipeline := &config.Pipeline{
 				Stages: []config.Stage{
 					{
 						Name: "Test DeployEmbeddedManifests Stage",
 						DeployEmbeddedManifests: &config.DeployEmbeddedManifests{
-							StageTimeoutMS: 360000,
 							Files: []config.ManifestFile{
 								{
 									File: file,
@@ -323,7 +321,31 @@ func TestBuilderPipelineStages(t *testing.T) {
 			spinnaker, err := builder.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
 
-			assert.Equal(t, int64(360000), spinnaker.Stages[0].(*types.ManifestStage).StageTimeoutMS)
+			assert.Equal(t, int64(1800000), spinnaker.Stages[0].(*types.ManifestStage).StageTimeoutMS)
+			assert.Equal(t, true, spinnaker.Stages[0].(*types.ManifestStage).OverrideTimeout)
+		})
+		t.Run("Overrides default timeout", func(t *testing.T) {
+			overrideTimeout := int64(360000)
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						Name: "Test DeployEmbeddedManifests Stage",
+						DeployEmbeddedManifests: &config.DeployEmbeddedManifests{
+							StageTimeoutMS: overrideTimeout,
+							Files: []config.ManifestFile{
+								{
+									File: file,
+								},
+							},
+						},
+					},
+				},
+			}
+			builder := builder.New(pipeline)
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			assert.Equal(t, overrideTimeout, spinnaker.Stages[0].(*types.ManifestStage).StageTimeoutMS)
 			assert.Equal(t, true, spinnaker.Stages[0].(*types.ManifestStage).OverrideTimeout)
 		})
 		t.Run("Overrides container overrides limits and requests", func(t *testing.T) {
@@ -1158,6 +1180,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 
 			boolt := true
 			boolf := false
+			oneHour := int64(3600000)
 			pipeline := &config.Pipeline{
 				Stages: []config.Stage{
 					{
@@ -1208,6 +1231,29 @@ func TestBuilderPipelineStages(t *testing.T) {
 			assert.Equal(t, &boolt, stg.FailPipeline)
 			assert.Equal(t, &boolf, stg.MarkUnstableAsSuccessful)
 			assert.Equal(t, &boolt, stg.WaitForCompletion)
+			assert.Equal(t, boolt, stg.OverrideTimeout)
+			assert.Equal(t, oneHour, stg.StageTimeoutMS)
+		})
+
+		t.Run("Overrides default timeout", func(t *testing.T) {
+			overridingTimeout := int64(1)
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						Name: "Test RunSpinnakerPipeline Stage",
+						RunSpinnakerPipeline: &config.RunSpinnakerPipelineStage{
+							StageTimeoutMS:     overridingTimeout,
+							PipelineParameters: []config.PassthroughParameter{},
+						},
+					},
+				},
+			}
+			builder := builder.New(pipeline)
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			assert.Equal(t, overridingTimeout, spinnaker.Stages[0].(*types.RunSpinnakerPipelineStage).StageTimeoutMS)
+			assert.Equal(t, true, spinnaker.Stages[0].(*types.RunSpinnakerPipelineStage).OverrideTimeout)
 		})
 
 		t.Run("RequisiteStageRefIds defaults to an empty slice", func(t *testing.T) {

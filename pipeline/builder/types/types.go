@@ -266,6 +266,8 @@ type RunSpinnakerPipelineStage struct {
 	FailPipeline                  *bool `json:"failPipeline,omitempty"`
 	MarkUnstableAsSuccessful      *bool `json:"markUnstableAsSuccessful,omitempty"`
 	WaitForCompletion             *bool `json:"waitForCompletion,omitempty"`
+	OverrideTimeout               bool  `json:"overrideTimeout,omitempty"`
+	StageTimeoutMS                int64 `json:"stageTimeoutMs,omitempty"`
 }
 
 func (sps RunSpinnakerPipelineStage) spinnakerStage() {}

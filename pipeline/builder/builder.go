@@ -520,6 +520,7 @@ func (b *Builder) defaultManifestStage(index int, s config.Stage) *types.Manifes
 	failPipeline := setDefaultIfNil(s.DeployEmbeddedManifests.FailPipeline, true)
 	markUnstableAsSuccessful := setDefaultIfNil(s.DeployEmbeddedManifests.MarkUnstableAsSuccessful, false)
 	waitForCompletion := setDefaultIfNil(s.DeployEmbeddedManifests.WaitForCompletion, true)
+	timeoutMs := setDefaultIntIfNil(s.DeployEmbeddedManifests.StageTimeoutMS, int64(1800000)) // defaults to 30 minutes
 
 	stage := &types.ManifestStage{
 		StageMetadata:           buildStageMetadata(s, "deployManifest", index, b.isLinear),
@@ -538,11 +539,8 @@ func (b *Builder) defaultManifestStage(index int, s config.Stage) *types.Manifes
 		FailPipeline:                  &failPipeline,
 		MarkUnstableAsSuccessful:      &markUnstableAsSuccessful,
 		WaitForCompletion:             &waitForCompletion,
-	}
-
-	if s.DeployEmbeddedManifests.StageTimeoutMS > 0 {
-		stage.OverrideTimeout = true
-		stage.StageTimeoutMS = s.DeployEmbeddedManifests.StageTimeoutMS
+		OverrideTimeout:               true,
+		StageTimeoutMS:                timeoutMs,
 	}
 
 	return stage
@@ -623,6 +621,7 @@ func (b *Builder) buildRunSpinnakerPipelineStage(index int, s config.Stage) (*ty
 	failPipeline := setDefaultIfNil(s.RunSpinnakerPipeline.FailPipeline, true)
 	markUnstableAsSuccessful := setDefaultIfNil(s.RunSpinnakerPipeline.MarkUnstableAsSuccessful, false)
 	waitForCompletion := setDefaultIfNil(s.RunSpinnakerPipeline.WaitForCompletion, true)
+	timeoutMs := setDefaultIntIfNil(s.RunSpinnakerPipeline.StageTimeoutMS, int64(3600000)) // defaults to 1 hour
 
 	stage := &types.RunSpinnakerPipelineStage{
 		StageMetadata:                 buildStageMetadata(s, "pipeline", index, b.isLinear),
@@ -635,6 +634,8 @@ func (b *Builder) buildRunSpinnakerPipelineStage(index int, s config.Stage) (*ty
 		FailPipeline:                  &failPipeline,
 		MarkUnstableAsSuccessful:      &markUnstableAsSuccessful,
 		WaitForCompletion:             &waitForCompletion,
+		OverrideTimeout:               true,
+		StageTimeoutMS:                timeoutMs,
 	}
 
 	for _, p := range s.RunSpinnakerPipeline.PipelineParameters {
@@ -649,6 +650,15 @@ func setDefaultIfNil(givenValue *bool, defaultValue bool) bool {
 	retValue := defaultValue
 	if givenValue != nil {
 		retValue = *(givenValue)
+	}
+
+	return retValue
+}
+
+func setDefaultIntIfNil(givenValue int64, defaultValue int64) int64 {
+	retValue := defaultValue
+	if givenValue != 0 {
+		retValue = givenValue
 	}
 
 	return retValue
