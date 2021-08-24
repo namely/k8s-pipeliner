@@ -10,7 +10,8 @@ import (
 	"github.com/namely/k8s-pipeliner/pipeline/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	v1 "k8s.io/api/apps/v1"
+	appsv1 "k8s.io/api/apps/v1"
+	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -292,7 +293,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 			assert.Equal(t, "Test DeployEmbeddedManifests Stage", spinnaker.Stages[0].(*types.ManifestStage).Name)
 			manifest := spinnaker.Stages[0].(*types.ManifestStage).Manifests[0]
 			assert.NotNil(t, manifest)
-			var d v1.Deployment
+			var d appsv1.Deployment
 			u, _ := runtime.DefaultUnstructuredConverter.ToUnstructured(manifest)
 			err = runtime.DefaultUnstructuredConverter.FromUnstructured(u, &d)
 			assert.NoError(t, err)
@@ -375,7 +376,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 			builder := builder.New(pipeline)
 			spinnaker, err := builder.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
-			var d v1.Deployment
+			var d appsv1.Deployment
 			u, _ := runtime.DefaultUnstructuredConverter.ToUnstructured(spinnaker.Stages[0].(*types.ManifestStage).Manifests[0])
 			err = runtime.DefaultUnstructuredConverter.FromUnstructured(u, &d)
 			require.NoError(t, err)
@@ -411,7 +412,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 			builder := builder.New(pipeline)
 			spinnaker, err := builder.Pipeline()
 			require.NoError(t, err, "error generating pipeline json")
-			var d v1.Deployment
+			var d appsv1.Deployment
 			u, _ := runtime.DefaultUnstructuredConverter.ToUnstructured(spinnaker.Stages[0].(*types.ManifestStage).Manifests[0])
 			err = runtime.DefaultUnstructuredConverter.FromUnstructured(u, &d)
 			require.NoError(t, err)
@@ -446,13 +447,50 @@ func TestBuilderPipelineStages(t *testing.T) {
 		builder := builder.New(pipeline)
 		spinnaker, err := builder.Pipeline()
 		require.NoError(t, err, "error generating pipeline json")
-		var d v1.Deployment
+		var d appsv1.Deployment
 		u, _ := runtime.DefaultUnstructuredConverter.ToUnstructured(spinnaker.Stages[0].(*types.ManifestStage).Manifests[0])
 		err = runtime.DefaultUnstructuredConverter.FromUnstructured(u, &d)
 		require.NoError(t, err)
 		container := d.Spec.Template.Spec.Containers[0]
 		assert.Equal(t, "300Mi", container.Resources.Limits.Memory().String())
 		assert.Equal(t, "400m", container.Resources.Limits.Cpu().String())
+	})
+	t.Run("Overrides container overrides only cpu with resources set in CronJob", func(t *testing.T) {
+		pipeline := &config.Pipeline{
+			Stages: []config.Stage{
+				{
+					Name: "Test DeployEmbeddedManifests Stage",
+					DeployEmbeddedManifests: &config.DeployEmbeddedManifests{
+						Files: []config.ManifestFile{
+							{
+								File: filepath.Join(wd, "testdata", "cronjob.v1beta1.yml"),
+							},
+						},
+						ContainerOverrides: []*config.ContainerOverrides{
+							{
+								Name: "hello",
+								Resources: &config.Resources{
+									Limits: &config.Resource{Memory: "300Mi", CPU: "300m"},
+									Requests: &config.Resource{Memory: "500Mi", CPU: "500m"},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		builder := builder.New(pipeline)
+		spinnaker, err := builder.Pipeline()
+		require.NoError(t, err, "error generating pipeline json")
+		var c batchv1beta1.CronJob
+		u, _ := runtime.DefaultUnstructuredConverter.ToUnstructured(spinnaker.Stages[0].(*types.ManifestStage).Manifests[0])
+		err = runtime.DefaultUnstructuredConverter.FromUnstructured(u, &c)
+		require.NoError(t, err)
+		container := c.Spec.JobTemplate.Spec.Template.Spec.Containers[0]
+		assert.Equal(t, "500Mi", container.Resources.Requests.Memory().String())
+		assert.Equal(t, "500m", container.Resources.Requests.Cpu().String())
+		assert.Equal(t, "300Mi", container.Resources.Limits.Memory().String())
+		assert.Equal(t, "300m", container.Resources.Limits.Cpu().String())
 	})
 	t.Run("Overrides container overrides only cpu with resources set in deployment", func(t *testing.T) {
 		pipeline := &config.Pipeline{
@@ -480,7 +518,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 		builder := builder.New(pipeline)
 		spinnaker, err := builder.Pipeline()
 		require.NoError(t, err, "error generating pipeline json")
-		var d v1.Deployment
+		var d appsv1.Deployment
 		u, _ := runtime.DefaultUnstructuredConverter.ToUnstructured(spinnaker.Stages[0].(*types.ManifestStage).Manifests[0])
 		err = runtime.DefaultUnstructuredConverter.FromUnstructured(u, &d)
 		require.NoError(t, err)
@@ -514,7 +552,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 		builder := builder.New(pipeline)
 		spinnaker, err := builder.Pipeline()
 		require.NoError(t, err, "error generating pipeline json")
-		var d v1.Deployment
+		var d appsv1.Deployment
 		u, _ := runtime.DefaultUnstructuredConverter.ToUnstructured(spinnaker.Stages[0].(*types.ManifestStage).Manifests[0])
 		err = runtime.DefaultUnstructuredConverter.FromUnstructured(u, &d)
 		require.NoError(t, err)

@@ -319,51 +319,97 @@ func (b *Builder) buildDeployEmbeddedManifestStage(index int, s config.Stage) (*
 			if !ok {
 				return nil, errors.New("manifest parser returned an unexpected object type")
 			}
-			if u.GetKind() != "Deployment" {
-				continue
-			}
 
-			// if containers in deployment set container overrides
-			c, _, _ := unstructured.NestedFieldNoCopy(u.Object, "spec", "template", "spec", "containers")
-			containers := c.([]interface{})
+			if u.GetKind() == "Deployment" {
+				// if containers in deployment set container overrides
+				c, _, _ := unstructured.NestedFieldNoCopy(u.Object, "spec", "template", "spec", "containers")
+				containers := c.([]interface{})
 
-			for i, unstructuredContainer := range containers {
-				container := unstructuredContainer.(map[string]interface{})
-				for _, overrideContainer := range maniStage.ContainerOverrides {
-					if container["name"] != overrideContainer.Name || overrideContainer.Resources == nil {
-						continue
-					}
-					c := (containers[i]).(map[string]interface{})
-					// set resources requests
-					requests, _, _ := unstructured.NestedFieldNoCopy(c, "resources", "requests")
-					requestsTyped, err := toResourceList(requests)
-					if err != nil {
-						return nil, errors.Wrapf(err, "failed to convert resources requests to a resource list for container: %s", overrideContainer.Name)
-					}
-					requests, err = overrideResource(requestsTyped, overrideContainer.Resources.Requests)
-					if err != nil {
-						return nil, errors.Wrapf(err, errOverrideResource, "requests", overrideContainer.Name)
-					}
-					if err := setNestedFieldNoCopy(c, requests, "resources", "requests"); err != nil {
-						return nil, errors.Wrapf(err, "failed to set resources requests for container: %s", overrideContainer.Name)
-					}
+				for i, unstructuredContainer := range containers {
+					container := unstructuredContainer.(map[string]interface{})
+					for _, overrideContainer := range maniStage.ContainerOverrides {
+						if container["name"] != overrideContainer.Name || overrideContainer.Resources == nil {
+							continue
+						}
+						c := (containers[i]).(map[string]interface{})
+						// set resources requests
+						requests, _, _ := unstructured.NestedFieldNoCopy(c, "resources", "requests")
+						requestsTyped, err := toResourceList(requests)
+						if err != nil {
+							return nil, errors.Wrapf(err, "failed to convert resources requests to a resource list for container: %s", overrideContainer.Name)
+						}
+						requests, err = overrideResource(requestsTyped, overrideContainer.Resources.Requests)
+						if err != nil {
+							return nil, errors.Wrapf(err, errOverrideResource, "requests", overrideContainer.Name)
+						}
+						if err := setNestedFieldNoCopy(c, requests, "resources", "requests"); err != nil {
+							return nil, errors.Wrapf(err, "failed to set resources requests for container: %s", overrideContainer.Name)
+						}
 
-					// set resources limits
-					limits, _, _ := unstructured.NestedFieldNoCopy(c, "resources", "limits")
-					limitsTyped, err := toResourceList(limits)
-					if err != nil {
-						return nil, errors.Wrapf(err, "failed to convert resources limits to a resource list for container: %s", overrideContainer.Name)
-					}
-					limits, err = overrideResource(limitsTyped, overrideContainer.Resources.Limits)
-					if err != nil {
-						return nil, errors.Wrapf(err, errOverrideResource, "limits", overrideContainer.Name)
-					}
-					if err := setNestedFieldNoCopy(c, limits, "resources", "limits"); err != nil {
-						return nil, errors.Wrapf(err, "failed to set resources requests for container: %s", overrideContainer.Name)
+						// set resources limits
+						limits, _, _ := unstructured.NestedFieldNoCopy(c, "resources", "limits")
+						limitsTyped, err := toResourceList(limits)
+						if err != nil {
+							return nil, errors.Wrapf(err, "failed to convert resources limits to a resource list for container: %s", overrideContainer.Name)
+						}
+						limits, err = overrideResource(limitsTyped, overrideContainer.Resources.Limits)
+						if err != nil {
+							return nil, errors.Wrapf(err, errOverrideResource, "limits", overrideContainer.Name)
+						}
+						if err := setNestedFieldNoCopy(c, limits, "resources", "limits"); err != nil {
+							return nil, errors.Wrapf(err, "failed to set resources requests for container: %s", overrideContainer.Name)
+						}
 					}
 				}
+				objs[i] = u
+			} else if u.GetKind() == "CronJob" {
+				// if containers in CronJob set container overrides
+				c, _, _ := unstructured.NestedFieldNoCopy(u.Object, "spec", "jobTemplate", "spec", "template", "spec", "containers")
+				containers := c.([]interface{})
+
+				for i, unstructuredContainer := range containers {
+					container := unstructuredContainer.(map[string]interface{})
+
+					for _, overrideContainer := range maniStage.ContainerOverrides {
+
+						if container["name"] != overrideContainer.Name || overrideContainer.Resources == nil {
+							continue
+						}
+						c := (containers[i]).(map[string]interface{})
+
+						// set resources requests
+						requests, _, _ := unstructured.NestedFieldNoCopy(c, "resources", "requests")
+						requestsTyped, err := toResourceList(requests)
+						if err != nil {
+							return nil, errors.Wrapf(err, "failed to convert resources requests to a resource list for container: %s", overrideContainer.Name)
+						}
+						requests, err = overrideResource(requestsTyped, overrideContainer.Resources.Requests)
+						if err != nil {
+							return nil, errors.Wrapf(err, errOverrideResource, "requests", overrideContainer.Name)
+						}
+						if err := setNestedFieldNoCopy(c, requests, "resources", "requests"); err != nil {
+							return nil, errors.Wrapf(err, "failed to set resources requests for container: %s", overrideContainer.Name)
+						}
+
+						// set resources limits
+						limits, _, _ := unstructured.NestedFieldNoCopy(c, "resources", "limits")
+						limitsTyped, err := toResourceList(limits)
+						if err != nil {
+							return nil, errors.Wrapf(err, "failed to convert resources limits to a resource list for container: %s", overrideContainer.Name)
+						}
+						limits, err = overrideResource(limitsTyped, overrideContainer.Resources.Limits)
+						if err != nil {
+							return nil, errors.Wrapf(err, errOverrideResource, "limits", overrideContainer.Name)
+						}
+						if err := setNestedFieldNoCopy(c, limits, "resources", "limits"); err != nil {
+							return nil, errors.Wrapf(err, "failed to set resources requests for container: %s", overrideContainer.Name)
+						}
+					}
+				}
+				objs[i] = u
+			} else {
+				continue
 			}
-			objs[i] = u
 		}
 
 		ds.Manifests = append(ds.Manifests, objs...)
