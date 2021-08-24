@@ -1,6 +1,6 @@
 # Kubernetes Pipeliner
 
-[![Build Status](https://travis-ci.org/namely/k8s-pipeliner.svg?branch=master)](https://travis-ci.org/namely/k8s-pipeliner)
+[![Build Status](https://travis-ci.com/namely/k8s-pipeliner.svg?branch=master)](https://travis-ci.com/namely/k8s-pipeliner)
 [![Coverage Status](https://coveralls.io/repos/github/namely/k8s-pipeliner/badge.svg)](https://coveralls.io/github/namely/k8s-pipeliner)
 
 This tool is used to generate pipeline JSON for [Spinnaker](https://spinnaker.io) from Kubernetes manifest files.
@@ -332,7 +332,7 @@ stages:
         requests:
           memory: "100"
           cpu: "200"
-          
+
 ```
 
 All of these files will be composed into a single stage deployment into the given account. This means you can deploy services and deployments in tandem together.
