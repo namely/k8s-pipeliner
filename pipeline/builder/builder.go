@@ -320,15 +320,15 @@ func (b *Builder) buildDeployEmbeddedManifestStage(index int, s config.Stage) (*
 				return nil, errors.New("manifest parser returned an unexpected object type")
 			}
 
-			if u.GetKind() == "Deployment" || u.GetKind() == "CronJob" {
+			if u.GetKind() == "Deployment" || u.GetKind() == "Job" || u.GetKind() == "CronJob" {
 				var c interface{}
 
 				// Gets the containers based on the kind
-				if u.GetKind() == "Deployment" {
-					// Deployment's nested struct
+				if u.GetKind() == "Deployment" || u.GetKind() == "Job" {
+					// Deployment and Job nested struct
 					c, _, _ = unstructured.NestedFieldNoCopy(u.Object, "spec", "template", "spec", "containers")
 				} else {
-					// CronJob's nested struct
+					// CronJob nested struct
 					c, _, _ = unstructured.NestedFieldNoCopy(u.Object, "spec", "jobTemplate", "spec", "template", "spec", "containers")
 				}
 

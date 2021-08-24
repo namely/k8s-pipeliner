@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
+	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -455,7 +456,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 		assert.Equal(t, "300Mi", container.Resources.Limits.Memory().String())
 		assert.Equal(t, "400m", container.Resources.Limits.Cpu().String())
 	})
-	t.Run("Overrides container overrides only cpu with resources set in CronJob", func(t *testing.T) {
+	t.Run("Overrides container overrides resources set in CronJob", func(t *testing.T) {
 		pipeline := &config.Pipeline{
 			Stages: []config.Stage{
 				{
@@ -487,6 +488,43 @@ func TestBuilderPipelineStages(t *testing.T) {
 		err = runtime.DefaultUnstructuredConverter.FromUnstructured(u, &c)
 		require.NoError(t, err)
 		container := c.Spec.JobTemplate.Spec.Template.Spec.Containers[0]
+		assert.Equal(t, "500Mi", container.Resources.Requests.Memory().String())
+		assert.Equal(t, "500m", container.Resources.Requests.Cpu().String())
+		assert.Equal(t, "300Mi", container.Resources.Limits.Memory().String())
+		assert.Equal(t, "300m", container.Resources.Limits.Cpu().String())
+	})
+	t.Run("Overrides container overrides resources set in Job", func(t *testing.T) {
+		pipeline := &config.Pipeline{
+			Stages: []config.Stage{
+				{
+					Name: "Test DeployEmbeddedManifests Stage",
+					DeployEmbeddedManifests: &config.DeployEmbeddedManifests{
+						Files: []config.ManifestFile{
+							{
+								File: filepath.Join(wd, "testdata", "job.v1.yml"),
+							},
+						},
+						ContainerOverrides: []*config.ContainerOverrides{
+							{
+								Name: "pi",
+								Resources: &config.Resources{
+									Limits: &config.Resource{Memory: "300Mi", CPU: "300m"},
+									Requests: &config.Resource{Memory: "500Mi", CPU: "500m"},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		builder := builder.New(pipeline)
+		spinnaker, err := builder.Pipeline()
+		require.NoError(t, err, "error generating pipeline json")
+		var c batchv1.Job
+		u, _ := runtime.DefaultUnstructuredConverter.ToUnstructured(spinnaker.Stages[0].(*types.ManifestStage).Manifests[0])
+		err = runtime.DefaultUnstructuredConverter.FromUnstructured(u, &c)
+		require.NoError(t, err)
+		container := c.Spec.Template.Spec.Containers[0]
 		assert.Equal(t, "500Mi", container.Resources.Requests.Memory().String())
 		assert.Equal(t, "500m", container.Resources.Requests.Cpu().String())
 		assert.Equal(t, "300Mi", container.Resources.Limits.Memory().String())
