@@ -371,8 +371,6 @@ func (b *Builder) buildDeployEmbeddedManifestStage(index int, s config.Stage) (*
 					}
 				}
 				objs[i] = u
-			} else {
-				continue
 			}
 		}
 
