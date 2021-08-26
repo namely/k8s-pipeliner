@@ -10,7 +10,7 @@ test:
 
 .PHONY: deps
 deps:
-	go mod vendor
+	GO111MODULE="on" go mod vendor
 	go get github.com/mattn/goveralls
 	go get github.com/go-playground/overalls
 	go get github.com/mgechev/revive
