@@ -10,6 +10,7 @@ test:
 
 .PHONY: deps
 deps:
+	export GO111MODULE="on"
 	go mod vendor
 	go get github.com/mattn/goveralls
 	go get github.com/go-playground/overalls
