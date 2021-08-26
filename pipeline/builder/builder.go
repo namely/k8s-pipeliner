@@ -20,6 +20,9 @@ import (
 
 const (
 	errOverrideResource = "could not override %s for container: %s"
+	kindCronJob = "CronJob"
+	kindDeployment = "Deployment"
+	kindJob = "Job"
 )
 
 var (
@@ -320,11 +323,11 @@ func (b *Builder) buildDeployEmbeddedManifestStage(index int, s config.Stage) (*
 				return nil, errors.New("manifest parser returned an unexpected object type")
 			}
 
-			if u.GetKind() == "Deployment" || u.GetKind() == "Job" || u.GetKind() == "CronJob" {
+			if u.GetKind() == kindDeployment || u.GetKind() == kindJob || u.GetKind() == kindCronJob {
 				var c interface{}
 
 				// Gets the containers based on the kind
-				if u.GetKind() == "Deployment" || u.GetKind() == "Job" {
+				if u.GetKind() == kindDeployment || u.GetKind() == kindJob {
 					// Deployment and Job nested struct
 					c, _, _ = unstructured.NestedFieldNoCopy(u.Object, "spec", "template", "spec", "containers")
 				} else {
