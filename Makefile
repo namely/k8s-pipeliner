@@ -14,6 +14,7 @@ deps:
 	go get github.com/mattn/goveralls
 	go get github.com/go-playground/overalls
 	go get github.com/mgechev/revive
+	go get github.com/stretchr/testify@v1.4.0
 
 .PHONY: coveralls
 coveralls:
