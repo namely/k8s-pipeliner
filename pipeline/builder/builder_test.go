@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	appsv1 "k8s.io/api/apps/v1"
-	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -483,7 +482,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 		builder := builder.New(pipeline)
 		spinnaker, err := builder.Pipeline()
 		require.NoError(t, err, "error generating pipeline json")
-		var c batchv1beta1.CronJob
+		var c batchv1.CronJob
 		u, _ := runtime.DefaultUnstructuredConverter.ToUnstructured(spinnaker.Stages[0].(*types.ManifestStage).Manifests[0])
 		err = runtime.DefaultUnstructuredConverter.FromUnstructured(u, &c)
 		require.NoError(t, err)

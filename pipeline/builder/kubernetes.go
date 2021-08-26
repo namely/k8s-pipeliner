@@ -14,7 +14,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	v1beta1 "k8s.io/api/extensions/v1beta1"
+	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -230,13 +230,21 @@ func (mp *ManifestParser) ContainersFromScaffold(scaffold config.ContainerScaffo
 	case "Deployment":
 		resource = &appsv1.Deployment{}
 		if err := scheme.Scheme.Convert(obj, resource, nil); err != nil {
-			return nil, err
+			// if it is unable to convert, pass through the object (for backwards compatibility)
+			resource = obj
 		}
 	case "Pod":
 		resource = obj
 	}
 
 	switch t := resource.(type) {
+	case *v1beta1.Deployment:
+		mg.Containers = mp.deploymentContainers(t.Spec.Template.Spec, scaffold)
+		mg.InitContainers = mp.deploymentInitContainers(t.Spec.Template.Spec, scaffold)
+		mg.Annotations = t.Annotations
+		mg.PodAnnotations = t.Spec.Template.Annotations
+		mg.Namespace = t.GetNamespace()
+		mg.VolumeSources = mp.volumeSources(t.Spec.Template.Spec.Volumes)
 	case *appsv1.Deployment:
 		mg.Containers = mp.deploymentContainers(t.Spec.Template.Spec, scaffold)
 		mg.InitContainers = mp.deploymentInitContainers(t.Spec.Template.Spec, scaffold)
