@@ -136,7 +136,7 @@ To use it:
 
 ```
 $ cd your-project
-$ k8s-pipeliner create pipeline.yml
+$ ~/go/bin/k8s-pipeliner create pipeline.yml
 ```
 
 If you want a pretty view and have JQ installed, you can do:
