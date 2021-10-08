@@ -276,7 +276,7 @@ func TestContainersFromManifests(t *testing.T) {
 		assert.Equal(t, []string{"BAR"}, container.SecurityContext.Capabilities.Drop)
 	})
 
-	t.Run("LivenessProbe is copied in the correct format", func(t *testing.T) {
+	t.Run("Probes are copied in the correct format", func(t *testing.T) {
 		file := filepath.Join(wd, "testdata", "deployment.probes.yml")
 		parser := builder.NewManfifestParser(&config.Pipeline{})
 		group, err := parser.ContainersFromScaffold(scaffoldMock{
@@ -288,6 +288,7 @@ func TestContainersFromManifests(t *testing.T) {
 
 		require.NotNil(t, container.LivenessProbe)
 		require.NotNil(t, container.ReadinessProbe)
+		require.NotNil(t, container.StartupProbe)
 	})
 
 	t.Run("InitContainers are copied in the correct format", func(t *testing.T) {
