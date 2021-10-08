@@ -25,3 +25,6 @@ spec:
         readinessProbe:
           exec:
             command: ["say", "hello"]
+        startupProbe:
+          exec:
+            command: ["say", "hello"]
