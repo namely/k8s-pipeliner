@@ -454,6 +454,10 @@ func (mp *ManifestParser) parseContainer(container corev1.Container, scaffold co
 	if probe := container.ReadinessProbe; probe != nil {
 		spinContainer.ReadinessProbe = spinnakerProbeHandler(probe)
 	}
+	
+	if probe := container.StartupProbe; probe != nil {
+		spinContainer.StartupProbe = spinnakerProbeHandler(probe)
+	}
 
 	// add all of the volume mounts
 	for _, vm := range container.VolumeMounts {
