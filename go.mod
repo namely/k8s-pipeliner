@@ -9,7 +9,7 @@ require (
 	github.com/stretchr/testify v1.4.0
 	github.com/urfave/cli v1.22.4
 	golang.org/x/net v0.0.0-20200425230154-ff2c4b7c35a0 // indirect
-	gopkg.in/yaml.v2 v2.2.8
+	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.17.0
 	k8s.io/apimachinery v0.17.5
 	k8s.io/client-go v11.0.0+incompatible
