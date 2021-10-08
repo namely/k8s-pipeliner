@@ -332,6 +332,7 @@ type Container struct {
 
 	LivenessProbe  *Probe `json:"livenessProbe"`
 	ReadinessProbe *Probe `json:"readinessProbe"`
+	StartupProbe   *Probe `json:"startupProbe"`
 
 	SecurityContext *SecurityContext `json:"securityContext"`
 }
