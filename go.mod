@@ -1,6 +1,6 @@
 module github.com/namely/k8s-pipeliner
 
-go 1.12
+go 1.13
 
 require (
 	github.com/hashicorp/go-multierror v1.0.0
