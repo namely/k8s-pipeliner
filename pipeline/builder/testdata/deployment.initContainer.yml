@@ -25,13 +25,13 @@ spec:
         image: init.container/latest
         livenessProbe:
           exec:
-            command: ["say", "hello"]
+            command: ["say", "liveness"]
         readinessProbe:
           exec:
-            command: ["say", "hello"]
+            command: ["say", "readiness"]
         startupProbe:
           exec:
-            command: ["say", "hello"]
+            command: ["say", "startup"]
         volumeMounts:
           - name: configmap-volume
             mountPath: "/thisisthemount"
