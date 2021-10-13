@@ -21,7 +21,10 @@ spec:
         - hello
         livenessProbe:
           exec:
-            command: ["say", "hello"]
+            command: ["say", "liveness"]
         readinessProbe:
           exec:
-            command: ["say", "hello"]
+            command: ["say", "readiness"]
+        startupProbe:
+          exec:
+            command: ["say", "startup"]

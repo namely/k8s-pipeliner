@@ -276,7 +276,7 @@ func TestContainersFromManifests(t *testing.T) {
 		assert.Equal(t, []string{"BAR"}, container.SecurityContext.Capabilities.Drop)
 	})
 
-	t.Run("LivenessProbe is copied in the correct format", func(t *testing.T) {
+	t.Run("Probes are copied in the correct format", func(t *testing.T) {
 		file := filepath.Join(wd, "testdata", "deployment.probes.yml")
 		parser := builder.NewManfifestParser(&config.Pipeline{})
 		group, err := parser.ContainersFromScaffold(scaffoldMock{
@@ -287,7 +287,11 @@ func TestContainersFromManifests(t *testing.T) {
 		container := group.Containers[0]
 
 		require.NotNil(t, container.LivenessProbe)
+		assert.Equal(t, []string{"say", "liveness"}, container.LivenessProbe.Handler.ExecAction.Commands)
 		require.NotNil(t, container.ReadinessProbe)
+		assert.Equal(t, []string{"say", "readiness"}, container.ReadinessProbe.Handler.ExecAction.Commands)
+		require.NotNil(t, container.StartupProbe)
+		assert.Equal(t, []string{"say", "startup"}, container.StartupProbe.Handler.ExecAction.Commands)
 	})
 
 	t.Run("InitContainers are copied in the correct format", func(t *testing.T) {
@@ -317,7 +321,11 @@ func TestContainersFromManifests(t *testing.T) {
 		assert.Equal(t, "init-container", initContainer.Name)
 
 		require.NotNil(t, initContainer.LivenessProbe)
+		assert.Equal(t, []string{"say", "liveness"}, initContainer.LivenessProbe.Handler.ExecAction.Commands)
 		require.NotNil(t, initContainer.ReadinessProbe)
+		assert.Equal(t, []string{"say", "readiness"}, initContainer.ReadinessProbe.Handler.ExecAction.Commands)
+		require.NotNil(t, initContainer.StartupProbe)
+		assert.Equal(t, []string{"say", "startup"}, initContainer.StartupProbe.Handler.ExecAction.Commands)
 
 		t.Run("InitContainer env are copied in", func(t *testing.T) {
 			require.Len(t, initContainer.EnvVars, 1)
