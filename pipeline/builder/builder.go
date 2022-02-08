@@ -631,9 +631,9 @@ func (b *Builder) buildJenkinsStage(index int, s config.Stage) (*types.JenkinsSt
 
 func (b *Builder) buildEvaluateVariablesStage(index int, s config.Stage) (*types.EvaluateVariablesStage, error) {
 	stage := &types.EvaluateVariablesStage{
-		StageMetadata: buildStageMetadata(s, "evaluate", index, b.isLinear),
-		Type:          "evaluatevariables",
-		Variables:     make(map[string]string),
+		StageMetadata:           buildStageMetadata(s, "evaluatevariables", index, b.isLinear),
+		FailOnFailedExpressions: true,
+		Variables:               make(map[string]string),
 	}
 
 	for _, p := range s.EvaluateVariables.Variables {

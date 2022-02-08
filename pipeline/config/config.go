@@ -370,6 +370,5 @@ func findImageDescription(containerName string, refs []ImageDescriptionRef) *Ima
 
 // EvaluateVariablesStage parses complex expressions for reuse throughout a pipeline
 type EvaluateVariablesStage struct {
-	Type      string                 `yaml:"type,omitempty"`
 	Variables []PassthroughParameter `yaml:"variables,omitempty"`
 }

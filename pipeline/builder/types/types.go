@@ -561,7 +561,8 @@ type OptionalStageSupport struct {
 type EvaluateVariablesStage struct {
 	StageMetadata
 
-	Type      string            `json:"type,omitempty"`
+	FailOnFailedExpressions bool `json:"failOnFailedExpessions"`
+
 	Variables map[string]string `json:"variables,omitempty"`
 }
 

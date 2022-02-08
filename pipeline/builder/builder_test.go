@@ -1197,11 +1197,10 @@ func TestBuilderPipelineStages(t *testing.T) {
 					{
 						Name: "Test EvaluateVariables Stage",
 						EvaluateVariables: &config.EvaluateVariablesStage{
-							Type: "evaluatevariables",
 							Variables: []config.PassthroughParameter{
 								{
 									Key:   "myfunkey",
-									Value: "myfunvalue",
+									Value: "${mycomplexexpression}",
 								},
 							},
 						},
@@ -1218,7 +1217,11 @@ func TestBuilderPipelineStages(t *testing.T) {
 			assert.Equal(t, "evaluatevariables", stg.Type)
 
 			variables := stg.Variables
-			assert.Equal(t, "myfunvalue", variables["myfunkey"])
+			assert.Equal(t, "${mycomplexexpression}", variables["myfunkey"])
+
+			assert.True(t, stg.FailOnFailedExpressions)
+
+			t.Logf("%+v\n", stg)
 		})
 
 		t.Run("Parses without type specified", func(t *testing.T) {
