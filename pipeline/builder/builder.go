@@ -219,6 +219,14 @@ func (b *Builder) Pipeline() (*types.SpinnakerPipeline, error) {
 			stageIndex = stageIndex + 1
 		}
 
+		if stage.EvaluateVariables != nil {
+			s, err = b.buildEvaluateVariablesStage(stageIndex, stage)
+			if err != nil {
+				return sp, fmt.Errorf("failed to build evaluate variables stage with error: %v", err)
+			}
+			stageIndex++
+		}
+
 		if stage.RunSpinnakerPipeline != nil {
 			s, err = b.buildRunSpinnakerPipelineStage(stageIndex, stage)
 			if err != nil {
@@ -616,6 +624,20 @@ func (b *Builder) buildJenkinsStage(index int, s config.Stage) (*types.JenkinsSt
 
 	for _, p := range s.Jenkins.Parameters {
 		stage.Parameters[p.Key] = p.Value
+	}
+
+	return stage, nil
+}
+
+func (b *Builder) buildEvaluateVariablesStage(index int, s config.Stage) (*types.EvaluateVariablesStage, error) {
+	stage := &types.EvaluateVariablesStage{
+		StageMetadata: buildStageMetadata(s, "evaluate", index, b.isLinear),
+		Type:          "evaluatevariables",
+		Variables:     make(map[string]string),
+	}
+
+	for _, p := range s.EvaluateVariables.Variables {
+		stage.Variables[p.Key] = p.Value
 	}
 
 	return stage, nil
