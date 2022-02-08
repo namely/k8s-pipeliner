@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	appsv1 "k8s.io/api/apps/v1"
-	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	batchv1 "k8s.io/api/batch/v1"
+	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -471,7 +471,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 							{
 								Name: "hello",
 								Resources: &config.Resources{
-									Limits: &config.Resource{Memory: "300Mi", CPU: "300m"},
+									Limits:   &config.Resource{Memory: "300Mi", CPU: "300m"},
 									Requests: &config.Resource{Memory: "500Mi", CPU: "500m"},
 								},
 							},
@@ -508,7 +508,7 @@ func TestBuilderPipelineStages(t *testing.T) {
 							{
 								Name: "pi",
 								Resources: &config.Resources{
-									Limits: &config.Resource{Memory: "300Mi", CPU: "300m"},
+									Limits:   &config.Resource{Memory: "300Mi", CPU: "300m"},
 									Requests: &config.Resource{Memory: "500Mi", CPU: "500m"},
 								},
 							},
@@ -1187,6 +1187,38 @@ func TestBuilderPipelineStages(t *testing.T) {
 			require.NoError(t, err, "error generating pipeline json")
 
 			assert.Equal(t, []string{"2"}, spinnaker.Stages[0].(*types.JenkinsStage).StageMetadata.RequisiteStageRefIds)
+		})
+	})
+
+	t.Run("EvaluateVariables stage is parsed correctly", func(t *testing.T) {
+		t.Run("Properties are assigned", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						Name: "Test EvaluateVariables Stage",
+						EvaluateVariables: &config.EvaluateVariablesStage{
+							Type: "evaluatevariables",
+							Variables: []config.PassthroughParameter{
+								{
+									Key:   "myfunkey",
+									Value: "myfunvalue",
+								},
+							},
+						},
+					},
+				},
+			}
+
+			builder := builder.New(pipeline)
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating EvaluateVariables pipeline json")
+
+			stg := spinnaker.Stages[0].(*types.EvaluateVariablesStage)
+			assert.Equal(t, "Test EvaluateVariables Stage", stg.Name)
+			assert.Equal(t, "evaluatevariables", stg.Type)
+
+			variables := stg.Variables
+			assert.Equal(t, "myfunvalue", variables["myfunkey"])
 		})
 	})
 
