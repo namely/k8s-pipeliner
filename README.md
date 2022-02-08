@@ -307,6 +307,26 @@ parameters:
 
 This configures your pipeline to have parameters in the UI / enable pipeline expressions.
 
+### <a name="evaluatevariables"></a> Evaluate Variables Stage
+
+The evaluate variables stage allows you to evaluate complex expressions and use them throughout your pipeline:
+
+```yaml
+- name: "evaluate variables"
+  variables:
+    - key: "my-fun-key"
+      value: ${my-complex-expression}
+```
+
+You can reference the variable by the key name:
+
+```yaml
+- name: "Some other stage"
+  someField: ${ my-fun-key }
+```
+
+### <a name="configurator"></a> Configurator
+
 Files under the `configuratorFiles` section are expected to be in the [k8s-configurator format](https://github.com/namely/k8s-configurator/blob/master/README.md#input-file-and-envs). These will be run through k8s-configurator to generate the environment-specific manifest. By default, the environment used by k8s-configurator will be determined by the account used in this stage. However, you may set the optional `env` property for configuratorFiles to override this.
 
 ```yaml
