@@ -556,3 +556,15 @@ type OptionalStageSupport struct {
 	Expression string `json:"expression"`
 	Type       string `json:"type"`
 }
+
+// EvaluateVariablesStage parses complex expressions for reuse throughout a pipeline
+type EvaluateVariablesStage struct {
+	StageMetadata
+
+	Type      string            `json:"type,omitempty"`
+	Variables map[string]string `json:"variables,omitempty"`
+}
+
+func (evs EvaluateVariablesStage) spinnakerStage() {}
+
+var _ Stage = EvaluateVariablesStage{}
