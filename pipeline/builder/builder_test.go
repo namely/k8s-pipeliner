@@ -1223,35 +1223,6 @@ func TestBuilderPipelineStages(t *testing.T) {
 
 			t.Logf("%+v\n", stg)
 		})
-
-		t.Run("Parses without type specified", func(t *testing.T) {
-			pipeline := &config.Pipeline{
-				Stages: []config.Stage{
-					{
-						Name: "Test EvaluateVariables Stage",
-						EvaluateVariables: &config.EvaluateVariablesStage{
-							Variables: []config.PassthroughParameter{
-								{
-									Key:   "myfunkey",
-									Value: "myfunvalue",
-								},
-							},
-						},
-					},
-				},
-			}
-
-			builder := builder.New(pipeline)
-			spinnaker, err := builder.Pipeline()
-			require.NoError(t, err, "error generating EvaluateVariables pipeline json")
-
-			stg := spinnaker.Stages[0].(*types.EvaluateVariablesStage)
-			assert.Equal(t, "Test EvaluateVariables Stage", stg.Name)
-			assert.Equal(t, "evaluatevariables", stg.Type)
-
-			variables := stg.Variables
-			assert.Equal(t, "myfunvalue", variables["myfunkey"])
-		})
 	})
 
 	t.Run("RunSpinnakerPipeline stage is parsed correctly", func(t *testing.T) {
