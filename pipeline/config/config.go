@@ -160,7 +160,7 @@ type Stage struct {
 	WebHook                 *WebHookStage              `yaml:"webHook,omitempty"`
 	Jenkins                 *JenkinsStage              `yaml:"jenkins,omitempty"`
 	RunSpinnakerPipeline    *RunSpinnakerPipelineStage `yaml:"spinnaker,omitempty"`
-	EvaluateVariables       *EvaluateVariablesStage    `yaml:"evaluatevariables,omitempty"`
+	EvaluateVariables       *EvaluateVariablesStage    `yaml:"variables,omitempty"`
 }
 
 // Notification config from pipeline configuration on a stage or pipeline
