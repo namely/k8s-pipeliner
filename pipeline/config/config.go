@@ -160,6 +160,7 @@ type Stage struct {
 	WebHook                 *WebHookStage              `yaml:"webHook,omitempty"`
 	Jenkins                 *JenkinsStage              `yaml:"jenkins,omitempty"`
 	RunSpinnakerPipeline    *RunSpinnakerPipelineStage `yaml:"spinnaker,omitempty"`
+	EvaluateVariables       *EvaluateVariablesStage    `yaml:"variables,omitempty"`
 }
 
 // Notification config from pipeline configuration on a stage or pipeline
@@ -365,4 +366,9 @@ func findImageDescription(containerName string, refs []ImageDescriptionRef) *Ima
 	}
 
 	return nil
+}
+
+// EvaluateVariablesStage parses complex expressions for reuse throughout a pipeline
+type EvaluateVariablesStage struct {
+	Variables []PassthroughParameter `yaml:"variables,omitempty"`
 }
