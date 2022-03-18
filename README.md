@@ -1,5 +1,7 @@
 # Kubernetes Pipeliner
-
+ 
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/03d22314658645d181c489328b1f3309)](https://app.codacy.com/gh/namely/k8s-pipeliner/dashboard)
+[![Codacy Badge](https://app.codacy.com/project/badge/Coverage/03d22314658645d181c489328b1f3309)](https://app.codacy.com/gh/namely/k8s-pipeliner/dashboard)
 [![Build Status](https://travis-ci.com/namely/k8s-pipeliner.svg?branch=master)](https://travis-ci.com/namely/k8s-pipeliner)
 [![Coverage Status](https://coveralls.io/repos/github/namely/k8s-pipeliner/badge.svg)](https://coveralls.io/github/namely/k8s-pipeliner)
 
