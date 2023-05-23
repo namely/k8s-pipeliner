@@ -53,8 +53,8 @@ func main() {
 	}
 
 	if err := app.Run(os.Args); err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
+		fmt.Printf("error: %v", err)
+		os.Exit(255)
 	}
 }
 
