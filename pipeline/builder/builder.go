@@ -838,6 +838,13 @@ func buildStageMetadata(s config.Stage, t string, index int, linear bool) types.
 		Type:                 t,
 		Notifications:        notifications,
 		SendNotifications:    (len(notifications) > 0),
+		TrafficManagement: &types.TrafficManagement{
+			Enabled: false,
+			Options: &types.TrafficManagementOptions{
+				EnableTraffic: false,
+				Services:      []string{},
+			},
+		},
 	}
 
 	if len(s.Condition) > 0 {

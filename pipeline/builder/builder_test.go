@@ -1399,6 +1399,22 @@ func TestBuilderPipelineStages(t *testing.T) {
 
 			assert.Equal(t, []string{"2"}, spinnaker.Stages[0].(*types.RunSpinnakerPipelineStage).StageMetadata.RequisiteStageRefIds)
 		})
+
+		t.Run("TrafficManagement is assigned", func(t *testing.T) {
+			pipeline := &config.Pipeline{
+				Stages: []config.Stage{
+					{
+						Deploy:   &config.DeployStage{},
+					},
+				},
+			}
+
+			builder := builder.New(pipeline)
+			spinnaker, err := builder.Pipeline()
+			require.NoError(t, err, "error generating pipeline json")
+
+			assert.Equal(t, &types.TrafficManagement{Enabled: false, Options: &types.TrafficManagementOptions{EnableTraffic: false, Services: []string{}}}, spinnaker.Stages[0].(*types.DeployStage).StageMetadata.TrafficManagement)
+		})
 	})
 }
 
