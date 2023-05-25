@@ -569,3 +569,15 @@ type EvaluateVariablesStage struct {
 func (evs EvaluateVariablesStage) spinnakerStage() {}
 
 var _ Stage = EvaluateVariablesStage{}
+
+// TrafficManagement is a struct for the Spinnaker traffic management configuration
+type TrafficManagement struct {
+	Enabled bool                      `json:"enabled" default:"false"`
+	Options *TrafficManagementOptions `json:"options"`
+}
+
+// TrafficManagementOptions options for traffic management
+type TrafficManagementOptions struct {
+	EnableTraffic bool     `json:"enableTraffic" default:"false"`
+	Services      []string `json:"services" default:"[]"`
+}

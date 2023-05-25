@@ -20,6 +20,7 @@ type StageMetadata struct {
 	Notifications        []Notification        `json:"notifications,omitempty"`
 	SendNotifications    bool                  `json:"sendNotifications,omitempty"`
 	StageEnabled         *OptionalStageSupport `json:"stageEnabled,omitempty"`
+	TrafficManagement    *TrafficManagement    `json:"trafficManagement"`
 }
 
 // JenkinsTrigger constructs the JSON necessary to include a Jenkins trigger
