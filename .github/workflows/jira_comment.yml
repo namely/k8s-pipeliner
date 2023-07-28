@@ -1,0 +1,11 @@
+on:
+  pull_request_target:
+    types:
+      - closed
+
+jobs:
+  jira_comment:
+    if: github.event.pull_request.merged == true
+    uses: namely/sre/.github/workflows/reusable-workflow-jira-comment.yml@main
+    secrets:
+      jira_token: ${{ secrets.NAMELY_ENG_INTEGRATIONS_JIRA_PAT }}
