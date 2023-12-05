@@ -5,6 +5,8 @@ on:
 
 jobs:
   jira_comment:
+    permissions:
+      pull-requests: read
     if: github.event.pull_request.merged == true
     uses: namely/sre/.github/workflows/reusable-workflow-jira-comment.yml@main
     secrets:
