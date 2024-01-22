@@ -131,7 +131,7 @@ stages:
 If you have a Go environment installed and configured, you can use `go get` to install the latest package of this project:
 
 ```
-$ go get -u github.com/namely/k8s-pipeliner/cmd/k8s-pipeliner
+$ go install github.com/namely/k8s-pipeliner/cmd/k8s-pipeliner
 ```
 
 To use it:
