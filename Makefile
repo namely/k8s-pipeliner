@@ -11,8 +11,8 @@ test:
 .PHONY: deps
 deps:
 	GO111MODULE=on go mod vendor
-	go install github.com/mattn/goveralls
-	go install github.com/go-playground/overalls
+	go install github.com/mattn/goveralls@0.12
+	go install github.com/go-playground/overalls@latest
 
 .PHONY: coveralls
 coveralls:
